@@ -1,0 +1,185 @@
+.sidebar {
+  width: 280px;
+  height: 100%;
+  background-color: var(--sidebar-bg-color);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem;
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 80px;
+  padding: 1rem 0.5rem;
+  align-items: center;
+}
+
+/* This new container will hold the header and the scrollable list */
+.sidebar-main-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0; /* This is the critical fix for the flexbox overflow issue */
+}
+
+.sidebar-header {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+  flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-light-color);
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.toggle-btn:hover {
+  background-color: var(--hover-color);
+}
+
+.new-chat-btn {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background-color: var(--secondary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0; /* Prevent button from shrinking */
+}
+
+.new-chat-btn:hover {
+  background-color: #218838; /* Darker green */
+}
+
+.sidebar.collapsed .new-chat-btn span {
+  display: none;
+}
+
+.chat-history {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow-y: auto; /* This will now work correctly */
+  flex-grow: 1;
+  width: 100%;
+}
+
+.chat-history-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  gap: 0.75rem;
+}
+
+.sidebar.collapsed .chat-history-item {
+  justify-content: center;
+  padding: 0.75rem 0;
+}
+
+.chat-history-item:hover {
+  background-color: var(--hover-color);
+}
+
+.chat-history-item.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.chat-icon {
+  flex-shrink: 0;
+}
+
+.chat-title {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.delete-chat-btn {
+  background: none;
+  border: none;
+  color: var(--text-light-color);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.2s ease;
+  margin-left: auto;
+}
+
+.chat-history-item:hover .delete-chat-btn {
+  opacity: 1;
+}
+
+.chat-history-item.active .delete-chat-btn {
+  color: white;
+  opacity: 1;
+}
+
+.delete-chat-btn:hover {
+  color: var(--danger-color);
+}
+
+.loading-placeholder {
+  text-align: center;
+  padding: 1rem;
+  color: var(--text-light-color);
+}
+
+.sidebar-footer {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0; /* Prevent footer from shrinking */
+}
+
+.dummy-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  color: var(--text-light-color);
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dummy-link:hover {
+  background-color: var(--hover-color);
+  color: var(--text-color);
+}
+
+.dummy-link.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.sidebar.collapsed .dummy-link {
+  justify-content: center;
+}

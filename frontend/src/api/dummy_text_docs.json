@@ -1,0 +1,30 @@
+
+[
+  {
+    "id": 1,
+    "doc_id": "doc-1",
+    "summary_text": "This is a summary of the first text document.",
+    "raw_text": "This is the full raw text of the first document. It contains detailed information about the topic.",
+    "category": "General",
+    "filename": "document1.txt",
+    "page_number": 1
+  },
+  {
+    "id": 2,
+    "doc_id": "doc-2",
+    "summary_text": "This document discusses advanced React patterns.",
+    "raw_text": "The text explores various advanced React patterns, including higher-order components, render props, and hooks.",
+    "category": "React",
+    "filename": "react_patterns.md",
+    "page_number": null
+  },
+  {
+    "id": 3,
+    "doc_id": "doc-3",
+    "summary_text": "A guide to CSS Flexbox.",
+    "raw_text": "This is a comprehensive guide to CSS Flexbox, covering all the properties and providing examples.",
+    "category": "CSS",
+    "filename": "flexbox_guide.css",
+    "page_number": 3
+  }
+]

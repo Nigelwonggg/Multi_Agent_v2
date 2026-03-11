@@ -1,0 +1,223 @@
+import React, { useState, useEffect, useCallback } from "react";
+import { getTextDocuments, deleteTextDocument, getAvailableDomains } from "../../api/textStoreApi";
+import type { TextDocument } from "../../api/textStoreApi";
+import MarkdownRenderer from "../MarkdownRenderer/MarkdownRenderer";
+import FilterBar from "../FilterBar/FilterBar";
+import Pagination from "../Pagination/Pagination";
+import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import "./TextStore.css";
+
+const TextStore: React.FC = () => {
+  const [documents, setDocuments] = useState<TextDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(() => {
+    const savedPage = sessionStorage.getItem('currentPage');
+    return savedPage ? parseInt(savedPage, 10) : 1;
+  });
+  const [totalPages, setTotalPages] = useState(1);
+  const [filters, setFilters] = useState(() => {
+    const savedFilters = sessionStorage.getItem('filters');
+    return savedFilters ? JSON.parse(savedFilters) : { category: "", filename: "" };
+  });
+  const [selectedDomain, setSelectedDomain] = useState("data_science");
+  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
+  const pageSize = 10;
+  const navigate = useNavigate();
+
+  const fetchDocuments = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await getTextDocuments(
+        currentPage,
+        pageSize,
+        filters.category || null,
+        filters.filename || null,
+        null, // search
+        selectedDomain
+      );
+      setDocuments(response.documents);
+      setTotalPages(Math.ceil(response.total / pageSize));
+    } catch (error) {
+      console.error("Failed to fetch documents:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, pageSize, filters, selectedDomain]);
+
+  useEffect(() => {
+    fetchDocuments();
+    // Clear the stored state after it's been used
+    sessionStorage.removeItem('currentPage');
+    sessionStorage.removeItem('filters');
+  }, [fetchDocuments]);
+
+  useEffect(() => {
+    // Load available domains on component mount
+    getAvailableDomains()
+      .then(domains => setAvailableDomains(domains))
+      .catch(error => console.error("Failed to fetch domains:", error));
+  }, []);
+
+  const handleFilterChange = useCallback((newFilters: {
+    category: string;
+    filename: string;
+  }) => {
+    setCurrentPage(1); // Reset to first page when filters change
+    setFilters(newFilters);
+  }, []);
+
+  const handleDelete = async (docId: string) => {
+    if (window.confirm("Are you sure you want to delete this document?")) {
+      try {
+        await deleteTextDocument(docId);
+        // Refetch documents after deletion
+        const response = await getTextDocuments(currentPage, pageSize);
+        setDocuments(response.documents);
+        setTotalPages(Math.ceil(response.total / pageSize));
+      } catch (error) {
+        console.error("Failed to delete document:", error);
+      }
+    }
+  };
+
+  // Create a helper function to format filename with page number
+  const formatFilenameWithPage = (
+    filename: string | null | undefined,
+    pageNumber?: number | null
+  ): string => {
+    const displayFilename = filename || "N/A"; // Handle undefined or null filename
+    if (pageNumber !== null && pageNumber !== undefined) {
+      return `${displayFilename} \n (Page ${pageNumber})`;
+    }
+    return displayFilename;
+  };
+
+  return (
+    <div className="text-store-container">
+      <div className="text-store-header">
+        <h1>Text Store</h1>
+        <button className="add-new-btn" onClick={() => {
+          sessionStorage.setItem('currentPage', currentPage.toString());
+          sessionStorage.setItem('filters', JSON.stringify(filters));
+          navigate('/vector-database/text-store/add'); 
+        }}>
+          <FiPlus />
+          <span>Add New</span>
+        </button>
+      </div>
+
+      {/* Domain Filter */}
+      <div className="domain-filter" style={{ 
+        marginBottom: '16px', 
+        padding: '12px', 
+        backgroundColor: '#f5f5f5', 
+        borderRadius: '6px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px'
+      }}>
+        <label htmlFor="domain-select" style={{ fontWeight: 'bold' }}>
+          Domain:
+        </label>
+        <select
+          id="domain-select"
+          value={selectedDomain}
+          onChange={(e) => {
+            setSelectedDomain(e.target.value);
+            setCurrentPage(1); // Reset to first page when domain changes
+            setFilters({ category: "", filename: "" }); // Reset filters when domain changes
+          }}
+          style={{
+            padding: '8px 12px',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            fontSize: '14px',
+            backgroundColor: 'white'
+          }}
+        >
+          {availableDomains.map(domain => (
+            <option key={domain} value={domain}>
+              {domain.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </option>
+          ))}
+        </select>
+        <span style={{ fontSize: '12px', color: '#666' }}>
+          Showing documents from the selected domain
+        </span>
+      </div>
+
+      <FilterBar 
+        onFilterChange={handleFilterChange} 
+        domain={selectedDomain}
+        storeType="text"
+      />
+
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <>
+          <table className="document-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Document ID</th>
+                <th>Summary Text</th>
+                <th>Raw Text</th>
+                <th>Category</th>
+                <th>Filename</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {documents.map((doc, index) => (
+                <tr key={doc.id}>
+                  <td>{(currentPage - 1) * pageSize + index + 1}</td>
+                  <td>{doc.doc_id}</td>
+                  <td className="markdown-cell">
+                    <MarkdownRenderer content={doc.summary_text} />
+                  </td>
+                  <td className="markdown-cell">
+                    <MarkdownRenderer content={doc.raw_text} />
+                  </td>
+                  <td>{doc.category}</td>
+                  <td className="filename-cell">
+                    {formatFilenameWithPage(doc.filename, doc.page_number)}
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      <button className="action-btn edit-btn" title="Edit" onClick={() => {
+                        sessionStorage.setItem('currentPage', currentPage.toString());
+                        sessionStorage.setItem('filters', JSON.stringify(filters));
+                        navigate(`/vector-database/text-store/edit/${doc.doc_id}`);
+                      }}>
+                        <FiEdit />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        className="action-btn delete-btn"
+                        title="Delete"
+                        onClick={() => handleDelete(doc.doc_id || '')}
+                      >
+                        <FiTrash2 />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
+    </div>
+  );
+};
+
+export default TextStore;

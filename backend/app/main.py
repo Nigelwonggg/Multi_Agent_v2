@@ -1,0 +1,75 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+# ================================================================
+# LOGGING SETUP
+# ================================================================
+# Import centralized logging
+from app.utils.logging_config import setup_logging, get_logger
+
+# Ensure logging is properly configured with DEBUG level
+setup_logging(log_level="DEBUG", enable_console_logging=True, enable_file_logging=True)
+
+# Get logger for main module
+logger = get_logger("main")
+
+
+# ================================================================
+# DATABASE SETUP
+# ================================================================
+from app.databases.chat_database import init_db
+
+# ================================================================
+# FASTAPI APPLICATION
+# ================================================================
+
+app = FastAPI(
+    title="Chatbot Backend",
+    description="A chatbot backend application using FastAPI and LangGraph.",
+    version="0.1.0",
+)
+
+
+# Enable CORS for your frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:5174"],  # Your React app URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+logger.info("🌐 CORS middleware configured")
+
+
+# ================================================================
+# API ROUTES
+# ================================================================
+from app.api.routes.chat import router as chat_router
+app.include_router(chat_router)
+
+from app.api.routes.text_store import router as text_store_router
+app.include_router(text_store_router)
+
+from app.api.routes.image_store import router as image_store_router
+app.include_router(image_store_router)
+
+from app.api.routes.domains import router as domains_router
+app.include_router(domains_router)
+
+# ================================================================
+# LLM FACTORY INITIALIZATION
+# ================================================================
+# from app.services.llm.llm_factory import get_llm_factory
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+    # llm_factory = get_llm_factory()
+    logger.info("🎬 Application startup complete")
+    logger.info("📊 Available endpoints:")
+
+
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the Chatbot Backend!"}

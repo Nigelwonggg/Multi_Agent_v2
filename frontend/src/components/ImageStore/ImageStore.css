@@ -1,0 +1,160 @@
+.image-store-container {
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.image-store-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.image-store-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.add-new-btn {
+  background-color: var(--secondary-color);
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 1rem;
+}
+
+.document-table {
+  width: 100%;
+  border-collapse: collapse;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 0.9rem;
+}
+
+.document-table th,
+.document-table td {
+  border: 1px solid var(--border-color);
+  padding: 12px;
+  text-align: left;
+  /* Removed vertical-align: top; to allow flexbox centering */
+}
+
+/* --- Column Width Adjustments --- */
+/* Adjust the width of each column here */
+.document-table th:nth-child(1), .document-table td:nth-child(1) { width: 5%; }
+.document-table th:nth-child(2), .document-table td:nth-child(2) { width: 10%; }
+.document-table th:nth-child(3), .document-table td:nth-child(3) { width: 25%; } /* Image Summary */
+.document-table th:nth-child(4), .document-table td:nth-child(4) { 
+  width: 30%; /* Increase image column width */
+  min-width: 320px; /* Ensure minimum width for images */
+}
+.document-table th:nth-child(5), .document-table td:nth-child(5) { width: 10%; }
+.document-table th:nth-child(6), .document-table td:nth-child(6) { width: 15%; }
+.document-table th:nth-child(7), .document-table td:nth-child(7) { width: 10%; }
+/* --- End Column Width Adjustments --- */
+
+.document-table th {
+  background-color: var(--sidebar-bg-color);
+}
+
+.document-table .image-summary-cell {
+  max-width: 300px; /* Adjust as needed */
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  max-height: 300px; /* Consistent with image cell */
+  overflow-y: auto; /* Add scroll for overflow content */
+}
+
+/* Replace lines 71-78 with: */
+.document-table .image-cell {
+  text-align: center;
+  padding: 32px !important; /* Increased padding and force override */
+  vertical-align: middle;
+  min-height: 350px; /* Increased minimum height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box; /* Ensure padding is included in calculations */
+}
+
+.document-table td.image-cell {
+  padding: 32px !important; /* Override the general 12px padding */
+}
+
+
+/* Fix - Replace with: */
+.document-image {
+  max-width: 240px; /* Further reduced to account for more padding */
+  max-height: 240px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  margin: auto;
+}
+
+.document-image:hover {
+  transform: scale(1.05);
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Space between buttons */
+}
+
+.action-btn {
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.edit-btn {
+  background-color: var(--primary-color);
+}
+
+.delete-btn {
+  background-color: var(--danger-color);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.pagination button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  margin: 0 5px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  background-color: var(--hover-color);
+  cursor: not-allowed;
+}
+
+.pagination span {
+  margin: 0 10px;
+}

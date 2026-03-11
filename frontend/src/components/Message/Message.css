@@ -1,0 +1,115 @@
+/* 
+  Message.css
+  Base styling for the message container and avatar.
+*/
+.message {
+  display: flex;
+  margin-bottom: 1rem;
+  max-width: 90%; /* Allow messages to be a bit wider */
+  align-items: flex-start;
+}
+
+.message.user {
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.message.bot {
+  margin-right: auto;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--border-color);
+  color: var(--text-light-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin: 0 0.75rem;
+  flex-shrink: 0;
+}
+
+/* 
+  Generic message content styling that applies to both text and image messages.
+  This ensures consistent padding, borders, and colors.
+*/
+.message-content,
+.image-message-content {
+  padding: 0.75rem 1rem;
+  border-radius: 18px;
+  line-height: 1.5;
+}
+
+.message.user .message-content,
+.message.user .image-message-content {
+  background-color: var(--primary-color);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.message.bot .message-content,
+.message.bot .image-message-content {
+  background-color: var(--input-bg-color);
+  color: var(--text-color);
+  border-bottom-left-radius: 4px;
+}
+
+
+/* --- Markdown specific styles --- */
+/* These styles apply to markdown rendered within any message type */
+
+.message-content pre,
+.image-message-content pre {
+  background-color: #2d2d2d;
+  color: #f8f8f2;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.9rem;
+}
+
+.message-content code,
+.image-message-content code {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Fira Code', 'Courier New', monospace;
+}
+
+.message-content pre code,
+.image-message-content pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.message-content blockquote,
+.image-message-content blockquote {
+  border-left: 4px solid var(--border-color);
+  padding-left: 1rem;
+  margin-left: 0;
+  color: var(--text-light-color);
+}
+
+.message-content ul, .message-content ol,
+.image-message-content ul, .image-message-content ol {
+  padding-left: 1.5rem;
+}
+
+/* Markdown styles for user messages */
+.message.user .message-content pre,
+.message.user .image-message-content pre {
+  background-color: #0056b3; /* Darker blue for code blocks */
+}
+.message.user .message-content code,
+.message.user .image-message-content code {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+.message.user .message-content blockquote,
+.message.user .image-message-content blockquote {
+  border-left-color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.8);
+}

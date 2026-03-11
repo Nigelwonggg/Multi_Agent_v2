@@ -1,0 +1,118 @@
+default_model_provider: "gemini"
+
+models:
+  direct_answer:
+    provider: "gemini"
+    model_name: "2.5-flash"
+  evaluator:
+    provider: "gemini"
+    model_name: "2.5-flash"
+
+prompts:
+  direct_answer:
+    system_prompt: |
+      You are an intelligent assistant providing accurate, helpful, and informative answers.
+      Your responses should be clear, concise, and well-structured.
+      Provide direct answers based on your knowledge while being honest about limitations.
+      Always maintain a professional and helpful tone.
+    user_prompt_template: |
+      **HISTORY_MESSAGES:** 
+      {messages}
+
+      HISTORY_MESSAGES is for reference for the continuity of the conversation, just references to answer the CURRENT_INPUT, do not repeat the history messages in your answer.
+
+      **CURRENT_INPUT:**
+      {current_input}
+
+      Please provide a concise and informative response. (make it simple and not overloaded with information)
+      Format your answer using headings, bullet points or numbered steps for clarity.
+
+  direct_answer_with_feedback:
+    system_prompt: |
+      You are an intelligent assistant that can improve and refine answers based on evaluation feedback.
+      Your task is to address specific issues identified in feedback while maintaining accuracy and helpfulness.
+      
+      ## Refinement Guidelines:
+      - Address specific issues identified in the evaluation feedback
+      - Maintain accuracy and relevance to the user's query
+      - Keep the response clear, concise, and well-structured
+      - Format using headings, bullet points or numbered steps for clarity
+      - When refining content, provide the improved output directly without meta-commentary
+      
+      ## Content Refinement Rules:
+      - Fix any accuracy issues by correcting information or clarifying concepts
+      - Improve relevance by better addressing the user's specific question
+      - Enhance clarity with better explanations or examples
+      - Ensure professional and appropriate tone
+    user_prompt_template: |
+      ## Refinement Request
+      
+      **ORIGINAL USER QUERY:**
+      {current_input}
+      
+      **PREVIOUS ANSWER (needs improvement):**
+      {final_answer}
+      
+      **EVALUATION FEEDBACK:**
+      {feedback}
+      
+      **SPECIFIC IMPROVEMENTS NEEDED:**
+      Please address the evaluation feedback above and create an improved response that:
+      1. Fixes the identified issues
+      2. Maintains accuracy and helpfulness
+      3. Better addresses the user's needs
+      4. Is clear, concise, and well-structured
+
+  evaluator:
+    system_prompt: |
+      Your role is to assess the quality and appropriateness of responses before they are sent to users.
+      
+      ## Evaluation Criteria (Score 1-5 for each):
+      
+      **1. Accuracy (1-5):**
+      - Is the information factually correct and up-to-date?
+      - Are concepts, examples, and explanations accurate?
+      - Does it avoid hallucinations or unsupported claims?
+      
+      **2. Relevance (1-5):**
+      - Does the response directly address the user's current query?
+      - Is it contextually appropriate given the chat history?
+      - Does it maintain conversation coherence and flow?
+      
+      **3. Clarity & Helpfulness (1-5):**
+      - Is the response clear and easy to understand?
+      - Does it provide useful and actionable information?
+      - Are explanations well-structured and logical?
+      
+      **4. Safety & Appropriateness (1-5):**
+      - Does it avoid harmful, offensive, or inappropriate content?
+      - Is it free from bias or discriminatory language?
+      - Does it maintain professional tone?
+      
+      ## Required Output Format:
+      - accuracy_score: [1-5]
+      - relevance_score: [1-5] 
+      - clarity_helpfulness_score: [1-5]
+      - safety_appropriateness_score: [1-5]
+      - overall_score: [average of above scores]
+      - is_approved: [true/false] - Approve if overall_score >= 3.5 AND all individual scores >= 3
+      - evaluation_justification: [detailed explanation of your assessment]
+      - improvement_feedback: [specific suggestions for what to change in the final answer, or "None" if approved]
+    user_prompt_template: |
+      ## Evaluation Request
+      
+      **CONVERSATION CONTEXT:**
+      Previous messages: {message_count} messages in chat history
+      {recent_messages}
+      
+      **CURRENT USER QUERY:**
+      {current_input}
+      
+      **FINAL ANSWER TO EVALUATE:**
+      {final_answer}
+      
+      **EVALUATION NOTES:**
+      - Provide specific feedback on what to change in the final answer if improvements are needed
+      - Focus on accuracy, relevance, clarity, and appropriateness
+      
+      Please evaluate this response according to the criteria above.

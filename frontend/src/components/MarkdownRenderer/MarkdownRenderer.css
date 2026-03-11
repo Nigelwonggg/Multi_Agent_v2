@@ -1,0 +1,8 @@
+.markdown-renderer {
+  max-height: 500px; /* Allow more height for content */
+  overflow: auto; /* Add scrollbar if content overflows */
+  padding: 5px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}

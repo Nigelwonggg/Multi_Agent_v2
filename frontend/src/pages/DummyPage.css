@@ -1,0 +1,25 @@
+/* 
+  Styling for the DummyPage component.
+  Provides a simple centered layout for placeholder content.
+*/
+.dummy-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+}
+
+.dummy-page h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.dummy-page p {
+  font-size: 1.2rem;
+  color: var(--text-light-color);
+  max-width: 600px;
+}

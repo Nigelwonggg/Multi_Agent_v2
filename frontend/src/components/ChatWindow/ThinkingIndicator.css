@@ -1,0 +1,55 @@
+/* ThinkingIndicator.css */
+
+/* The main bubble for the thinking indicator */
+.thinking-indicator-bubble {
+  background-color: var(--input-bg-color);
+  color: var(--text-color);
+  padding: 0.75rem 1rem;
+  border-radius: 18px;
+  border-bottom-left-radius: 4px;
+  display: flex;
+  align-items: center;
+  max-width: 70%;
+}
+
+/* Container for the animated dots */
+.thinking-dots {
+  display: flex;
+  align-items: center;
+}
+
+/* Individual animated dot */
+.dot {
+  width: 8px;
+  height: 8px;
+  margin: 0 3px;
+  background-color: var(--text-light-color); /* Use a theme color for the dots */
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+/* Animation delays for a staggered effect */
+.dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+/* Keyframe animation for the bouncing effect */
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1.0);
+  }
+}
+
+/* Styling for the "Thinking..." text */
+.thinking-text {
+  margin-left: 10px;
+  font-style: italic;
+  color: var(--text-light-color); /* Use a theme color for the text */
+}

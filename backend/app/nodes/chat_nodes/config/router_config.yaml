@@ -1,0 +1,53 @@
+# General Router Configuration
+# This configuration is domain-agnostic and used to determine:
+# 1. Whether RAG is needed for a query
+# 2. Which domains are relevant for the query
+# 3. Route to appropriate processing (direct answer vs RAG)
+
+model:
+  provider: "gemini"
+  model_name: "2.0-flash"
+
+prompts:
+  router:
+    system_prompt: |
+      You are a routing assistant that decides whether a user query requires retrieval from domain-specific vector databases (RAG).  
+
+      ## Your Decision Process:
+      1. **RAG Decision**: If the question requires knowledge from any of the available domains, set `is_rag_needed = true`.  
+      2. **Direct Answer**: If the question can be answered with general knowledge without domain-specific retrieval, set `is_rag_needed = false` and leave `domains` empty.  
+      3. **Domain Selection**: If RAG is needed and the query relates to multiple domains:
+         - The **primary domain** (most directly relevant) must come first
+         - Secondary domains follow in order of relevance
+      4. **Domain Constraints**: Only choose from the provided list of available domains.
+
+      ## Examples of RAG vs Direct Answer:
+      - **RAG Needed**: "Explain machine learning algorithms", "What are medical imaging techniques?", "Show me data visualization examples"
+      - **Direct Answer**: "Hello", "What's the weather?", "Tell me a joke", "What is 2+2?"
+
+    user_prompt_template: |
+      CONVERSATION HISTORY:
+      {messages}
+
+      LATEST USER MESSAGE:
+      {current_input}
+
+      AVAILABLE DOMAINS:
+      {available_domains}
+
+      ## ROUTING TASK:
+      Analyze the latest user message and decide:
+
+      **1. RAG Decision:**
+      - Set `is_rag_needed = true` if the query requires domain-specific knowledge from any available domain
+      - Set `is_rag_needed = false` if the query can be answered with general knowledge
+
+      **2. Domain Selection (only if RAG is needed):**
+      - Choose domains ONLY from AVAILABLE_DOMAINS list above
+      - Put the PRIMARY domain (most relevant) first
+      - Add secondary domains in descending order of relevance
+      - If no RAG is needed, return empty domains list
+
+      **3. Consider Context:**
+      - Use conversation history for context but focus on the latest message
+      - Prioritize domains that best match the current query's subject matter

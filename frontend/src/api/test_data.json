@@ -1,0 +1,21 @@
+{
+  "chats": [
+    { "id": "1", "title": "React Best Practices" },
+    { "id": "2", "title": "State Management" },
+    { "id": "3", "title": "CSS Styling Techniques" }
+  ],
+  "messages": {
+    "1": [
+      { "id": "m1-1", "text": "What are the best practices for React?", "sender": "user" },
+      { "id": "m1-2", "text": "Component-based architecture is key! Here is an example of a functional component:\n\n```javascript\nfunction Welcome(props) {\n  return <h1>Hello, {props.name}</h1>;\n}\n```", "sender": "bot" }
+    ],
+    "2": [
+      { "id": "m2-1", "text": "useState vs useReducer?", "sender": "user" },
+      { "id": "m2-2", "text": "`useState` is for simple state, while `useReducer` is for more complex state logic.\n\n> For example, when you have multiple sub-values or when the next state depends on the previous one.", "sender": "bot" }
+    ],
+    "3": [
+      { "id": "m3-1", "text": "How to center a div?", "sender": "user" },
+      { "id": "m3-2", "text": "Use flexbox: `display: flex; justify-content: center; align-items: center;`\n\nHere is a list of other flexbox properties:\n- `flex-direction`\n- `flex-wrap`\n- `align-content`", "sender": "bot" }
+    ]
+  }
+}

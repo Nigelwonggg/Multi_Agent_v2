@@ -1,0 +1,106 @@
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+  font-family: inherit;
+}
+
+.pagination-list {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0 15px;
+  align-items: center;
+}
+
+.pagination-item {
+  margin: 0 4px;
+}
+
+/* Styling for the page number buttons */
+.pagination-item button {
+  background-color: white;
+  color: var(--primary-color);
+  border: 1px solid var(--border-color);
+  padding: 8px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.pagination-item button:hover {
+  background-color: var(--hover-color);
+  border-color: var(--primary-color);
+}
+
+.pagination-item.active button {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* Styling for the Previous/Next buttons */
+.pagination-container > button {
+  background-color: var(--secondary-color);
+  color: white;
+  border: 1px solid var(--secondary-color);
+  padding: 8px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.pagination-container > button:hover {
+  background-color: #218838; /* Darker green on hover */
+  border-color: #1e7e34;
+}
+
+.pagination-item.disabled button,
+.pagination-container > button:disabled {
+  background-color: var(--hover-color);
+  color: var(--text-light-color);
+  border-color: var(--border-color);
+  cursor: not-allowed;
+}
+
+.pagination-item.ellipsis span {
+  padding: 8px 4px;
+  color: var(--text-light-color);
+}
+
+.pagination-jump {
+  display: flex;
+  align-items: center;
+  margin-left: 20px;
+}
+
+.pagination-jump label {
+  margin-right: 8px;
+  font-size: 1rem; /* Increased font size */
+}
+
+.pagination-jump select {
+  width: 80px; /* Adjusted width */
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  text-align: center;
+  font-size: 1rem;
+  background-color: white;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none; /* Remove default arrow */
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007bff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.6-3.6%205.4-7.9%205.4-12.9%200-5-1.8-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  padding-right: 30px; /* Make space for arrow */
+}
+
+.pagination-jump select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}

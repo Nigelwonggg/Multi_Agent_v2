@@ -1,0 +1,72 @@
+/*
+  MessageMetadata.css
+  Styling for the metadata tags and tooltips.
+*/
+.metadata-container {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Space between tags */
+  margin-top: 8px;
+  flex-wrap: wrap; /* Allow tags to wrap to the next line */
+}
+
+.metadata-tag-wrapper {
+  position: relative; /* Needed for tooltip positioning */
+  display: inline-block; /* Allows tooltips to work correctly */
+}
+
+.metadata-tag {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 12px; /* Pill shape */
+  font-size: 12px;
+  cursor: pointer; /* Indicates it's clickable */
+  transition: background-color 0.2s ease;
+}
+
+.tag-icon {
+  margin-right: 5px;
+}
+
+/* Specific styles for each tag type */
+.route-tag .metadata-tag {
+  background-color: #e0e7ff; /* Light blue */
+  color: #3730a3; /* Dark blue */
+}
+
+.rag-tag .metadata-tag {
+  background-color: #d1fae5; /* Light green */
+  color: #065f46; /* Dark green */
+}
+
+.time-tag .metadata-tag {
+  background-color: #fef3c7; /* Light yellow */
+  color: #92400e; /* Dark yellow */
+}
+
+/* Tooltip styles */
+.tooltip {
+  visibility: hidden;
+  width: max-content;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 10px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%; /* Position above the tag */
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.metadata-tag-wrapper:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+
+

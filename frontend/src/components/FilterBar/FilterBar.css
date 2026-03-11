@@ -1,0 +1,59 @@
+.filter-bar {
+  display: flex;
+  gap: 24px; /* Increased gap for better spacing */
+  align-items: center;
+  padding: 20px;
+  background-color: #fdfdff; /* A very light, almost white, blue */
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-group label {
+  font-size: 0.9rem;
+  margin-bottom: 8px; /* Increased margin */
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.filter-group select {
+  padding: 10px 15px; /* Increased padding */
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  background-color: white;
+  min-width: 220px; /* Increased width */
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-group select:hover {
+  border-color: var(--primary-color);
+}
+
+.filter-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+.clear-filters-btn {
+  align-self: flex-end; /* Align to the bottom of the flex container */
+  background-color: transparent;
+  border: 1px solid var(--danger-color);
+  color: var(--danger-color);
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  font-weight: 500;
+}
+
+.clear-filters-btn:hover {
+  background-color: var(--danger-color);
+  color: white;
+}

@@ -1,0 +1,35 @@
+/* 
+  ImageMessage.css
+  Styling for the component that displays a message with text and an image.
+*/
+
+.image-message-content {
+  /* --text-width-ratio and --image-width-ratio control the layout. */
+  /* They should add up to 10. For a 70/30 split, use 7 and 3. */
+  --text-width-ratio: 5;
+  --image-width-ratio: 5;
+
+  display: flex;
+  width: 100%;
+  gap: 1rem;
+}
+
+.image-message-content .text-container {
+  flex: var(--text-width-ratio);
+  min-width: 0; /* Prevents flex items from overflowing */
+}
+
+.image-message-content .image-container {
+  flex: var(--image-width-ratio);
+  display: flex;
+  align-items: top;
+  justify-content: center;
+  min-width: 0;
+}
+
+.message-image {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 8px;
+  object-fit: contain;
+}

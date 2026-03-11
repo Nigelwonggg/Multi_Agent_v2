@@ -1,0 +1,113 @@
+.chat-window {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Changed from 100vh to 100% */
+  background-color: var(--background-color);
+}
+
+.chat-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 1.1rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.test-data-btn {
+  background-color: var(--secondary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.test-data-btn:hover {
+  background-color: #218838; /* Darker green */
+}
+
+.test-data-btn.header {
+  background-color: var(--primary-color);
+}
+
+.test-data-btn.header:hover {
+  background-color: #0069d9; /* Darker blue */
+}
+
+.messages-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.no-chat-selected {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-light-color);
+}
+
+.no-chat-selected-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.chat-input-form {
+  display: flex;
+  padding: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.chat-input {
+  flex-grow: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg-color);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.send-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.send-btn:hover {
+  background-color: #0069d9; /* Darker blue */
+}
+
+.send-btn:disabled {
+    background-color: #a0c7f3;
+    cursor: not-allowed;
+}

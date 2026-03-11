@@ -1,0 +1,5 @@
+.chat-page {
+  display: flex;
+  height: 100%; /* Fill the height of the parent .main-content */
+  width: 100%;  /* Fill the width of the parent .main-content */
+}

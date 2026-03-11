@@ -1,0 +1,49 @@
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import './TopNavBar.css';
+
+interface TopNavBarProps {
+  basePath?: string;
+}
+
+const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) => {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const activeStore = location.pathname.includes('/image-store') || params.get('tab') === 'image' ? 'image' : 'text';
+
+  let textStorePath: string;
+  let imageStorePath: string;
+
+  if (basePath === '/retrieved-content') {
+    const textParams = new URLSearchParams(location.search);
+    textParams.set('tab', 'text');
+    textStorePath = `${basePath}?${textParams.toString()}`;
+
+    const imageParams = new URLSearchParams(location.search);
+    imageParams.set('tab', 'image');
+    imageStorePath = `${basePath}?${imageParams.toString()}`;
+  } else {
+    textStorePath = `${basePath}/text-store`;
+    imageStorePath = `${basePath}/image-store`;
+  }
+
+  return (
+    <nav className="top-nav-bar">
+      <div className="logo">Vector DB</div>
+      <div className="nav-links">
+        <Link
+          to={textStorePath}
+          className={`nav-link ${activeStore === 'text' ? 'active' : ''}`}>
+          Text Store
+        </Link>
+        <Link
+          to={imageStorePath}
+          className={`nav-link ${activeStore === 'image' ? 'active' : ''}`}>
+          Image Store
+        </Link>
+      </div>
+    </nav>
+  );
+};
+
+export default TopNavBar;

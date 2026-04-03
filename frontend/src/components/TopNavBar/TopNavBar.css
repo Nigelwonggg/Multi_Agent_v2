@@ -5,18 +5,30 @@
   padding: 0 20px;
   background-color: var(--navbar-bg-color);
   height: 60px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(
+    180deg,
+    rgba(18, 18, 18, 0.95),
+    rgba(10, 10, 10, 0.9)
+  );
+
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 .top-nav-bar .logo {
   font-size: 1.5rem;
   font-weight: bold;
-  color: var(--navbar-text-color);
+  color: var(--accent);
+  letter-spacing: 0.5px;
 }
 
 .top-nav-bar .nav-links {
   display: flex;
   gap: 20px;
+  color: var(--text-muted);
+
 }
 
 .top-nav-bar .nav-link {
@@ -27,7 +39,7 @@
   color: var(--navbar-text-color);
   padding: 10px 15px;
   border-radius: 5px;
-  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  transition: all var(--transition);
   font-size: 1rem; /* Ensure font size is consistent */
 }
 

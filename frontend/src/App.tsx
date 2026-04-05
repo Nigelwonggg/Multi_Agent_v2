@@ -3,7 +3,6 @@ import Layout from './pages/Layout';
 import ChatPage from './pages/ChatPage';
 import DummyPage from './pages/DummyPage';
 import ChatWindow from './components/ChatWindow/ChatWindow';
-import HomePage from './pages/HomePage';
 
 import EditDocumentPage from './pages/EditDocumentPage';
 import AddDocumentPage from './pages/AddDocumentPage';
@@ -17,10 +16,9 @@ import RetrievedContentPage from './pages/RetrievedContentPage';
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/chat" element={<Layout />}>
+      <Route path="/" element={<Layout />}>
         <Route index element={<ChatWindow chatId={null} />} />
-        <Route path=":chatId" element={<ChatPage />} />
+        <Route path="chat/:chatId" element={<ChatPage />} />
         <Route path="dummy" element={<DummyPage />} />
       </Route>
       <Route path="/vector-database" element={<DatabaseLayout />}>

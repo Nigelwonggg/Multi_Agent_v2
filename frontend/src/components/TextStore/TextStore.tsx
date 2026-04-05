@@ -109,14 +109,13 @@ const TextStore: React.FC = () => {
 
       {/* Domain Filter */}
       <div className="domain-filter" style={{ 
-        marginBottom: '16px',
-        padding: '12px',
-        background: 'linear-gradient(145deg, #1c1c1c, #161616)',
+        marginBottom: '16px', 
+        padding: '12px', 
+        backgroundColor: '#f5f5f5', 
         borderRadius: '6px',
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
-        border: '1px solid #2a2a2a'
+        gap: '12px'
       }}>
         <label htmlFor="domain-select" style={{ fontWeight: 'bold' }}>
           Domain:
@@ -131,15 +130,10 @@ const TextStore: React.FC = () => {
           }}
           style={{
             padding: '8px 12px',
-            border: '1px solid #2a2a2a',
+            border: '1px solid #ddd',
             borderRadius: '4px',
             fontSize: '14px',
-
-            backgroundColor: '#1e1e1e',
-            color: '#ffffff',
-
-            outline: 'none',
-            cursor: 'pointer'
+            backgroundColor: 'white'
           }}
         >
           {availableDomains.map(domain => (

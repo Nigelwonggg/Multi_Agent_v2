@@ -101,7 +101,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, showTestButton = false 
 
   return (
     <div className="chat-window">
-      {/* <header className="chat-header">
+      <header className="chat-header">
         <span>Edu Assistant Chat App</span>
         {showTestButton && (
             <button className="test-data-btn header" onClick={handleLoadTestData}>
@@ -109,7 +109,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, showTestButton = false 
                 <span>Test UI</span>
             </button>
         )}
-      </header> */}
+      </header>
       <div className="messages-container">
         {loading ? (
           <div className="loading-placeholder">Loading...</div>

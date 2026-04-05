@@ -52,9 +52,8 @@
 
 .message.bot .message-content,
 .message.bot .image-message-content {
-  background: rgb(101, 99, 99);
-  color: var(--text);
-  border: 1px solid var(--border);
+  background-color: var(--input-bg-color);
+  color: var(--text-color);
   border-bottom-left-radius: 4px;
 }
 

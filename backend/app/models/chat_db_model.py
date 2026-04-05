@@ -18,6 +18,7 @@ class Chat(Base):
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     title = Column(String, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) # Allow null for now to support old chats
 
     # A chat session has many messages. Cascade deletes ensure
     # associated messages are removed when a chat is deleted.
@@ -27,6 +28,7 @@ class Chat(Base):
         cascade="all, delete-orphan",
         order_by="Message.timestamp",
     )
+    user = relationship("User", back_populates="chats")
 
 
 class Message(Base):

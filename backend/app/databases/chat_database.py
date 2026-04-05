@@ -6,12 +6,20 @@ class used by ORM models. It also exposes a `get_db` dependency
 function for use with FastAPI endpoints.
 """
 
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # SQLite is used here for simplicity. Update the URL to point to a
-# different database such as PostgreSQL in production.
-SQLALCHEMY_DATABASE_URL = "sqlite:///./chat.db"
+# different database such as PostgreSQL in production via .env
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./chat.db")
+
+# If the URL is just a filename (no protocol like sqlite:///), prepend sqlite:///
+if SQLALCHEMY_DATABASE_URL and "://" not in SQLALCHEMY_DATABASE_URL:
+    SQLALCHEMY_DATABASE_URL = f"sqlite:///{SQLALCHEMY_DATABASE_URL}"
 
 # Import centralized logging
 from app.utils.logging_config import get_logger
@@ -19,8 +27,9 @@ logger = get_logger("databases.chat_database")
 
 # When using SQLite with multithreading (which FastAPI does), set
 # check_same_thread=False. Other databases don't require this.
+connect_args = {"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL, connect_args=connect_args
 )
 
 # Create a configured "Session" class. Disable autocommit and

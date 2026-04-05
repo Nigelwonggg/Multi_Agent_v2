@@ -1,10 +1,21 @@
-import { useEffect, useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./HeroSection.css";
 
 const HeroSection = () => {
-
+  const [user, setUser] = useState<{ full_name: string } | null>(null);
   const heroRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        setUser(null);
+      }
+    }
+  }, []);
 
   return (
     <section className="hero" ref={heroRef}>
@@ -19,7 +30,9 @@ const HeroSection = () => {
 
         {/* Title */}
         <h1 className="hero__title">
-          Your Personal <span>Educational AI Tutor</span>
+          {user ? `Welcome back, ${user.full_name.split(' ')[0]}!` : "Your Personal Educational AI Tutor"}
+          <br />
+          <span>Educational AI Tutor</span>
         </h1>
 
         {/* Subtitle */}
@@ -35,7 +48,7 @@ const HeroSection = () => {
           <Link to="/chat" className="btn-primary">
             Start Chatting →
           </Link>
-          <Link to="" className="btn-secondary">
+          <Link to="/vector-database" className="btn-secondary">
             Upload Materials
           </Link>
         </div>

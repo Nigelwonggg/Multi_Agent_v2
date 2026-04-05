@@ -14,6 +14,8 @@ from app.schemas.chat_sch import (
 from app.graph_logics.chat_graph import chat_graph 
 from app.databases.chat_database import get_db
 from app.models.chat_db_model import Chat, Message
+from app.models.user_model import User
+from app.utils.auth_utils import get_current_user
 from app.services.session_service import get_session_service
 
 from app.utils.logging_config import get_logger
@@ -105,6 +107,7 @@ def convert_image_to_base64(image_data) -> Optional[str]:
 async def chat(
     request: MessageRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ) -> MessageResponse:
     """
     Main chat endpoint - processes messages through LangGraph
@@ -118,9 +121,13 @@ async def chat(
     # Get session service
     session_service = get_session_service()
 
-    chat = db.query(Chat).get(thread_id)
+    chat = db.query(Chat).filter(Chat.id == thread_id).first()
     if chat is None:
         raise HTTPException(status_code=404, detail="Chat not found")
+    
+    # Check if user owns the chat
+    if chat.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this chat")
     
     # Create timestamp for this conversation turn
     conversation_timestamp = datetime.now()
@@ -220,12 +227,17 @@ async def chat(
 async def get_chat_messages(
     request: MessagesRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ) -> MessagesResponse:
     thread_id = request.thread_id
     logger.info(f"💬 Retrieving Messages of Chat: {thread_id}")
-    chat = db.query(Chat).get(thread_id)
+    chat = db.query(Chat).filter(Chat.id == thread_id).first()
     if chat is None:
         raise HTTPException(status_code=404, detail="Chat not found")
+    
+    # Check if user owns the chat
+    if chat.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this chat")
     
     # Get messages sorted by timestamp (chronological order)
     sorted_messages = sorted(chat.messages, key=lambda msg: msg.timestamp or datetime.min)
@@ -285,26 +297,36 @@ async def get_chat_messages(
 
 
 @router.post("/api/chat", response_model=ChatResponse, status_code=status.HTTP_201_CREATED)
-def create_chat(db: Session = Depends(get_db)) -> Chat:
+def create_chat(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Chat:
     """Create a new chat session and return it."""
-    chat = Chat()
+    chat = Chat(user_id=current_user.id, title="New Chat")
     db.add(chat)
     db.commit()
     db.refresh(chat)
     return chat
 
 @router.get("/api/chats", response_model=ChatsResponse)
-def list_chats(db: Session = Depends(get_db)) -> ChatsResponse:
-    """Return all chat sessions.
+def list_chats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> ChatsResponse:
+    """Return all chat sessions belonging to the current user.
 
     Chats are ordered by creation time ascending. Each chat includes its ID,
     title (if set) and creation timestamp.
     """
-    chats = db.query(Chat).order_by(Chat.created_at).all()
+    chats = db.query(Chat).filter(Chat.user_id == current_user.id).order_by(Chat.created_at).all()
     return ChatsResponse(chats=chats)
 
 @router.delete("/api/chat/{thread_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_chat(thread_id: str, db: Session = Depends(get_db)) -> None:
+def delete_chat(
+    thread_id: str, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> None:
     """Delete a chat session and its messages."""
     try:
         # Convert string to integer
@@ -312,9 +334,13 @@ def delete_chat(thread_id: str, db: Session = Depends(get_db)) -> None:
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid chat ID format")
     
-    chat = db.query(Chat).get(chat_id)
+    chat = db.query(Chat).filter(Chat.id == chat_id).first()
     if chat is None:
         raise HTTPException(status_code=404, detail="Chat not found")
+    
+    # Check if user owns the chat
+    if chat.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this chat")
     
     # Clear session cache before deleting
     session_service = get_session_service()

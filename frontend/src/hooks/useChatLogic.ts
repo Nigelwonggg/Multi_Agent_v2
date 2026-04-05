@@ -76,7 +76,7 @@ export const useChatLogic = () => {
       if (newActiveId) {
         navigate(`/chat/${newActiveId}`);
       } else {
-        navigate('/');
+        navigate('/chat');
       }
     }
 
@@ -90,7 +90,7 @@ export const useChatLogic = () => {
       if (previousActiveId) {
         navigate(`/chat/${previousActiveId}`);
       } else {
-        navigate('/');
+        navigate('/chat');
       }
     }
   }, [activeChatId, chats, navigate]);

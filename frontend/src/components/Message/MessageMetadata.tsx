@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiInfo, FiCheckCircle, FiClock } from 'react-icons/fi';
+import { FiCheckCircle, FiClock } from 'react-icons/fi';
 import { extractDocIds, getDocsByDomain } from '../../api/chatApi';
 import type { DomainDocReference } from '../../api/chatApi';
 import './MessageMetadata.css';
@@ -15,7 +15,7 @@ interface MessageMetadataProps {
 }
 
 const MessageMetadata: React.FC<MessageMetadataProps> = ({ metadata }) => {
-  const { routes, is_rag_used, processing_time, docs, image_docs } = metadata;
+  const { is_rag_used, processing_time, docs, image_docs } = metadata;
 
   const handleRagTagClick = () => {
     if (is_rag_used && (docs?.length || image_docs?.length)) {

@@ -121,7 +121,11 @@ const simulateDelay = (ms: number) => new Promise((res) => setTimeout(res, ms));
  */
 export const getChats = async (): Promise<Chat[]> => {
   try {
-    const response = await fetch(`${API_BASE}/api/chats`);
+    const response = await fetch(`${API_BASE}/api/chats`, {
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem('token')}`
+      }
+    });
     const data = await handleResponse(response);
 
     // Extract chats from the nested response structure
@@ -131,7 +135,7 @@ export const getChats = async (): Promise<Chat[]> => {
     // Map the backend response to match the frontend Chat interface
     const chatMapped = chatList.map((chat: any) => ({
       id: String(chat.id), // Convert to string as expected by frontend
-      title: chat.title || `Chat ${chat.id}`, // Provide fallback title
+      title: chat.title || "New Chat", // Provide fallback title
     }));
 
     return chatMapped;
@@ -153,6 +157,7 @@ export const getMessages = async (chatId: string): Promise<Message[]> => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem('token')}`
       },
       body: JSON.stringify({
         thread_id: chatId,
@@ -218,6 +223,7 @@ export const createNewChat = async (): Promise<Chat> => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem('token')}`
       },
       // No body needed for creating a new chat
     });
@@ -227,7 +233,7 @@ export const createNewChat = async (): Promise<Chat> => {
     // Convert backend response to frontend Chat interface
     const newChat: Chat = {
       id: String(data.id), // Convert backend number to frontend string
-      title: data.title || `Chat ${data.id}`, // Use "Chat + {thread_id}" if no title
+      title: data.title || "New Chat", // Use "New Chat" if no title
     };
 
     // Add to local chats cache (prepend to start)
@@ -244,7 +250,7 @@ export const createNewChat = async (): Promise<Chat> => {
     const fallbackId = String(Date.now());
     const fallbackChat: Chat = {
       id: fallbackId,
-      title: `Chat ${fallbackId}`, // Use "Chat + {id}" format for fallback too
+      title: "New Chat", // Use "New Chat" format for fallback too
     };
 
     // Add to local state
@@ -267,6 +273,9 @@ export const deleteChat = async (
     // Call the actual backend API
     const response = await fetch(`${API_BASE}/api/chat/${chatId}`, {
       method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem('token')}`
+      }
     });
 
     // Handle the response (204 No Content expected)
@@ -299,6 +308,7 @@ export const postMessage = async (
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem('token')}`
       },
       body: JSON.stringify({
         message: text,

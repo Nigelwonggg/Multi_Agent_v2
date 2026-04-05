@@ -1,0 +1,51 @@
+.robot-wrapper {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 5; /* Behind navbar (999) but above content */
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0 2rem;
+}
+
+.robot-sticky-container {
+  position: sticky;
+  top: calc(100vh - 160px); /* Adjust based on robot height and desired bottom margin */
+  width: 120px;
+  height: 120px;
+  filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.4));
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+
+.robot-sticky-container--right {
+  transform: scaleX(-1);
+}
+
+.robot-svg {
+  width: 100%;
+  height: 100%;
+  color: var(--accent, #d4af37);
+  opacity: 0.6;
+}
+
+/* Hover effect if you want them to react (though pointer-events is none right now) */
+/* If you want them to be interactive, change pointer-events to auto on .robot-sticky-container */
+
+@media (max-width: 1024px) {
+  .robot-sticky-container {
+    width: 80px;
+    height: 80px;
+    top: calc(100vh - 100px);
+  }
+}
+
+@media (max-width: 768px) {
+  .robot-wrapper {
+    display: none;
+  }
+}

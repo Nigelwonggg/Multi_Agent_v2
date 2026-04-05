@@ -1,19 +1,29 @@
 .sidebar {
   width: 280px;
   height: 100%;
-  background-color: var(--sidebar-bg-color);
-  border-right: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  border-right: 1px solid var(--border);
+  box-shadow: 
+    0 0 0 1px var(--border),
+    0 0 12px var(--accent-glow);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 1rem;
   transition: width 0.3s ease;
+  backdrop-filter: blur(10px);
+  background: linear-gradient(
+    180deg,
+    rgba(18, 18, 18, 0.95),
+    rgba(10, 10, 10, 0.9)
+  );
 }
 
 .sidebar.collapsed {
   width: 80px;
   padding: 1rem 0.5rem;
   align-items: center;
+  transition: all var(--transition);
 }
 
 /* This new container will hold the header and the scrollable list */
@@ -36,25 +46,25 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--text-light-color);
+  color: var(--text-muted);
   padding: 0.5rem;
   border-radius: 8px;
 }
 
 .toggle-btn:hover {
-  background-color: var(--hover-color);
+  background-color: var(--bg-card2);
 }
 
 .new-chat-btn {
   width: 100%;
   padding: 0.75rem;
   margin-bottom: 1rem;
-  background-color: var(--secondary-color);
-  color: white;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: black;
+  font-weight: 600;
   border: none;
   border-radius: 8px;
   font-size: 1rem;
-  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -65,7 +75,7 @@
 }
 
 .new-chat-btn:hover {
-  background-color: #218838; /* Darker green */
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .sidebar.collapsed .new-chat-btn span {
@@ -101,12 +111,13 @@
 }
 
 .chat-history-item:hover {
-  background-color: var(--hover-color);
+  background-color: var(--bg-card2);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .chat-history-item.active {
-  background-color: var(--primary-color);
-  color: white;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  color: black;
 }
 
 .chat-icon {
@@ -122,7 +133,7 @@
 .delete-chat-btn {
   background: none;
   border: none;
-  color: var(--text-light-color);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 50%;
@@ -139,23 +150,23 @@
 }
 
 .chat-history-item.active .delete-chat-btn {
-  color: white;
+  color: rgb(12, 12, 12);
   opacity: 1;
 }
 
 .delete-chat-btn:hover {
-  color: var(--danger-color);
+  color: var(--accent2);
 }
 
 .loading-placeholder {
   text-align: center;
   padding: 1rem;
-  color: var(--text-light-color);
+  color: var(--text-muted);
 }
 
 .sidebar-footer {
   padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
   flex-shrink: 0; /* Prevent footer from shrinking */
 }
 
@@ -165,14 +176,14 @@
   gap: 0.75rem;
   padding: 0.75rem;
   border-radius: 8px;
-  color: var(--text-light-color);
+  color: var(--text-muted);
   text-decoration: none;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .dummy-link:hover {
-  background-color: var(--hover-color);
-  color: var(--text-color);
+  background-color: var(--bg-card2);
+  color: var(--accent2);
 }
 
 .dummy-link.active {

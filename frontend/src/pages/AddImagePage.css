@@ -1,10 +1,17 @@
 .add-image-container {
   max-width: 800px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: #f9f9f9;
+  margin: 20px auto;
+  padding: 20px;
+
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+    'Helvetica Neue', sans-serif;
+
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
 .add-image-form {
@@ -13,71 +20,126 @@
   gap: 1.5rem;
 }
 
+.add-image-container h1 {
+  color: #ffffff;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
 .add-image-form .form-group {
   display: flex;
   flex-direction: column;
 }
 
 .add-image-form label {
-  margin-bottom: 0.5rem;
+  margin-bottom: 5px;
   font-weight: bold;
-  color: #333;
+  color: #e0e0e0;
 }
 
 .add-image-form input[type="text"],
 .add-image-form input[type="number"],
-.add-image-form input[type="file"] {
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.add-image-form input[type="file"],
+.add-image-form textarea {
+  width: 100%;
+  padding: 10px;
+
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+
   font-size: 1rem;
+
+  background-color: #121212;
+  color: #e0e0e0;
+
+  box-sizing: border-box;
 }
 
-.add-image-form .summary-textarea {
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
+.add-image-form textarea.summary-textarea {
   min-height: 150px;
   resize: vertical;
+}
+
+.add-image-form input:focus,
+.add-image-form textarea:focus {
+  outline: none;
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15);
 }
 
 .add-image-form .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 .add-image-form .submit-btn,
 .add-image-form .cancel-btn {
-  padding: 0.75rem 1.5rem;
+  padding: 10px 20px;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+
+  font-size: 1rem;
+  font-weight: bold;
+
+  transition: all 0.2s ease;
 }
 
 .add-image-form .submit-btn {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--primary-color, #d4af37);
+  color: #0d0900;
 }
 
 .add-image-form .submit-btn:hover {
-  background-color: #0056b3;
+  background-color: #e2bd45;
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
 }
 
 .add-image-form .cancel-btn {
-  background-color: #6c757d;
-  color: white;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
 }
 
 .add-image-form .cancel-btn:hover {
-  background-color: #5a6268;
+  background-color: #3a3a3a;
 }
 
 .add-image-form .error-message {
-  color: #d9534f;
-  margin-top: 1rem;
+  color: var(--danger-color, #ff4d4f);
+  text-align: center;
+  margin-top: 20px;
+  font-weight: bold;
+}
+
+input[type="file"] {
+  color: #e0e0e0;
+  background-color: #121212;
+
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 10px;
+
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Style the "Choose File" button */
+input[type="file"]::file-selector-button {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+
+  border: none;
+  border-radius: 4px;
+
+  padding: 8px 12px;
+  margin-right: 10px;
+
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background-color: #3a3a3a;
 }

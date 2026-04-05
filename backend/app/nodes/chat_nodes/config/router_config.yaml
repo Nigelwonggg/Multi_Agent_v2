@@ -6,7 +6,7 @@
 
 model:
   provider: "gemini"
-  model_name: "2.0-flash"
+  model_name: "2.5-flash"
 
 prompts:
   router:

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
 const navLinks = [
@@ -13,7 +13,29 @@ const navLinks = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<{ full_name: string } | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUser = () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    checkUser();
+    // Listen for storage changes
+    window.addEventListener('storage', checkUser);
+    return () => window.removeEventListener('storage', checkUser);
+  }, [location]);
 
   // Helper to check if a link is active
   const isActive = (to: string) => {
@@ -27,6 +49,13 @@ const Navbar = () => {
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    navigate('/');
+  };
 
   return (
     <nav className={`navbar ${scrolled ? "navbar--scrolled" : ""}`}>
@@ -68,7 +97,14 @@ const Navbar = () => {
 
         {/* Auth Button */}
         <div className="navbar__auth">
-          <a href="#login" className="btn-accent">Login / Sign Up</a>
+          {user ? (
+            <div className="navbar__user-info">
+              <span className="navbar__user-greeting">Hi, {user.full_name}</span>
+              <button onClick={handleLogout} className="btn-outline-accent">Logout</button>
+            </div>
+          ) : (
+            <Link to="/login" className="btn-accent">Login / Sign Up</Link>
+          )}
         </div>
 
         {/* Mobile Hamburger */}
@@ -107,9 +143,16 @@ const Navbar = () => {
           )
         ))}
         <div className="navbar__mobile-auth">
-          <a href="#login" className="btn-accent" onClick={() => setIsOpen(false)}>
-            Login / Sign Up
-          </a>
+          {user ? (
+            <div className="navbar__mobile-user-info">
+              <span className="navbar__mobile-user-greeting">Hi, {user.full_name}</span>
+              <button onClick={() => { handleLogout(); setIsOpen(false); }} className="btn-outline-accent">Logout</button>
+            </div>
+          ) : (
+            <Link to="/login" className="btn-accent" onClick={() => setIsOpen(false)}>
+              Login / Sign Up
+            </Link>
+          )}
         </div>
       </div>
     </nav>

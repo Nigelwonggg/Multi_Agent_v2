@@ -22,6 +22,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   loading,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const storedUser = localStorage.getItem('user');
+  const user = storedUser ? JSON.parse(storedUser) : null;
 
   const handleDelete = (e: React.MouseEvent, chatId: string) => {
     e.stopPropagation(); // Prevent chat selection when deleting
@@ -66,11 +68,12 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
       <div className="sidebar-footer">
-         <NavLink to="/vector-database" className="dummy-link" title="Vector Databases" target="_blank" rel="noopener noreferrer">
-            <FiDatabase size={20} />
-           {!isCollapsed && <span>Vector Databases</span>}
-         </NavLink>
-         
+         {user?.role === 'lecturer' && (
+           <NavLink to="/vector-database" className="dummy-link" title="Vector Databases" target="_blank" rel="noopener noreferrer">
+              <FiDatabase size={20} />
+             {!isCollapsed && <span>Vector Databases</span>}
+           </NavLink>
+         )}
       </div>
     </div>
   );

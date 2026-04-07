@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import "./HeroSection.css";
 
 const HeroSection = () => {
-  const [user, setUser] = useState<{ full_name: string } | null>(null);
+  const [user, setUser] = useState<{ full_name: string; role: string } | null>(null);
   const heroRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -48,9 +48,11 @@ const HeroSection = () => {
           <Link to="/chat" className="btn-primary">
             Start Chatting →
           </Link>
-          <Link to="/vector-database" className="btn-secondary">
-            Upload Materials
-          </Link>
+          {(!user || user.role === 'lecturer') && (
+            <Link to="/vector-database" className="btn-secondary">
+              Upload Materials
+            </Link>
+          )}
         </div>
       </div>
     </section>

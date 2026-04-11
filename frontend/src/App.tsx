@@ -17,11 +17,19 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 
 // Simple component to protect routes
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
   const token = localStorage.getItem('token');
+  const storedUser = localStorage.getItem('user');
+  const user = storedUser ? JSON.parse(storedUser) : null;
+
   if (!token) {
     return <Navigate to="/login" replace />;
   }
+
+  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -43,7 +51,7 @@ function App() {
       </Route>
 
       <Route path="/vector-database" element={
-        <ProtectedRoute>
+        <ProtectedRoute allowedRoles={['lecturer']}>
           <DatabaseLayout />
         </ProtectedRoute>
       }>

@@ -2,18 +2,10 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
-const navLinks = [
-  { to: "/", label: "Home" },
-  { to: "/chat", label: "Chat" },
-  { to: "/vector-database", label: "Vector DB" },
-  { to: "#pdf", label: "Upload PDF" },
-  { to: "#quiz", label: "Quiz" },
-];
-
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [user, setUser] = useState<{ full_name: string } | null>(null);
+  const [user, setUser] = useState<{ full_name: string; role: string } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -36,6 +28,35 @@ const Navbar = () => {
     window.addEventListener('storage', checkUser);
     return () => window.removeEventListener('storage', checkUser);
   }, [location]);
+
+  // Define links based on user role
+  const getNavLinks = () => {
+    const commonLinks = [{ to: "/", label: "Home" }];
+    
+    if (!user) {
+      return [...commonLinks];
+    }
+
+    if (user.role === 'lecturer') {
+      return [
+        ...commonLinks,
+        { to: "/chat", label: "Chat" },
+        { to: "/vector-database", label: "Vector DB" },
+        { to: "#pdf", label: "Upload PDF" },
+        { to: "#quiz", label: "Upload Quiz" },
+        { to: "#settings", label: "Settings" },
+      ];
+    } else {
+      // student role
+      return [
+        ...commonLinks,
+        { to: "/chat", label: "Chat" },
+        { to: "#quiz", label: "Quiz" },
+      ];
+    }
+  };
+
+  const navLinks = getNavLinks();
 
   // Helper to check if a link is active
   const isActive = (to: string) => {

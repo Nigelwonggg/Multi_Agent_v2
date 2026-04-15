@@ -40,7 +40,7 @@ const features: Feature[] = [
     title: "Feed Your Knowledge Base",
     description:
       "Upload PDF materials. They are parsed, chunked, and indexed automatically so the AI can reference them at any time.",
-    to: "#pdf",
+    to: "/upload-pdf",
     accent: "#34d399",
   },
   {

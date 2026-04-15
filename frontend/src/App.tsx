@@ -40,6 +40,14 @@ function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/upload-pdf" element={
+        <ProtectedRoute allowedRoles={['lecturer']}>
+          <UploadPdfPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/vector-database/upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
+      <Route path="/vector-database/text-store/upload" element={<Navigate to="/upload-pdf" replace />} />
       
       <Route path="/chat" element={
         <ProtectedRoute>
@@ -51,18 +59,6 @@ function App() {
         <Route path="dummy" element={<DummyPage />} />
       </Route>
 
-      <Route path="/upload-pdf" element={
-        <ProtectedRoute>
-          <UploadPdfPage />
-        </ProtectedRoute>
-      } />
-
-      <Route path="/vector-database" element={
-        <ProtectedRoute>
-          <UploadPdfPage />
-        </ProtectedRoute>
-      } />
-
       <Route path="/vector-database" element={
         <ProtectedRoute allowedRoles={['lecturer']}>
           <DatabaseLayout />
@@ -71,8 +67,6 @@ function App() {
         <Route index element={<Navigate to="text-store" />} />
         <Route path="text-store" element={<TextStore />} />
         <Route path="text-store/add" element={<AddDocumentPage />} />
-        <Route path="upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
-        <Route path="text-store/upload" element={<Navigate to="/upload-pdf" replace />} />
         <Route path="text-store/edit/:docId" element={<EditDocumentPage />} />
         <Route path="image-store" element={<ImageStore />} />
         <Route path="image-store/add" element={<AddImagePage />} />

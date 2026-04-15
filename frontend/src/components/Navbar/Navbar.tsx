@@ -42,7 +42,7 @@ const Navbar = () => {
         ...commonLinks,
         { to: "/chat", label: "Chat" },
         { to: "/vector-database", label: "Vector DB" },
-        { to: "#pdf", label: "Upload PDF" },
+        { to: "/upload-pdf", label: "Upload PDF" },
         { to: "#quiz", label: "Upload Quiz" },
         { to: "#settings", label: "Settings" },
       ];

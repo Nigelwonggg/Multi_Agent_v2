@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 class TextDocumentBase(BaseModel):
     doc_id: str
@@ -57,3 +57,23 @@ class DocumentsByIdsRequest(BaseModel):
 # Domain-aware document retrieval
 class DocumentsByDomainRequest(BaseModel):
     docs_by_domain: dict  # {domain: [doc_id1, doc_id2, ...]}
+
+
+class PdfUploadResponse(BaseModel):
+    job_id: str
+    status: Literal["queued", "processing", "completed", "failed"]
+    message: str
+
+
+class PdfUploadJobResponse(BaseModel):
+    job_id: str
+    filename: str
+    domain: str
+    category: str
+    status: Literal["queued", "processing", "completed", "failed"]
+    processed_pages: int
+    created_documents: int
+    created_images: int = 0
+    error: Optional[str] = None
+    created_at: str
+    updated_at: str

@@ -473,6 +473,8 @@ pypdf==5.6.0
     # via agents (pyproject.toml)
 pypdf2==3.0.1
     # via agents (pyproject.toml)
+unstructured[pdf]==0.18.13
+    # via agents (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via pandas
 python-dotenv==1.1.0

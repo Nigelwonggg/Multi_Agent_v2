@@ -54,8 +54,7 @@ class RAGAnswerNode(BaseNode):
 
         # Retrieve context from all domains
         context_text = []
-        all_docs = []
-        domain_doc_mapping = []  # Track which documents belong to which domain
+        retrieved_doc_refs = []  # Track the actual documents passed into the prompt
 
         for domain in domains:
             current_docs = []
@@ -64,15 +63,14 @@ class RAGAnswerNode(BaseNode):
                 text_store_service = text_store_factory.get_store_by_name(domain)
                 current_docs = text_store_service.search_documents_by_query(query=current_input)
                 
-                # Track domain for each document
+                # Track the actual documents in the same order they are supplied to the model.
                 for doc in current_docs:
-                    domain_doc_mapping.append({
+                    retrieved_doc_refs.append({
                         'domain': domain,
                         'doc_id': doc.metadata.get('doc_id', 'unknown_id'),
-                        'doc': doc
+                        'raw_text': doc.metadata.get('raw_text', ''),
                     })
-                
-                all_docs.extend(current_docs)
+
                 self.logger.debug(f"📄 Retrieved {len(current_docs)} documents from '{domain}' vector store")
 
                 for i, doc in enumerate(current_docs):
@@ -121,30 +119,19 @@ class RAGAnswerNode(BaseNode):
             self.logger.debug(f"🔍 Full LLM response: {response}")
             self.logger.debug(f"🔍 Response type: {type(response)}")
             self.logger.debug(f"🔍 Response docs_index: {getattr(response, 'docs_index', 'NOT_FOUND')}")
-            self.logger.debug(f"🔍 Domain doc mapping length: {len(domain_doc_mapping)}")
+            self.logger.debug(f"🔍 Retrieved doc refs length: {len(retrieved_doc_refs)}")
             
-            # Log each document in the mapping for debugging
-            for i, doc_info in enumerate(domain_doc_mapping):
-                self.logger.debug(f"🔍 Doc mapping [{i}]: domain={doc_info['domain']}, doc_id={doc_info['doc_id']}")
+            # Return the actual retrieved documents used to build context.
+            # This is more reliable than trusting model-generated source indices.
+            used_docs = [
+                {"doc_id": doc_ref["doc_id"], "domain": doc_ref["domain"]}
+                for doc_ref in retrieved_doc_refs
+            ]
 
-            # Create domain-aware document references
-            used_docs = []
-            docs_index = getattr(response, 'docs_index', [])
-            self.logger.debug(f"🔍 Processing docs_index: {docs_index}")
-            
-            for index in docs_index:
-                self.logger.debug(f"🔍 Processing index: {index}")
-                if 0 <= index < len(domain_doc_mapping):
-                    doc_info = domain_doc_mapping[index]
-                    used_docs.append({
-                        "doc_id": doc_info['doc_id'],
-                        "domain": doc_info['domain']
-                    })
-                    self.logger.debug(f"🔍 Added doc: {doc_info['doc_id']} from domain {doc_info['domain']}")
-                else:
-                    self.logger.warning(f"⚠️ Index {index} out of range for domain_doc_mapping (length: {len(domain_doc_mapping)})")
-            
-            self.logger.info(f"📋 Using {len(used_docs)} documents across domains: {set(doc['domain'] for doc in used_docs) if used_docs else 'None'}")
+            self.logger.info(
+                f"📋 Using {len(used_docs)} retrieved documents across domains: "
+                f"{set(doc['domain'] for doc in used_docs) if used_docs else 'None'}"
+            )
             
             return {
                 "text_answer": answer,

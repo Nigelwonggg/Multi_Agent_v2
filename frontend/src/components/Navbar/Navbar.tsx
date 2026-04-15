@@ -2,14 +2,6 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
-const navLinks = [
-  { to: "/", label: "Home" },
-  { to: "/chat", label: "Chat" },
-  { to: "/vector-database", label: "Vector DB" },
-  { to: "/upload-pdf", label: "Upload PDF" },
-  { to: "#quiz", label: "Quiz" },
-];
-
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);

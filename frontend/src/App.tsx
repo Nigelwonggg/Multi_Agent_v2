@@ -52,15 +52,12 @@ function App() {
       </Route>
 
       <Route path="/upload-pdf" element={
-<<<<<<< HEAD
-=======
         <ProtectedRoute>
           <UploadPdfPage />
         </ProtectedRoute>
       } />
 
       <Route path="/vector-database" element={
->>>>>>> 4d00a0f7adf67b57f2ee7f97cecdbf8852311511
         <ProtectedRoute>
           <UploadPdfPage />
         </ProtectedRoute>

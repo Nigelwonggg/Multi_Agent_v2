@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createTextDocument } from '../api/textStoreApi';
 import './AddDocumentPage.css';
 
 const AddDocumentPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const domain = searchParams.get('domain') || 'data_science';
   const [newDocument, setNewDocument] = useState({
     summary_text: '',
     raw_text: '',
@@ -31,9 +33,9 @@ const AddDocumentPage: React.FC = () => {
     setError(null);
 
     try {
-      await createTextDocument(newDocument);
+      await createTextDocument(newDocument, domain);
       alert('Document added successfully!');
-      navigate('/vector-database/text-store'); // Navigate back to the text store page
+      navigate(`/vector-database/text-store?domain=${encodeURIComponent(domain)}`);
     } catch (err) {
       console.error('Failed to add document:', err);
       setError('Failed to add document. Please try again.');
@@ -43,7 +45,7 @@ const AddDocumentPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/vector-database/text-store'); // Go back to the text store page
+    navigate(`/vector-database/text-store?domain=${encodeURIComponent(domain)}`);
   };
 
   return (

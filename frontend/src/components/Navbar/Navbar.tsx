@@ -6,7 +6,7 @@ const navLinks = [
   { to: "/", label: "Home" },
   { to: "/chat", label: "Chat" },
   { to: "/vector-database", label: "Vector DB" },
-  { to: "#pdf", label: "Upload PDF" },
+  { to: "/upload-pdf", label: "Upload PDF" },
   { to: "#quiz", label: "Quiz" },
 ];
 

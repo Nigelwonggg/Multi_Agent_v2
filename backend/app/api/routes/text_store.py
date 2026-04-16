@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Query, UploadFile
 from typing import Optional, List
+from pathlib import Path
 
 from app.services.text_store_services import get_text_store_factory
+from app.services.pdf_ingestion_service import get_pdf_ingestion_service
 from ...schemas.text_doc_sch import (
     TextDocumentResponse, 
     TextDocumentListResponse,
@@ -11,7 +13,9 @@ from ...schemas.text_doc_sch import (
     DeleteResponse,
     SearchRequest,
     DocumentsByIdsRequest,
-    DocumentsByDomainRequest
+    DocumentsByDomainRequest,
+    PdfUploadResponse,
+    PdfUploadJobResponse,
 )
 
 from ...utils.logging_config import get_logger
@@ -21,6 +25,7 @@ logger = get_logger("api.routes.text-store")
 
 # Get the factory instance
 text_factory = get_text_store_factory()
+pdf_ingestion_service = get_pdf_ingestion_service()
 
 @router.get("/", response_model=TextDocumentListResponse)
 async def get_text_documents(
@@ -95,39 +100,63 @@ async def get_text_document(
     return document
 
 @router.post("/", response_model=TextDocumentResponse)
-async def create_text_document(document_data: TextDocumentCreate):
+async def create_text_document(
+    document_data: TextDocumentCreate,
+    domain: Optional[str] = Query("data_science", description="Domain to store document in (data_science, medical)"),
+):
     """Create a new text document"""
-    # Check if doc_id already exists (if provided)
+    try:
+        text_store = text_factory.get_store_by_name(domain)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     if document_data.doc_id:
-        existing = ds_text_store.get_document_by_doc_id(document_data.doc_id)
+        existing = text_store.get_document_by_doc_id(document_data.doc_id)
         if existing:
             raise HTTPException(status_code=400, detail="Document with this doc_id already exists")
     
-    doc_id = ds_text_store.add_document(document_data.dict())
+    doc_id = text_store.add_document(document_data.dict())
     
     # Return the created document
-    created_doc = ds_text_store.get_document_by_doc_id(doc_id)
+    created_doc = text_store.get_document_by_doc_id(doc_id)
     if not created_doc:
         raise HTTPException(status_code=500, detail="Failed to create document")
     
     return created_doc
 
 @router.put("/{doc_id}", response_model=TextDocumentResponse)
-async def update_text_document(doc_id: str, document_data: TextDocumentUpdate):
+async def update_text_document(
+    doc_id: str,
+    document_data: TextDocumentUpdate,
+    domain: Optional[str] = Query("data_science", description="Domain to update document in (data_science, medical)"),
+):
     """Update an existing text document"""
-    success = ds_text_store.update_document(doc_id, document_data.dict())
+    try:
+        text_store = text_factory.get_store_by_name(domain)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    success = text_store.update_document(doc_id, document_data.dict())
     
     if not success:
         raise HTTPException(status_code=404, detail="Document not found")
     
     # Return the updated document
-    updated_doc = ds_text_store.get_document_by_doc_id(doc_id)
+    updated_doc = text_store.get_document_by_doc_id(doc_id)
     return updated_doc
 
 @router.delete("/{doc_id}", response_model=DeleteResponse)
-async def delete_text_document(doc_id: str):
+async def delete_text_document(
+    doc_id: str,
+    domain: Optional[str] = Query("data_science", description="Domain to delete document from (data_science, medical)"),
+):
     """Delete a text document"""
-    success = ds_text_store.delete_document(doc_id)
+    try:
+        text_store = text_factory.get_store_by_name(domain)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    success = text_store.delete_document(doc_id)
     
     if not success:
         logger.error(f"Failed to delete document {doc_id}")
@@ -137,9 +166,17 @@ async def delete_text_document(doc_id: str):
     return DeleteResponse(success=True)
 
 @router.post("/search", response_model=List[TextDocumentResponse])
-async def search_documents_by_content(search_request: SearchRequest):
+async def search_documents_by_content(
+    search_request: SearchRequest,
+    domain: Optional[str] = Query("data_science", description="Domain to query (data_science, medical)"),
+):
     """Search documents using vector similarity"""
-    documents = ds_text_store.search_documents_by_content(
+    try:
+        text_store = text_factory.get_store_by_name(domain)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    documents = text_store.search_documents_by_content(
         search_request.query, 
         search_request.limit
     )
@@ -150,30 +187,98 @@ async def search_documents_by_content(search_request: SearchRequest):
 @router.get("/search/content", response_model=List[TextDocumentResponse])
 async def search_documents_by_query(
     query: str = Query(..., min_length=3),
-    limit: int = Query(10, ge=1, le=50)
+    limit: int = Query(10, ge=1, le=50),
+    domain: Optional[str] = Query("data_science", description="Domain to query (data_science, medical)"),
 ):
     """Search documents by content using query parameters"""
-    documents = ds_text_store.search_documents_by_content(query, limit)
+    try:
+        text_store = text_factory.get_store_by_name(domain)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    documents = text_store.search_documents_by_content(query, limit)
     return documents
 
 
 @router.post("/by-ids", response_model=List[TextDocumentResponse])
 async def get_documents_by_ids(
-    request: DocumentsByIdsRequest
+    request: DocumentsByIdsRequest,
+    domain: Optional[str] = Query("data_science", description="Domain to query (data_science, medical)")
 ) -> List[TextDocumentResponse]:
     """Get multiple documents by their doc_ids (UUIDs)"""
     try:
+        text_store = text_factory.get_store_by_name(domain)
         logger.info(f"📋 Fetching {len(request.doc_ids)} documents by IDs")
         
         # Query documents by doc_ids using the service
-        documents = ds_text_store.get_documents_by_ids(request.doc_ids)
+        documents = text_store.get_documents_by_ids(request.doc_ids)
         
         logger.info(f"✅ Found {len(documents)} documents")
         return documents
         
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"❌ Error fetching documents by IDs: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch documents: {str(e)}")
+
+
+@router.post("/upload-pdf", response_model=PdfUploadResponse)
+async def upload_pdf(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    domain: str = Form("data_science"),
+    category: str = Form("general"),
+):
+    """Upload a PDF and ingest extracted text into the selected text store domain."""
+    if file.content_type not in {"application/pdf", "application/x-pdf"}:
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Uploaded file must have a .pdf extension")
+
+    try:
+        text_factory.get_store_by_name(domain)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    file_bytes = await file.read()
+    max_bytes = 20 * 1024 * 1024
+    if len(file_bytes) > max_bytes:
+        raise HTTPException(status_code=413, detail="PDF exceeds max upload size of 20MB")
+
+    safe_filename = Path(file.filename).name
+    job_id = pdf_ingestion_service.create_job(safe_filename, domain, category)
+    temp_file_path = pdf_ingestion_service.save_upload_to_temp_file(file_bytes, suffix=".pdf")
+
+    def process_and_cleanup() -> None:
+        try:
+            pdf_ingestion_service.process_pdf_file(
+                file_path=temp_file_path,
+                filename=safe_filename,
+                domain=domain,
+                category=category,
+                job_id=job_id,
+            )
+        finally:
+            pdf_ingestion_service.cleanup_temp_file(temp_file_path)
+
+    background_tasks.add_task(process_and_cleanup)
+    return PdfUploadResponse(
+        job_id=job_id,
+        status="queued",
+        message="PDF upload accepted. Processing has started in the background.",
+    )
+
+
+@router.get("/upload-jobs/{job_id}", response_model=PdfUploadJobResponse)
+async def get_pdf_upload_job_status(job_id: str):
+    """Get status for an async PDF upload job."""
+    job = pdf_ingestion_service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Upload job not found")
+
+    return PdfUploadJobResponse(**job)
 
 @router.post("/by-domain", response_model=List[TextDocumentResponse])
 async def get_documents_by_domain(

@@ -24,6 +24,26 @@ export interface FilterOptions {
   filenames: string[];
 }
 
+export interface PdfUploadResponse {
+  job_id: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  message: string;
+}
+
+export interface PdfUploadJobStatus {
+  job_id: string;
+  filename: string;
+  domain: string;
+  category: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  processed_pages: number;
+  created_documents: number;
+  created_images?: number;
+  error?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 
 export const getFilterOptions = async (
   category: string | null = null,
@@ -69,16 +89,24 @@ export const getTextDocuments = async (
   return await response.json();
 };
 
-export const getTextDocument = async (docId: string): Promise<TextDocument> => {
-  const response = await fetch(`${API_BASE}/api/text-store/${docId}`);
+export const getTextDocument = async (
+  docId: string,
+  domain: string = "data_science"
+): Promise<TextDocument> => {
+  const params = new URLSearchParams({ domain });
+  const response = await fetch(`${API_BASE}/api/text-store/${docId}?${params}`);
   if (!response.ok) {
     throw new Error('Failed to fetch document');
   }
   return await response.json();
 };
 
-export const createTextDocument = async (document: Omit<TextDocument, 'id'>): Promise<TextDocument> => {
-  const response = await fetch(`${API_BASE}/api/text-store/`, {
+export const createTextDocument = async (
+  document: Omit<TextDocument, 'id'>,
+  domain: string = "data_science"
+): Promise<TextDocument> => {
+  const params = new URLSearchParams({ domain });
+  const response = await fetch(`${API_BASE}/api/text-store/?${params}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -92,8 +120,13 @@ export const createTextDocument = async (document: Omit<TextDocument, 'id'>): Pr
   return await response.json();
 };
 
-export const updateTextDocument = async (docId: string, document: Partial<TextDocument>): Promise<TextDocument> => {
-  const response = await fetch(`${API_BASE}/api/text-store/${docId}`, {
+export const updateTextDocument = async (
+  docId: string,
+  document: Partial<TextDocument>,
+  domain: string = "data_science"
+): Promise<TextDocument> => {
+  const params = new URLSearchParams({ domain });
+  const response = await fetch(`${API_BASE}/api/text-store/${docId}?${params}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -107,8 +140,12 @@ export const updateTextDocument = async (docId: string, document: Partial<TextDo
   return await response.json();
 };
 
-export const deleteTextDocument = async (docId: string): Promise<void> => {
-  const response = await fetch(`${API_BASE}/api/text-store/${docId}`, {
+export const deleteTextDocument = async (
+  docId: string,
+  domain: string = "data_science"
+): Promise<void> => {
+  const params = new URLSearchParams({ domain });
+  const response = await fetch(`${API_BASE}/api/text-store/${docId}?${params}`, {
     method: 'DELETE',
   });
   
@@ -117,8 +154,12 @@ export const deleteTextDocument = async (docId: string): Promise<void> => {
   }
 };
 
-export const searchDocuments = async (query: string, limit: number = 10): Promise<TextDocument[]> => {
-  const response = await fetch(`${API_BASE}/api/text-store/search/content?query=${encodeURIComponent(query)}&limit=${limit}`);
+export const searchDocuments = async (
+  query: string,
+  limit: number = 10,
+  domain: string = "data_science"
+): Promise<TextDocument[]> => {
+  const response = await fetch(`${API_BASE}/api/text-store/search/content?query=${encodeURIComponent(query)}&limit=${limit}&domain=${encodeURIComponent(domain)}`);
   if (!response.ok) {
     throw new Error('Failed to search documents');
   }
@@ -128,7 +169,8 @@ export const searchDocuments = async (query: string, limit: number = 10): Promis
 import dummyTextDocs from "./dummy_text_docs.json";
 
 export const getTextDocumentsByIds = async (
-  docIds: string[]
+  docIds: string[],
+  domain: string = "data_science"
 ): Promise<TextDocument[]> => {
   console.log("Fetching text documents by IDs:", docIds);
   
@@ -137,7 +179,7 @@ export const getTextDocumentsByIds = async (
   }
   
   try {
-    const response = await fetch(`${API_BASE}/api/text-store/by-ids`, {
+    const response = await fetch(`${API_BASE}/api/text-store/by-ids?domain=${encodeURIComponent(domain)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -165,6 +207,39 @@ export const getTextDocumentsByIds = async (
     console.log(`⚠️ Using fallback data: ${filteredDocs.length} documents`);
     return filteredDocs;
   }
+};
+
+export const uploadPdfDocument = async (
+  file: File,
+  domain: string,
+  category: string
+): Promise<PdfUploadResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('domain', domain);
+  formData.append('category', category);
+
+  const response = await fetch(`${API_BASE}/api/text-store/upload-pdf`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to upload PDF');
+  }
+
+  return await response.json();
+};
+
+export const getPdfUploadJobStatus = async (
+  jobId: string
+): Promise<PdfUploadJobStatus> => {
+  const response = await fetch(`${API_BASE}/api/text-store/upload-jobs/${encodeURIComponent(jobId)}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch upload job status');
+  }
+  return await response.json();
 };
 
 /**

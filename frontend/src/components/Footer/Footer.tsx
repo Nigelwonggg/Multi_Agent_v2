@@ -11,7 +11,7 @@ const Footer: React.FC = () => {
       items: [
         { label: "Chat", to: "/chat" },
         { label: "Vector DB", to: "/vector-database" },
-        { label: "Upload PDF", to: "#pdf" },
+        { label: "Upload PDF", to: "/upload-pdf" },
         { label: "Quiz", to: "#quiz" }
       ] 
     },

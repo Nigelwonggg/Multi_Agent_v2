@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getTextDocument, updateTextDocument } from '../api/textStoreApi';
 import type { TextDocument } from '../api/textStoreApi';
 import './EditDocumentPage.css';
@@ -7,6 +7,8 @@ import './EditDocumentPage.css';
 const EditDocumentPage: React.FC = () => {
   const { docId } = useParams<{ docId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const domain = searchParams.get('domain') || 'data_science';
   const [document, setDocument] = useState<TextDocument | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +21,7 @@ const EditDocumentPage: React.FC = () => {
         return;
       }
       try {
-        const fetchedDoc = await getTextDocument(docId);
+        const fetchedDoc = await getTextDocument(docId, domain);
         setDocument(fetchedDoc);
       } catch (err) {
         console.error('Failed to fetch document:', err);
@@ -29,7 +31,7 @@ const EditDocumentPage: React.FC = () => {
       }
     };
     fetchDocument();
-  }, [docId]);
+  }, [docId, domain]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -53,9 +55,9 @@ const EditDocumentPage: React.FC = () => {
         category: document.category,
         filename: document.filename,
         page_number: document.page_number,
-      });
+      }, domain);
       alert('Document updated successfully!');
-      navigate('/vector-database/text-store'); // Navigate back to the text store page
+      navigate(`/vector-database/text-store?domain=${encodeURIComponent(domain)}`);
     } catch (err) {
       console.error('Failed to update document:', err);
       setError('Failed to update document. Please try again.');
@@ -63,7 +65,7 @@ const EditDocumentPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/vector-database/text-store'); // Go back to the text store page
+    navigate(`/vector-database/text-store?domain=${encodeURIComponent(domain)}`);
   };
 
   if (loading) {

@@ -5,10 +5,12 @@ import MarkdownRenderer from "../MarkdownRenderer/MarkdownRenderer";
 import FilterBar from "../FilterBar/FilterBar";
 import Pagination from "../Pagination/Pagination";
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import "./TextStore.css";
 
 const TextStore: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const domainFromQuery = searchParams.get('domain') || 'data_science';
   const [documents, setDocuments] = useState<TextDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(() => {
@@ -20,7 +22,7 @@ const TextStore: React.FC = () => {
     const savedFilters = sessionStorage.getItem('filters');
     return savedFilters ? JSON.parse(savedFilters) : { category: "", filename: "" };
   });
-  const [selectedDomain, setSelectedDomain] = useState("data_science");
+  const [selectedDomain, setSelectedDomain] = useState(domainFromQuery);
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
   const pageSize = 10;
   const navigate = useNavigate();
@@ -59,6 +61,17 @@ const TextStore: React.FC = () => {
       .catch(error => console.error("Failed to fetch domains:", error));
   }, []);
 
+  useEffect(() => {
+    if (!domainFromQuery) {
+      return;
+    }
+
+    // Sync only when URL query value itself changes.
+    setSelectedDomain(domainFromQuery);
+    setCurrentPage(1);
+    setFilters({ category: "", filename: "" });
+  }, [domainFromQuery]);
+
   const handleFilterChange = useCallback((newFilters: {
     category: string;
     filename: string;
@@ -70,9 +83,16 @@ const TextStore: React.FC = () => {
   const handleDelete = async (docId: string) => {
     if (window.confirm("Are you sure you want to delete this document?")) {
       try {
-        await deleteTextDocument(docId);
+        await deleteTextDocument(docId, selectedDomain);
         // Refetch documents after deletion
-        const response = await getTextDocuments(currentPage, pageSize);
+        const response = await getTextDocuments(
+          currentPage,
+          pageSize,
+          filters.category || null,
+          filters.filename || null,
+          null,
+          selectedDomain
+        );
         setDocuments(response.documents);
         setTotalPages(Math.ceil(response.total / pageSize));
       } catch (error) {
@@ -100,7 +120,7 @@ const TextStore: React.FC = () => {
         <button className="add-new-btn" onClick={() => {
           sessionStorage.setItem('currentPage', currentPage.toString());
           sessionStorage.setItem('filters', JSON.stringify(filters));
-          navigate('/vector-database/text-store/add'); 
+          navigate(`/vector-database/text-store/add?domain=${encodeURIComponent(selectedDomain)}`);
         }}>
           <FiPlus />
           <span>Add New</span>
@@ -195,7 +215,7 @@ const TextStore: React.FC = () => {
                       <button className="action-btn edit-btn" title="Edit" onClick={() => {
                         sessionStorage.setItem('currentPage', currentPage.toString());
                         sessionStorage.setItem('filters', JSON.stringify(filters));
-                        navigate(`/vector-database/text-store/edit/${doc.doc_id}`);
+                        navigate(`/vector-database/text-store/edit/${doc.doc_id}?domain=${encodeURIComponent(selectedDomain)}`);
                       }}>
                         <FiEdit />
                         <span>Edit</span>

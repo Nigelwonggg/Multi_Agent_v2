@@ -1,0 +1,121 @@
+/* PAGE */
+.qe-page {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1a0f0f, #000);
+  color: white;
+  padding-top: 80px;
+}
+
+/* CONTAINER */
+.qe-container {
+  width: 70%;
+  margin: auto;
+  padding: 40px 0;
+}
+
+/* HEADER */
+.qe-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.qe-header h1 {
+  font-size: 36px;
+  margin-bottom: 5px;
+}
+
+.qe-header p {
+  color: #aaa;
+}
+
+/* SEARCH */
+.qe-search {
+  padding: 10px 15px;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #111;
+  color: white;
+}
+
+/* LIST */
+.qe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* CARD */
+.qe-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #111, #1a1a1a);
+  border: 1px solid #222;
+  transition: 0.3s;
+}
+
+.qe-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(255, 200, 0, 0.1);
+}
+
+/* LEFT SIDE */
+.qe-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.qe-icon {
+  font-size: 30px;
+  background: #222;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+/* TEXT */
+.qe-card h2 {
+  margin: 0;
+}
+
+.qe-card p {
+  color: #aaa;
+  font-size: 14px;
+}
+
+/* ACTIONS */
+.qe-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* BUTTON BASE */
+.qe-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+/* VARIANTS */
+.qe-edit {
+  background: #facc15;
+  color: black;
+  border: none;
+}
+
+.qe-results:hover,
+.qe-more:hover {
+  background: #222;
+}
+
+.qe-edit:hover {
+  opacity: 0.9;
+}

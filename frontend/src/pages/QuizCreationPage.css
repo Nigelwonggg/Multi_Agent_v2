@@ -1,0 +1,163 @@
+.qc-dashboard {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1a0f0f, #000);
+  display: flex;
+  flex-direction: column;
+}
+
+/* PAGE TITLE */
+.qc-title {
+  text-align: center;
+  font-size: 40px;
+  font-weight: bold;
+  margin: 100px 0 20px 0;
+  color: white;
+}
+
+.qc-subtitle {
+  text-align: center;
+  color: #aaa;
+  margin-top: -10px;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+textarea.quiz-input {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* MAIN CONTAINER */
+.qc-create-container {
+  width: 60%;
+  margin: auto;
+  padding-bottom: 40px;
+}
+
+/* CARD STYLE (Google Forms block) */
+.qc-card {
+  background: rgb(28, 28, 28);
+  padding: 20px;
+  border-radius: 10px;
+  margin: 40px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: 0.2s ease;
+}
+
+.qc-card:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+/* INPUT STYLE */
+.qc-input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.2s ease;
+}
+
+.qc-input:focus {
+  border-color: #1a73e8;
+}
+
+/* QUESTION HEADER */
+.qc-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ACTIONS ROW */
+.qc-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* SELECT DROPDOWN */
+.qc-actions select {
+  padding: 5px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+/* DELETE BUTTON */
+.qc-delete-btn {
+  background: #ff4d4f;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.qc-delete-btn:hover {
+  background: #d9363e;
+}
+
+/* OPTIONS AREA */
+.qc-options {
+  margin-top: 10px;
+}
+
+/* OPTION ROW */
+.qc-option-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* RADIO BUTTON */
+.qc-option-row input[type="radio"] {
+  transform: scale(1.1);
+}
+
+/* SHORT ANSWER TEXT */
+.qc-short-note {
+  font-size: 13px;
+  color: #777;
+  margin-top: 10px;
+}
+
+/* BOTTOM ACTIONS */
+.qc-actions-bottom {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+/* ADD BUTTON */
+.qc-actions-bottom button {
+  background-color: #fbbc05;
+  color: black;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.qc-actions-bottom button:hover {
+  background-color: #e6aa00;
+}
+
+/* SAVE BUTTON */
+.qc-save-btn {
+  background-color: #fbbc05;
+  color: black;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.qc-save-btn:hover {
+  background-color: #e6aa00;
+}

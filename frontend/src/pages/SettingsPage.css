@@ -1,0 +1,79 @@
+.settings-container {
+    padding-top: 100px;
+    padding-bottom: 50px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    background-color: var(--bg-primary);
+  }
+  
+  .settings-card {
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+  }
+  
+  .settings-card h1 {
+    color: var(--text-primary);
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    border-bottom: 2px solid var(--accent-color);
+    padding-bottom: 0.5rem;
+  }
+  
+  .settings-section {
+    margin-bottom: 2rem;
+  }
+  
+  .settings-section h2 {
+    color: var(--text-primary);
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+  
+  .settings-description {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+  }
+  
+  .upload-form .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .upload-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  
+  .role-select, .file-input {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 6px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+  
+  .success-message {
+    color: #4caf50;
+    margin-top: 1rem;
+    font-weight: 500;
+  }
+  
+  .error-message {
+    color: #f44336;
+    margin-top: 1rem;
+    font-weight: 500;
+  }
+  
+  .btn-accent:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }

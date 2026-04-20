@@ -20,6 +20,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import QuizEditPage from './pages/QuizEditPage';
 import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
+import SettingsPage from './pages/SettingsPage';
 
 // Simple component to protect routes
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
@@ -84,6 +85,12 @@ function App() {
       <Route path="/retrieved-content" element={
         <ProtectedRoute>
           <RetrievedContentPage />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/settings" element={
+        <ProtectedRoute allowedRoles={['lecturer']}>
+          <SettingsPage />
         </ProtectedRoute>
       } />
       

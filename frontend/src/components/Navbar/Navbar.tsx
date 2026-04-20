@@ -44,7 +44,7 @@ const Navbar = () => {
         { to: "/vector-database", label: "Vector DB" },
         { to: "/upload-pdf", label: "Upload PDF" },
         { to: "/quiz", label: "Upload Quiz" },
-        { to: "#settings", label: "Settings" },
+        { to: "/settings", label: "Settings" },
       ];
     } else {
       // student role

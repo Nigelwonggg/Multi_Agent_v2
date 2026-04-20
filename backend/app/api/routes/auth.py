@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import csv
+import io
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.orm import Session
 from datetime import timedelta
+from typing import List
 
 from app.databases.chat_database import get_db
-from app.models.user_model import User
-from app.schemas.user_sch import UserCreate, UserLogin, UserResponse, Token
+from app.models.user_model import User, AllowedUser
+from app.schemas.user_sch import UserCreate, UserLogin, UserResponse, Token, AllowedUserResponse
 from app.utils.auth_utils import (
     get_password_hash, 
     verify_password, 
@@ -17,7 +20,23 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/signup", response_model=UserResponse)
 def signup(user_in: UserCreate, db: Session = Depends(get_db)):
-    # Check if user already exists
+    # Check if student_id is allowed
+    allowed = db.query(AllowedUser).filter(AllowedUser.student_id == user_in.student_id).first()
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ID not authorized for signup"
+        )
+    
+    # Check if student_id already registered
+    existing_id = db.query(User).filter(User.student_id == user_in.student_id).first()
+    if existing_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ID already registered"
+        )
+
+    # Check if email already registered
     user = db.query(User).filter(User.email == user_in.email).first()
     if user:
         raise HTTPException(
@@ -30,8 +49,9 @@ def signup(user_in: UserCreate, db: Session = Depends(get_db)):
     new_user = User(
         email=user_in.email,
         hashed_password=hashed_pw,
-        full_name=user_in.full_name,
-        role=user_in.role, # "student" or "lecturer"
+        full_name=user_in.full_name or allowed.name,
+        role=allowed.role, # Role is dictated by AllowedUser table
+        student_id=user_in.student_id,
         security_question=user_in.security_question,
         security_answer=user_in.security_answer
     )
@@ -59,3 +79,49 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserResponse)
 def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@router.get("/verify-id/{student_id}")
+def verify_id(student_id: str, db: Session = Depends(get_db)):
+    allowed = db.query(AllowedUser).filter(AllowedUser.student_id == student_id).first()
+    if not allowed:
+        raise HTTPException(status_code=404, detail="ID not found in allowed list")
+    
+    # Check if already registered
+    existing_user = db.query(User).filter(User.student_id == student_id).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="ID already registered")
+    
+    return {"allowed": True, "name": allowed.name, "role": allowed.role}
+
+@router.post("/upload-allowed-users")
+async def upload_allowed_users(
+    role: str,
+    file: UploadFile = File(...), 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "lecturer":
+        raise HTTPException(status_code=403, detail="Only lecturers can upload allowed users")
+
+    content = await file.read()
+    decoded = content.decode('utf-8')
+    reader = csv.reader(io.StringIO(decoded))
+    
+    added_count = 0
+    for row in reader:
+        if len(row) < 2:
+            continue
+        uid, name = row[0], row[1]
+        
+        # Check if already exists in allowed_users
+        existing = db.query(AllowedUser).filter(AllowedUser.student_id == uid).first()
+        if existing:
+            existing.name = name
+            existing.role = role
+        else:
+            new_allowed = AllowedUser(student_id=uid, name=name, role=role)
+            db.add(new_allowed)
+        added_count += 1
+    
+    db.commit()
+    return {"message": f"Successfully processed {added_count} users"}

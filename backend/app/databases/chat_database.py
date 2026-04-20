@@ -48,7 +48,7 @@ def init_db() -> None:
     handle migrations separately and might not call this function.
     """
     # Import models here to ensure they are registered with the Base
-    from app.models import chat_db_model
+    from app.models import chat_db_model, user_model
 
     Base.metadata.create_all(bind=engine)
     logger.info("Chat database initialized and tables created.")

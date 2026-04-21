@@ -15,7 +15,7 @@ load_dotenv()
 
 # SQLite is used here for simplicity. Update the URL to point to a
 # different database such as PostgreSQL in production via .env
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./chat.db")
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
 # If the URL is just a filename (no protocol like sqlite:///), prepend sqlite:///
 if SQLALCHEMY_DATABASE_URL and "://" not in SQLALCHEMY_DATABASE_URL:
@@ -41,17 +41,12 @@ Base = declarative_base()
 
 
 def init_db() -> None:
-    """Create database tables based on ORM models.
-
-    Importing models inside this function avoids circular import
-    issues. In a production setup with Alembic, you typically
-    handle migrations separately and might not call this function.
-    """
+    """Create database tables based on ORM models."""
     # Import models here to ensure they are registered with the Base
-    from app.models import chat_db_model, user_model
+    from app.models import chat_db_model, user_model, quiz, question
 
     Base.metadata.create_all(bind=engine)
-    logger.info("Chat database initialized and tables created.")
+    logger.info("Database initialized and all tables created.")
 
 
 def get_db():

@@ -60,16 +60,8 @@ app.include_router(image_store_router)
 from app.api.routes.domains import router as domains_router
 app.include_router(domains_router)
 
-from app.api.routes import quiz
-app.include_router(quiz.router)
-
 from app.api.routes.quiz import router as quiz_router
 app.include_router(quiz_router)
-
-from app.databases.session import Base, engine
-from app.models import quiz, question 
-
-Base.metadata.create_all(bind=engine)
 
 # ================================================================
 # LLM FACTORY INITIALIZATION

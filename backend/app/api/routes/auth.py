@@ -20,21 +20,25 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/signup", response_model=UserResponse)
 def signup(user_in: UserCreate, db: Session = Depends(get_db)):
-    # Check if student_id is allowed
-    allowed = db.query(AllowedUser).filter(AllowedUser.student_id == user_in.student_id).first()
-    if not allowed:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="ID not authorized for signup"
-        )
-    
-    # Check if student_id already registered
-    existing_id = db.query(User).filter(User.student_id == user_in.student_id).first()
-    if existing_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="ID already registered"
-        )
+    is_test_account = user_in.email in ["admin@test.com", "student@test.com"]
+
+    # Check if student_id is allowed (skip for test accounts)
+    allowed = None
+    if not is_test_account:
+        allowed = db.query(AllowedUser).filter(AllowedUser.student_id == user_in.student_id).first()
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="ID not authorized for signup"
+            )
+
+        # Check if student_id already registered
+        existing_id = db.query(User).filter(User.student_id == user_in.student_id).first()
+        if existing_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="ID already registered"
+            )
 
     # Check if email already registered
     user = db.query(User).filter(User.email == user_in.email).first()
@@ -43,15 +47,25 @@ def signup(user_in: UserCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
-    
+
     # Create new user
     hashed_pw = get_password_hash(user_in.password)
+
+    role = "student"
+    full_name = user_in.full_name
+
+    if is_test_account:
+        role = "lecturer" if user_in.email == "admin@test.com" else "student"
+    elif allowed:
+        role = allowed.role
+        full_name = user_in.full_name or allowed.name
+
     new_user = User(
         email=user_in.email,
         hashed_password=hashed_pw,
-        full_name=user_in.full_name or allowed.name,
-        role=allowed.role, # Role is dictated by AllowedUser table
-        student_id=user_in.student_id,
+        full_name=full_name,
+        role=role, # Role is dictated by AllowedUser table or test account default
+        student_id=user_in.student_id if not is_test_account else None,
         security_question=user_in.security_question,
         security_answer=user_in.security_answer
     )
@@ -59,7 +73,6 @@ def signup(user_in: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
-
 @router.post("/login", response_model=Token)
 def login(user_in: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == user_in.email).first()

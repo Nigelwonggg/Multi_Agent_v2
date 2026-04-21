@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.databases.session import get_db
+from app.databases.chat_database import get_db
 from app.models.quiz import Quiz
 from app.models.question import Question
 import json

@@ -4,9 +4,12 @@ import ChatPage from './pages/ChatPage';
 import DummyPage from './pages/DummyPage';
 import ChatWindow from './components/ChatWindow/ChatWindow';
 import HomePage from './pages/HomePage';
+import QuizPage from './pages/QuizPage';
+import QuizCreationPage from './pages/QuizCreationPage';
 
 import EditDocumentPage from './pages/EditDocumentPage';
 import AddDocumentPage from './pages/AddDocumentPage';
+import UploadPdfPage from './pages/UploadPdfPage';
 import ImageStore from './components/ImageStore/ImageStore';
 import AddImagePage from './pages/AddImagePage';
 import EditImagePage from './pages/EditImagePage';
@@ -15,6 +18,8 @@ import DatabaseLayout from './pages/DatabaseLayout';
 import RetrievedContentPage from './pages/RetrievedContentPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import QuizEditPage from './pages/QuizEditPage';
+import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
 
 // Simple component to protect routes
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
@@ -39,6 +44,18 @@ function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/upload-pdf" element={
+        <ProtectedRoute allowedRoles={['lecturer']}>
+          <UploadPdfPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/vector-database/upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
+      <Route path="/vector-database/text-store/upload" element={<Navigate to="/upload-pdf" replace />} />
+      <Route path="/quiz" element={<QuizPage />} />
+      <Route path="/quiz/create" element={<QuizCreationPage />} />
+      <Route path="/quiz/edit" element={<QuizEditPage />} />
+    
       
       <Route path="/chat" element={
         <ProtectedRoute>
@@ -76,3 +93,4 @@ function App() {
 }
 
 export default App;
+

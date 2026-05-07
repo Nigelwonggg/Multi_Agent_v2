@@ -4,6 +4,7 @@ import './AuthPage.css';
 
 const SignupPage: React.FC = () => {
   const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('student');
@@ -11,6 +12,8 @@ const SignupPage: React.FC = () => {
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,11 +25,12 @@ const SignupPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/auth/signup', {
+      const response = await fetch(`${API_BASE}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email,
+          full_name: fullName,
           password,
           role,
           security_question: securityQuestion,
@@ -50,6 +54,16 @@ const SignupPage: React.FC = () => {
       <div className="auth-card signup-card">
         <h2>Sign Up</h2>
         <form onSubmit={handleSignup}>
+          <div className="form-group">
+            <label>Full Name</label>
+            <input 
+              type="text" 
+              value={fullName} 
+              onChange={(e) => setFullName(e.target.value)} 
+              required 
+              placeholder="e.g. Name"
+            />
+          </div>
           <div className="form-group">
             <label>ID (Email)</label>
             <input 

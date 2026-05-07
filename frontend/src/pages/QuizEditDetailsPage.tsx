@@ -21,11 +21,13 @@ const QuizEditDetailsPage: React.FC = () => {
   const [description, setDescription] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
 
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
   // 📥 Load quiz from backend
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/quizzes/${id}`);
+        const res = await fetch(`${API_BASE}/quizzes/${id}`);
         const data = await res.json();
 
         setTitle(data.title);
@@ -37,7 +39,7 @@ const QuizEditDetailsPage: React.FC = () => {
     };
 
     fetchQuiz();
-  }, [id]);
+  }, [id, API_BASE]);
 
   // ✏️ Update question text
   const updateQuestion = (index: number, value: string) => {
@@ -69,7 +71,7 @@ const QuizEditDetailsPage: React.FC = () => {
     };
 
     try {
-      const res = await fetch(`http://localhost:8000/quizzes/${id}`, {
+      const res = await fetch(`${API_BASE}/quizzes/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

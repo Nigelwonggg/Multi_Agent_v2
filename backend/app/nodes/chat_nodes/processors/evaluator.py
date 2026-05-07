@@ -99,7 +99,7 @@ class EvaluatorNode(BaseNode):
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": f"data:image/png;base64,{selected_image.metadata.get("base64_image")}"
+                            "url": f"data:image/png;base64,{selected_image.metadata.get('base64_image')}"
                         },
                     },
                 ]

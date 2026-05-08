@@ -5,6 +5,10 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 # Fallback to local SQLite if no DATABASE_URL is provided
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./chat.db")
 
+# If the URL is just a filename (no protocol like sqlite:///), prepend sqlite:///
+if DATABASE_URL and "://" not in DATABASE_URL:
+    DATABASE_URL = f"sqlite:///{DATABASE_URL}"
+
 # If using PostgreSQL (Cloud SQL), we don't need check_same_thread
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(

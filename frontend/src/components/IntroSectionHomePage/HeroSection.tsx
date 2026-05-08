@@ -30,11 +30,10 @@ const HeroSection = () => {
 
         {/* Title */}
         <h1 className="hero__title">
-          {user ? `Welcome back, ${user.full_name.split(' ')[0]}!` : "Your Personal Educational AI Tutor"}
+          {user ? `Welcome back, ${(user.full_name || 'User').split(' ')[0]}!` : "Your Personal Educational AI Tutor"}
           <br />
           <span>Educational AI Tutor</span>
         </h1>
-
         {/* Subtitle */}
         <p className="hero__subtitle">
           Upload your study materials, build a personalized vector database, chat with an AI chatbot that understands the syllabus,

@@ -33,7 +33,12 @@ app = FastAPI(
 # Enable CORS for your frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],  # Your React app URL
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://gen-lang-client-0059459242.web.app",
+        "https://gen-lang-client-0059459242.firebaseapp.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

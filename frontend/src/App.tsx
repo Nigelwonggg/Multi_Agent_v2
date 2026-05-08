@@ -19,7 +19,7 @@ import RetrievedContentPage from './pages/RetrievedContentPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import QuizEditPage from './pages/QuizEditPage';
-import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
+// import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
 
 // Simple component to protect routes
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {

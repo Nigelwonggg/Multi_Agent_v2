@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getMessages, postMessage, getTestData } from '../../api/chatApi';
+import { getTestData } from '../../api/chatApi';
 import type { Message as MessageType } from '../../api/chatApi';
+import {
+  getChatMessagesSnapshot,
+  isPendingChatId,
+  refreshChatMessages,
+  replaceChatMessages,
+  sendChatMessage,
+  subscribeChatMessages,
+} from '../../stores/chatStore';
 import Message from '../Message/Message';
 import { FiSend, FiMessageSquare, FiClipboard } from 'react-icons/fi';
 import ThinkingIndicator from './ThinkingIndicator';
@@ -12,73 +20,70 @@ interface ChatWindowProps {
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, showTestButton = false }) => {
-  const [messages, setMessages] = useState<MessageType[]>([]);
+  const [chatState, setChatState] = useState(() => getChatMessagesSnapshot(chatId));
+  const [testMessages, setTestMessages] = useState<MessageType[]>([]);
+  const [testLoading, setTestLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messages = chatId ? chatState.messages : testMessages;
+  const loading = chatId ? chatState.loading : testLoading;
+  const isThinking = chatId ? chatState.isThinking : false;
+  const isPreparingChat = isPendingChatId(chatId);
+  const showWelcome = !loading && messages.length === 0;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
-    if (chatId) {
-      const fetchMessages = async () => {
-        setLoading(true);
-        try {
-          const fetchedMessages = await getMessages(chatId);
-          setMessages(fetchedMessages);
-        } catch (error) {
-          console.error("Failed to fetch messages:", error);
-          setMessages([]);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchMessages();
-    } else {
-      setMessages([]);
+    if (!chatId) {
+      setChatState(getChatMessagesSnapshot(null));
+      return;
     }
+
+    setChatState(getChatMessagesSnapshot(chatId));
+    const unsubscribe = subscribeChatMessages(chatId, () => {
+      setChatState(getChatMessagesSnapshot(chatId));
+    });
+
+    if (!isPendingChatId(chatId)) {
+      refreshChatMessages(chatId);
+    }
+
+    return unsubscribe;
   }, [chatId]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isThinking]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim() || !chatId) return;
+    if (!inputValue.trim() || !chatId || isPreparingChat) return;
 
-    const userMessage: MessageType = {
-        id: String(Date.now()),
-        text: inputValue,
-        sender: 'user',
-    };
-    setMessages(prev => [...prev, userMessage]);
+    const messageText = inputValue;
     setInputValue('');
-    setIsThinking(true);
 
     try {
-      const reply_message = await postMessage(chatId, inputValue);
-      setMessages(prev => [...prev.slice(0, -1), userMessage, reply_message]);
+      await sendChatMessage(chatId, messageText);
     } catch (error) {
       console.error("Failed to post message:", error);
-      // Optional: handle message sending failure
-    } finally {
-      setIsThinking(false);
     }
   };
 
   const handleLoadTestData = async () => {
-    setLoading(true);
+    setTestLoading(true);
     try {
         const testMessage = await getTestData();
-        setMessages([testMessage]);
+        if (chatId) {
+          replaceChatMessages(chatId, [testMessage]);
+        } else {
+          setTestMessages([testMessage]);
+        }
     } catch (error) {
         console.error("Failed to load test data:", error);
     } finally {
-        setLoading(false);
+        setTestLoading(false);
     }
   };
 
@@ -113,6 +118,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, showTestButton = false 
       <div className="messages-container">
         {loading ? (
           <div className="loading-placeholder">Loading...</div>
+        ) : showWelcome ? (
+          <div className="chat-welcome">
+            <div className="chat-welcome-icon">
+              <FiMessageSquare />
+            </div>
+            <h1>How Can I Help You Today?</h1>
+            <p>Ready when you are.</p>
+          </div>
         ) : (
           messages.map(msg => <Message key={msg.id} message={msg} />)
         )}
@@ -123,11 +136,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, showTestButton = false 
         <input
           type="text"
           className="chat-input"
-          placeholder="Type your message..."
+          placeholder={isPreparingChat ? "Preparing chat..." : "Type your message..."}
           value={inputValue}
+          disabled={isPreparingChat}
           onChange={(e) => setInputValue(e.target.value)}
         />
-        <button type="submit" className="send-btn" disabled={!inputValue.trim()}>
+        <button type="submit" className="send-btn" disabled={!inputValue.trim() || isPreparingChat}>
           <FiSend />
           <span>Send</span>
         </button>

@@ -164,33 +164,167 @@
   color: var(--text-muted);
 }
 
-.sidebar-footer {
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0; /* Prevent footer from shrinking */
-}
-
-.dummy-link {
+.delete-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border-radius: 8px;
-  color: var(--text-muted);
-  text-decoration: none;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.dummy-link:hover {
-  background-color: var(--bg-card2);
-  color: var(--accent2);
-}
-
-.dummy-link.active {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.sidebar.collapsed .dummy-link {
   justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(8px);
+  animation: deleteOverlayFadeIn 0.18s ease-out;
+}
+
+.delete-dialog {
+  width: min(420px, 100%);
+  padding: 1.5rem;
+  border-radius: 8px;
+  background: linear-gradient(
+    180deg,
+    rgba(18, 18, 18, 0.98),
+    rgba(10, 10, 10, 0.98)
+  );
+  border: 1px solid rgba(212, 175, 55, 0.24);
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.45),
+    0 0 24px var(--accent-glow);
+  color: var(--text);
+  transform-origin: center;
+  animation: deleteDialogPopIn 0.22s cubic-bezier(0.2, 0.9, 0.2, 1.08);
+}
+
+.delete-dialog-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  color: #f3c74f;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.32);
+}
+
+.delete-dialog-icon svg {
+  width: 24px;
+  height: 24px;
+  animation: deleteIconSettle 0.28s ease-out 0.06s both;
+}
+
+.delete-dialog-copy h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.delete-dialog-copy p {
+  margin: 0.75rem 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.delete-dialog-copy span {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.delete-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.delete-dialog-cancel,
+.delete-dialog-confirm {
+  min-height: 40px;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.delete-dialog-cancel {
+  color: var(--text);
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+}
+
+.delete-dialog-cancel:hover {
+  border-color: rgba(212, 175, 55, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.delete-dialog-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  color: #fff;
+  background: #b42318;
+  border: 1px solid #dc3a2f;
+}
+
+.delete-dialog-confirm:hover,
+.delete-dialog-confirm:focus-visible {
+  background: #d92d20;
+  box-shadow: 0 0 16px rgba(217, 45, 32, 0.3);
+}
+
+@media (max-width: 520px) {
+  .delete-dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .delete-dialog-cancel,
+  .delete-dialog-confirm {
+    width: 100%;
+  }
+}
+
+@keyframes deleteOverlayFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes deleteDialogPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes deleteIconSettle {
+  from {
+    opacity: 0;
+    transform: scale(0.8) rotate(-8deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delete-dialog-overlay,
+  .delete-dialog,
+  .delete-dialog-icon svg {
+    animation: none;
+  }
 }

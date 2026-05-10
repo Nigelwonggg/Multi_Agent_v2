@@ -19,6 +19,7 @@ import RetrievedContentPage from './pages/RetrievedContentPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import QuizEditPage from './pages/QuizEditPage';
+import ChatProgressToast from './components/ChatProgressToast/ChatProgressToast';
 // import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
 
 // Simple component to protect routes
@@ -40,55 +41,57 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-      <Route path="/upload-pdf" element={
-        <ProtectedRoute allowedRoles={['lecturer']}>
-          <UploadPdfPage />
-        </ProtectedRoute>
-      } />
+    <>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/upload-pdf" element={
+          <ProtectedRoute allowedRoles={['lecturer']}>
+            <UploadPdfPage />
+          </ProtectedRoute>
+        } />
 
-      <Route path="/vector-database/upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
-      <Route path="/vector-database/text-store/upload" element={<Navigate to="/upload-pdf" replace />} />
-      <Route path="/quiz" element={<QuizPage />} />
-      <Route path="/quiz/create" element={<QuizCreationPage />} />
-      <Route path="/quiz/edit" element={<QuizEditPage />} />
-    
-      
-      <Route path="/chat" element={
-        <ProtectedRoute>
-          <Layout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<ChatWindow chatId={null} />} />
-        <Route path=":chatId" element={<ChatPage />} />
-        <Route path="dummy" element={<DummyPage />} />
-      </Route>
+        <Route path="/vector-database/upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
+        <Route path="/vector-database/text-store/upload" element={<Navigate to="/upload-pdf" replace />} />
+        <Route path="/quiz" element={<QuizPage />} />
+        <Route path="/quiz/create" element={<QuizCreationPage />} />
+        <Route path="/quiz/edit" element={<QuizEditPage />} />
 
-      <Route path="/vector-database" element={
-        <ProtectedRoute allowedRoles={['lecturer']}>
-          <DatabaseLayout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="text-store" />} />
-        <Route path="text-store" element={<TextStore />} />
-        <Route path="text-store/add" element={<AddDocumentPage />} />
-        <Route path="text-store/edit/:docId" element={<EditDocumentPage />} />
-        <Route path="image-store" element={<ImageStore />} />
-        <Route path="image-store/add" element={<AddImagePage />} />
-        <Route path="image-store/edit/:docId" element={<EditImagePage />} />
-      </Route>
+        <Route path="/chat" element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<ChatWindow chatId={null} />} />
+          <Route path=":chatId" element={<ChatPage />} />
+          <Route path="dummy" element={<DummyPage />} />
+        </Route>
 
-      <Route path="/retrieved-content" element={
-        <ProtectedRoute>
-          <RetrievedContentPage />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+        <Route path="/vector-database" element={
+          <ProtectedRoute allowedRoles={['lecturer']}>
+            <DatabaseLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="text-store" />} />
+          <Route path="text-store" element={<TextStore />} />
+          <Route path="text-store/add" element={<AddDocumentPage />} />
+          <Route path="text-store/edit/:docId" element={<EditDocumentPage />} />
+          <Route path="image-store" element={<ImageStore />} />
+          <Route path="image-store/add" element={<AddImagePage />} />
+          <Route path="image-store/edit/:docId" element={<EditImagePage />} />
+        </Route>
+
+        <Route path="/retrieved-content" element={
+          <ProtectedRoute>
+            <RetrievedContentPage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+      <ChatProgressToast />
+    </>
   );
 }
 

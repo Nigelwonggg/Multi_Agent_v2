@@ -12,9 +12,12 @@ interface MessageState {
   messages: Message[];
   loading: boolean;
   pendingCount: number;
+  pendingSince: number | null;
+  lastPendingText: string;
 }
 
 const chatListeners = new Set<Listener>();
+const progressListeners = new Set<Listener>();
 const messageListeners = new Map<string, Set<Listener>>();
 const messageStates = new Map<string, MessageState>();
 
@@ -38,6 +41,10 @@ function notifyChats() {
   chatListeners.forEach(listener => listener());
 }
 
+function notifyProgress() {
+  progressListeners.forEach(listener => listener());
+}
+
 function notifyMessages(chatId: string) {
   messageListeners.get(chatId)?.forEach(listener => listener());
 }
@@ -53,6 +60,8 @@ function getMessageState(chatId: string): MessageState {
     messages: [],
     loading: false,
     pendingCount: 0,
+    pendingSince: null,
+    lastPendingText: "",
   };
   messageStates.set(chatId, initialState);
   return initialState;
@@ -71,12 +80,14 @@ function upsertChat(chat: Chat) {
 
 function updateChatTitleInCache(chatId: string, title: string) {
   setChats(chats.map(chat => chat.id === chatId ? { ...chat, title } : chat));
+  notifyProgress();
 }
 
 function removeChatFromCache(chatId: string) {
   setChats(chats.filter(chat => chat.id !== chatId));
   messageStates.delete(chatId);
   messageListeners.delete(chatId);
+  notifyProgress();
 }
 
 function replaceChatInCache(temporaryChatId: string, confirmedChat: Chat) {
@@ -101,6 +112,7 @@ function replaceChatInCache(temporaryChatId: string, confirmedChat: Chat) {
   setChats(nextChats);
   notifyMessages(temporaryChatId);
   notifyMessages(confirmedChat.id);
+  notifyProgress();
 }
 
 function mergeFetchedMessages(currentMessages: Message[], fetchedMessages: Message[]) {
@@ -195,6 +207,54 @@ export function subscribeChats(listener: Listener) {
   chatListeners.add(listener);
   return () => {
     chatListeners.delete(listener);
+  };
+}
+
+export interface ChatProgressSnapshot {
+  chatId: string | null;
+  title: string;
+  prompt: string;
+  pendingCount: number;
+  totalPendingChats: number;
+  startedAt: number | null;
+}
+
+export function getChatProgressSnapshot(): ChatProgressSnapshot {
+  const pendingEntries = Array.from(messageStates.entries())
+    .filter(([, state]) => state.pendingCount > 0)
+    .sort(([, firstState], [, secondState]) => (
+      (secondState.pendingSince ?? 0) - (firstState.pendingSince ?? 0)
+    ));
+  const activeEntry = pendingEntries[0];
+
+  if (!activeEntry) {
+    return {
+      chatId: null,
+      title: "",
+      prompt: "",
+      pendingCount: 0,
+      totalPendingChats: 0,
+      startedAt: null,
+    };
+  }
+
+  const [chatId, state] = activeEntry;
+  const chat = chats.find(existingChat => existingChat.id === chatId);
+
+  return {
+    chatId,
+    title: chat?.title || DEFAULT_CHAT_TITLE,
+    prompt: state.lastPendingText,
+    pendingCount: state.pendingCount,
+    totalPendingChats: pendingEntries.length,
+    startedAt: state.pendingSince,
+  };
+}
+
+export function subscribeChatProgress(listener: Listener) {
+  progressListeners.add(listener);
+  return () => {
+    progressListeners.delete(listener);
   };
 }
 
@@ -320,7 +380,10 @@ export async function sendChatMessage(chatId: string, text: string) {
   maybeTitleChatFromFirstMessage(chatId, text, existingMessageCount);
   state.messages = [...state.messages, userMessage];
   state.pendingCount += 1;
+  state.pendingSince = state.pendingSince ?? Date.now();
+  state.lastPendingText = text;
   notifyMessages(chatId);
+  notifyProgress();
 
   try {
     const replyMessage = await postMessage(chatId, text);
@@ -334,6 +397,11 @@ export async function sendChatMessage(chatId: string, text: string) {
     throw error;
   } finally {
     state.pendingCount = Math.max(0, state.pendingCount - 1);
+    if (state.pendingCount === 0) {
+      state.pendingSince = null;
+      state.lastPendingText = "";
+    }
     notifyMessages(chatId);
+    notifyProgress();
   }
 }

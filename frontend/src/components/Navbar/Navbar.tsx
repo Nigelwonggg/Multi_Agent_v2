@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import SmoothLink from "../SmoothLink/SmoothLink";
 import "./Navbar.css";
 
 const Navbar = () => {
@@ -83,7 +84,7 @@ const Navbar = () => {
       <div className="navbar__inner">
 
         {/* Logo */}
-        <Link to="/" className="navbar__logo">
+        <SmoothLink to="/" className="navbar__logo">
           <svg className="navbar__logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2a9 9 0 0 1 9 9c0 3.6-2.1 6.7-5.2 8.2L12 22l-3.8-2.8A9 9 0 0 1 3 11a9 9 0 0 1 9-9z"/>
             <path d="M9 11l2 2 4-4"/>
@@ -91,7 +92,7 @@ const Navbar = () => {
           <span className="navbar__logo-text">
             Tutor<span className="navbar__logo-accent">AI</span>
           </span>
-        </Link>
+        </SmoothLink>
 
         {/* Desktop Links */}
         <ul className="navbar__links">
@@ -105,12 +106,12 @@ const Navbar = () => {
                   {link.label}
                 </a>
               ) : (
-                <Link
+                <SmoothLink
                   to={link.to}
                   className={`navbar__link ${isActive(link.to) ? "navbar__link--active" : ""}`}
                 >
                   {link.label}
-                </Link>
+                </SmoothLink>
               )}
             </li>
           ))}
@@ -124,7 +125,7 @@ const Navbar = () => {
               <button onClick={handleLogout} className="btn-outline-accent">Logout</button>
             </div>
           ) : (
-            <Link to="/login" className="btn-accent">Login / Sign Up</Link>
+            <SmoothLink to="/login" className="btn-accent">Login / Sign Up</SmoothLink>
           )}
         </div>
 
@@ -153,14 +154,14 @@ const Navbar = () => {
               {link.label}
             </a>
           ) : (
-            <Link
+            <SmoothLink
               key={link.label}
               to={link.to}
               className={`navbar__mobile-link ${isActive(link.to) ? "navbar__mobile-link--active" : ""}`}
               onClick={() => setIsOpen(false)}
             >
               {link.label}
-            </Link>
+            </SmoothLink>
           )
         ))}
         <div className="navbar__mobile-auth">
@@ -170,9 +171,9 @@ const Navbar = () => {
               <button onClick={() => { handleLogout(); setIsOpen(false); }} className="btn-outline-accent">Logout</button>
             </div>
           ) : (
-            <Link to="/login" className="btn-accent" onClick={() => setIsOpen(false)}>
+            <SmoothLink to="/login" className="btn-accent" onClick={() => setIsOpen(false)}>
               Login / Sign Up
-            </Link>
+            </SmoothLink>
           )}
         </div>
       </div>

@@ -1,6 +1,7 @@
 import React from "react";
 import type { Message as MessageType } from "../../api/chatApi";
-import { FiUser, FiCpu } from "react-icons/fi";
+import { FiUser } from "react-icons/fi";
+import { FaRobot } from "react-icons/fa";
 import TextMessage from "./TextMessage";
 import ImageMessage from "./ImageMessage";
 import "./Message.css";
@@ -20,7 +21,7 @@ const Message: React.FC<MessageProps> = ({ message }) => {
 
   return (
     <div className={`message ${sender}`}>
-      <div className="avatar">{isUser ? <FiUser /> : <FiCpu />}</div>
+      <div className="avatar">{isUser ? <FiUser /> : <FaRobot />}</div>
       {hasImage ? (
         <ImageMessage message={message} />
       ) : (

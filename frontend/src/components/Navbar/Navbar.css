@@ -5,6 +5,7 @@
   left: 0;
   right: 0;
   z-index: 999;
+  view-transition-name: app-navbar;
   /* Always semi-transparent from the start */
   background: rgba(8, 6, 2, 0.55);
   backdrop-filter: blur(16px);

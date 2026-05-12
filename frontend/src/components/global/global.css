@@ -114,3 +114,141 @@ a {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 200px;
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: page-transition-out 260ms ease both;
+  }
+
+  ::view-transition-new(root) {
+    animation: page-transition-in 520ms ease both;
+  }
+
+  ::view-transition-old(app-navbar),
+  ::view-transition-new(app-navbar),
+  ::view-transition-old(vector-top-nav),
+  ::view-transition-new(vector-top-nav) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+}
+
+@keyframes page-transition-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-transition-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body.page-elements-entering
+    :where(
+      .home-page,
+      .auth-card,
+      .quiz-dashboard,
+      .quiz-cards,
+      .upload-pdf-container,
+      .text-store-container,
+      .image-store-container,
+      .add-document-container,
+      .add-image-container,
+      .edit-document-container,
+      .edit-image-container,
+      .retrieved-content-page,
+      .chat-window,
+      .chat-container,
+      .dummy-page
+    )
+    > :not(.navbar):not(.top-nav-bar):not(.noise-overlay) {
+    opacity: 0;
+    animation: page-element-fade-in 760ms ease forwards;
+  }
+
+  body.page-elements-entering
+    :where(
+      .home-page,
+      .auth-card,
+      .quiz-dashboard,
+      .quiz-cards,
+      .upload-pdf-container,
+      .text-store-container,
+      .image-store-container,
+      .add-document-container,
+      .add-image-container,
+      .edit-document-container,
+      .edit-image-container,
+      .retrieved-content-page,
+      .chat-window,
+      .chat-container,
+      .dummy-page
+    )
+    > :nth-child(2) {
+    animation-delay: 90ms;
+  }
+
+  body.page-elements-entering
+    :where(
+      .home-page,
+      .auth-card,
+      .quiz-dashboard,
+      .quiz-cards,
+      .upload-pdf-container,
+      .text-store-container,
+      .image-store-container,
+      .add-document-container,
+      .add-image-container,
+      .edit-document-container,
+      .edit-image-container,
+      .retrieved-content-page,
+      .chat-window,
+      .chat-container,
+      .dummy-page
+    )
+    > :nth-child(3) {
+    animation-delay: 180ms;
+  }
+
+  body.page-elements-entering
+    :where(
+      .home-page,
+      .auth-card,
+      .quiz-dashboard,
+      .quiz-cards,
+      .upload-pdf-container,
+      .text-store-container,
+      .image-store-container,
+      .add-document-container,
+      .add-image-container,
+      .edit-document-container,
+      .edit-image-container,
+      .retrieved-content-page,
+      .chat-window,
+      .chat-container,
+      .dummy-page
+    )
+    > :nth-child(n + 4) {
+    animation-delay: 270ms;
+  }
+}
+
+@keyframes page-element-fade-in {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}

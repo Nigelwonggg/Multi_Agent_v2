@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowUpRight, FiCpu } from 'react-icons/fi';
+import { FiArrowUpRight } from 'react-icons/fi';
+import { FaRobot } from 'react-icons/fa';
 import {
   getChatProgressSnapshot,
   subscribeChatProgress,
@@ -141,7 +142,7 @@ const ChatProgressToast: React.FC = () => {
       <div className="chat-progress-header">
         <div className="chat-progress-title">
           <span className="chat-progress-icon" aria-hidden="true">
-            <FiCpu />
+            <FaRobot />
           </span>
           <div>
             <p>{label}</p>

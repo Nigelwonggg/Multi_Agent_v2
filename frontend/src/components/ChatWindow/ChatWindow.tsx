@@ -10,7 +10,8 @@ import {
   subscribeChatMessages,
 } from '../../stores/chatStore';
 import Message from '../Message/Message';
-import { FiSend, FiMessageSquare, FiClipboard } from 'react-icons/fi';
+import { FiSend, FiClipboard } from 'react-icons/fi';
+import { FaRobot } from 'react-icons/fa';
 import ThinkingIndicator from './ThinkingIndicator';
 import './ChatWindow.css';
 
@@ -98,7 +99,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, showTestButton = false 
                     <span>Load Test Data</span>
                 </button>
             )}
-            <FiMessageSquare className="no-chat-selected-icon" />
+            <FaRobot className="no-chat-selected-icon" />
             <h2>Select a chat or create a new one to start messaging</h2>
         </div>
       </div>
@@ -122,7 +123,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, showTestButton = false 
         ) : showWelcome ? (
           <div className="chat-welcome">
             <div className="chat-welcome-icon">
-              <FiMessageSquare />
+              <FaRobot />
             </div>
             <h1>How Can I Help You Today?</h1>
             <p>Ready when you are.</p>

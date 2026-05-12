@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './pages/Layout';
 import ChatPage from './pages/ChatPage';
 import DummyPage from './pages/DummyPage';
@@ -40,6 +41,21 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
 };
 
 function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const className = 'page-elements-entering';
+    document.body.classList.remove(className);
+    void document.body.offsetWidth;
+    document.body.classList.add(className);
+
+    const timeoutId = window.setTimeout(() => {
+      document.body.classList.remove(className);
+    }, 1200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [location.pathname, location.search]);
+
   return (
     <>
       <Routes>

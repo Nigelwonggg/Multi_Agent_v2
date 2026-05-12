@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SmoothLink from "../SmoothLink/SmoothLink";
+import ThemeToggle from "../ThemeToggle/ThemeToggle";
 import "./Navbar.css";
 
 const Navbar = () => {
@@ -117,28 +118,32 @@ const Navbar = () => {
           ))}
         </ul>
 
-        {/* Auth Button */}
-        <div className="navbar__auth">
-          {user ? (
-            <div className="navbar__user-info">
-              <span className="navbar__user-greeting">Hi, {user.full_name}</span>
-              <button onClick={handleLogout} className="btn-outline-accent">Logout</button>
-            </div>
-          ) : (
-            <SmoothLink to="/login" className="btn-accent">Login / Sign Up</SmoothLink>
-          )}
-        </div>
+        <div className="navbar__right">
+          {/* Auth Button */}
+          <div className="navbar__auth">
+            {user ? (
+              <div className="navbar__user-info">
+                <span className="navbar__user-greeting">Hi, {user.full_name}</span>
+                <button onClick={handleLogout} className="btn-outline-accent">Logout</button>
+              </div>
+            ) : (
+              <SmoothLink to="/login" className="btn-accent">Login / Sign Up</SmoothLink>
+            )}
+          </div>
 
-        {/* Mobile Hamburger */}
-        <button
-          className={`navbar__hamburger ${isOpen ? "open" : ""}`}
-          onClick={() => setIsOpen(!isOpen)}
-          aria-label="Toggle menu"
-        >
-          <span />
-          <span />
-          <span />
-        </button>
+          <ThemeToggle />
+
+          {/* Mobile Hamburger */}
+          <button
+            className={`navbar__hamburger ${isOpen ? "open" : ""}`}
+            onClick={() => setIsOpen(!isOpen)}
+            aria-label="Toggle menu"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
       </div>
 
       {/* Mobile Dropdown */}

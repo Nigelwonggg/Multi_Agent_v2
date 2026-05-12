@@ -21,6 +21,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import QuizEditPage from './pages/QuizEditPage';
 import ChatProgressToast from './components/ChatProgressToast/ChatProgressToast';
+import './theme.css';
 // import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
 
 // Simple component to protect routes

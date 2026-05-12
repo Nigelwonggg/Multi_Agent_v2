@@ -29,6 +29,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, showTestButton = false 
   const loading = chatId ? chatState.loading : testLoading;
   const isThinking = chatId ? chatState.isThinking : false;
   const isPreparingChat = isPendingChatId(chatId);
+  const showLoadingPlaceholder = loading && messages.length === 0;
   const showWelcome = !loading && messages.length === 0;
 
   const scrollToBottom = () => {
@@ -116,7 +117,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId, showTestButton = false 
         )}
       </header> */}
       <div className="messages-container">
-        {loading ? (
+        {showLoadingPlaceholder ? (
           <div className="loading-placeholder">Loading...</div>
         ) : showWelcome ? (
           <div className="chat-welcome">

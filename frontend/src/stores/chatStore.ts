@@ -3,8 +3,11 @@ import type { Chat, Message } from '../api/chatApi';
 
 const LAST_ACTIVE_CHAT_KEY = 'lastActiveChatId';
 const CHAT_LIST_CACHE_KEY = 'cachedChats';
+const CHAT_MESSAGE_CACHE_KEY = 'cachedChatMessages';
 const PENDING_CHAT_PREFIX = 'pending-chat-';
 const DEFAULT_CHAT_TITLE = "New Question";
+const PENDING_MESSAGE_TTL_MS = 10 * 60 * 1000;
+const PENDING_POLL_INTERVAL_MS = 3500;
 
 type Listener = () => void;
 
@@ -20,6 +23,7 @@ const chatListeners = new Set<Listener>();
 const progressListeners = new Set<Listener>();
 const messageListeners = new Map<string, Set<Listener>>();
 const messageStates = new Map<string, MessageState>();
+const pendingPollTimers = new Map<string, number>();
 
 let chats: Chat[] = readCachedChats();
 let chatsLoading = chats.length === 0;
@@ -35,6 +39,81 @@ function readCachedChats(): Chat[] {
 
 function writeCachedChats(nextChats: Chat[]) {
   localStorage.setItem(CHAT_LIST_CACHE_KEY, JSON.stringify(nextChats));
+}
+
+function readCachedMessageStates(): Record<string, Partial<MessageState>> {
+  try {
+    const cached = sessionStorage.getItem(CHAT_MESSAGE_CACHE_KEY);
+    return cached ? JSON.parse(cached) : {};
+  } catch {
+    return {};
+  }
+}
+
+function sanitizeMessageForCache(message: Message): Message {
+  if (!message.imageUrl?.startsWith('data:')) {
+    return message;
+  }
+
+  return {
+    ...message,
+    imageUrl: undefined,
+  };
+}
+
+function isPendingFresh(pendingSince: number | null | undefined) {
+  return Boolean(pendingSince && Date.now() - pendingSince < PENDING_MESSAGE_TTL_MS);
+}
+
+function normalizeCachedMessageState(cachedState?: Partial<MessageState>): MessageState {
+  const pendingSince = cachedState?.pendingSince ?? null;
+  const hasFreshPending = isPendingFresh(pendingSince);
+
+  return {
+    messages: Array.isArray(cachedState?.messages) ? cachedState.messages : [],
+    loading: false,
+    pendingCount: hasFreshPending ? Math.max(1, cachedState?.pendingCount ?? 1) : 0,
+    pendingSince: hasFreshPending ? pendingSince : null,
+    lastPendingText: hasFreshPending ? cachedState?.lastPendingText ?? "" : "",
+  };
+}
+
+function persistMessageState(chatId: string, state: MessageState) {
+  try {
+    const cachedStates = readCachedMessageStates();
+    cachedStates[chatId] = {
+      messages: state.messages.slice(-80).map(sanitizeMessageForCache),
+      pendingCount: state.pendingCount,
+      pendingSince: state.pendingSince,
+      lastPendingText: state.lastPendingText,
+    };
+    sessionStorage.setItem(CHAT_MESSAGE_CACHE_KEY, JSON.stringify(cachedStates));
+  } catch (error) {
+    console.warn("Failed to cache chat messages:", error);
+  }
+}
+
+function removePersistedMessageState(chatId: string) {
+  try {
+    const cachedStates = readCachedMessageStates();
+    delete cachedStates[chatId];
+    sessionStorage.setItem(CHAT_MESSAGE_CACHE_KEY, JSON.stringify(cachedStates));
+  } catch {
+    // Cache cleanup is best effort.
+  }
+}
+
+function replacePersistedMessageState(temporaryChatId: string, confirmedChatId: string) {
+  try {
+    const cachedStates = readCachedMessageStates();
+    if (cachedStates[temporaryChatId] && !cachedStates[confirmedChatId]) {
+      cachedStates[confirmedChatId] = cachedStates[temporaryChatId];
+    }
+    delete cachedStates[temporaryChatId];
+    sessionStorage.setItem(CHAT_MESSAGE_CACHE_KEY, JSON.stringify(cachedStates));
+  } catch {
+    // Cache migration is best effort.
+  }
 }
 
 function notifyChats() {
@@ -56,14 +135,9 @@ function getMessageState(chatId: string): MessageState {
     return existingState;
   }
 
-  const initialState: MessageState = {
-    messages: [],
-    loading: false,
-    pendingCount: 0,
-    pendingSince: null,
-    lastPendingText: "",
-  };
+  const initialState = normalizeCachedMessageState(readCachedMessageStates()[chatId]);
   messageStates.set(chatId, initialState);
+  schedulePendingRefresh(chatId);
   return initialState;
 }
 
@@ -87,6 +161,8 @@ function removeChatFromCache(chatId: string) {
   setChats(chats.filter(chat => chat.id !== chatId));
   messageStates.delete(chatId);
   messageListeners.delete(chatId);
+  removePersistedMessageState(chatId);
+  clearPendingPoll(chatId);
   notifyProgress();
 }
 
@@ -101,6 +177,7 @@ function replaceChatInCache(temporaryChatId: string, confirmedChat: Chat) {
 
   if (temporaryState && !messageStates.has(confirmedChat.id)) {
     messageStates.set(confirmedChat.id, temporaryState);
+    persistMessageState(confirmedChat.id, temporaryState);
   }
 
   if (temporaryListeners && !messageListeners.has(confirmedChat.id)) {
@@ -109,6 +186,7 @@ function replaceChatInCache(temporaryChatId: string, confirmedChat: Chat) {
 
   messageStates.delete(temporaryChatId);
   messageListeners.delete(temporaryChatId);
+  replacePersistedMessageState(temporaryChatId, confirmedChat.id);
   setChats(nextChats);
   notifyMessages(temporaryChatId);
   notifyMessages(confirmedChat.id);
@@ -126,6 +204,81 @@ function mergeFetchedMessages(currentMessages: Message[], fetchedMessages: Messa
   ));
 
   return [...fetchedMessages, ...optimisticMessages];
+}
+
+function clearPendingPoll(chatId: string) {
+  const existingTimer = pendingPollTimers.get(chatId);
+  if (existingTimer) {
+    window.clearTimeout(existingTimer);
+    pendingPollTimers.delete(chatId);
+  }
+}
+
+function clearPendingState(chatId: string, state: MessageState) {
+  state.pendingCount = 0;
+  state.pendingSince = null;
+  state.lastPendingText = "";
+  clearPendingPoll(chatId);
+  persistMessageState(chatId, state);
+  notifyProgress();
+}
+
+function hasFetchedResponseForPending(state: MessageState, fetchedMessages: Message[]) {
+  if (!state.pendingSince) {
+    return false;
+  }
+
+  return fetchedMessages.some(message => {
+    if (message.sender !== 'bot') {
+      return false;
+    }
+
+    if (!message.timestamp) {
+      return true;
+    }
+
+    return new Date(message.timestamp).getTime() >= state.pendingSince!;
+  });
+}
+
+function schedulePendingRefresh(chatId: string) {
+  const state = messageStates.get(chatId);
+  if (!state || state.pendingCount === 0) {
+    return;
+  }
+
+  if (!isPendingFresh(state.pendingSince)) {
+    clearPendingState(chatId, state);
+    notifyMessages(chatId);
+    return;
+  }
+
+  if (pendingPollTimers.has(chatId)) {
+    return;
+  }
+
+  const timer = window.setTimeout(() => {
+    pendingPollTimers.delete(chatId);
+    refreshChatMessages(chatId);
+  }, PENDING_POLL_INTERVAL_MS);
+
+  pendingPollTimers.set(chatId, timer);
+}
+
+function hydrateCachedPendingStates() {
+  const cachedStates = readCachedMessageStates();
+
+  Object.entries(cachedStates).forEach(([chatId, cachedState]) => {
+    if (messageStates.has(chatId) || !isPendingFresh(cachedState.pendingSince)) {
+      return;
+    }
+
+    const state = normalizeCachedMessageState(cachedState);
+    if (state.pendingCount > 0) {
+      messageStates.set(chatId, state);
+      schedulePendingRefresh(chatId);
+    }
+  });
 }
 
 function toTitleCase(text: string) {
@@ -220,6 +373,8 @@ export interface ChatProgressSnapshot {
 }
 
 export function getChatProgressSnapshot(): ChatProgressSnapshot {
+  hydrateCachedPendingStates();
+
   const pendingEntries = Array.from(messageStates.entries())
     .filter(([, state]) => state.pendingCount > 0)
     .sort(([, firstState], [, secondState]) => (
@@ -346,17 +501,24 @@ export function subscribeChatMessages(chatId: string, listener: Listener) {
 
 export async function refreshChatMessages(chatId: string) {
   const state = getMessageState(chatId);
-  state.loading = state.messages.length === 0;
+  state.loading = state.messages.length === 0 && state.pendingCount === 0;
   notifyMessages(chatId);
 
   try {
     const fetchedMessages = await getMessages(chatId);
     state.messages = mergeFetchedMessages(state.messages, fetchedMessages);
+    if (hasFetchedResponseForPending(state, fetchedMessages)) {
+      clearPendingState(chatId, state);
+    } else {
+      persistMessageState(chatId, state);
+    }
   } catch (error) {
     console.error("Failed to fetch messages:", error);
   } finally {
     state.loading = false;
+    persistMessageState(chatId, state);
     notifyMessages(chatId);
+    schedulePendingRefresh(chatId);
   }
 }
 
@@ -364,6 +526,7 @@ export function replaceChatMessages(chatId: string, messages: Message[]) {
   const state = getMessageState(chatId);
   state.messages = messages;
   state.loading = false;
+  persistMessageState(chatId, state);
   notifyMessages(chatId);
 }
 
@@ -382,6 +545,7 @@ export async function sendChatMessage(chatId: string, text: string) {
   state.pendingCount += 1;
   state.pendingSince = state.pendingSince ?? Date.now();
   state.lastPendingText = text;
+  persistMessageState(chatId, state);
   notifyMessages(chatId);
   notifyProgress();
 
@@ -391,6 +555,7 @@ export async function sendChatMessage(chatId: string, text: string) {
       ...state.messages.filter(message => message.id !== replyMessage.id),
       replyMessage,
     ];
+    persistMessageState(chatId, state);
     return replyMessage;
   } catch (error) {
     console.error("Failed to post message:", error);
@@ -401,6 +566,7 @@ export async function sendChatMessage(chatId: string, text: string) {
       state.pendingSince = null;
       state.lastPendingText = "";
     }
+    persistMessageState(chatId, state);
     notifyMessages(chatId);
     notifyProgress();
   }

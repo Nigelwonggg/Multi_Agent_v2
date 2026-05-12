@@ -28,6 +28,10 @@ class LLMFactory:
         self._services: Dict[LLMProvider, BaseLLMService] = {}
         self._embedding_service = None
         self._initialized = False
+        self._service_getters = {
+            LLMProvider.GEMINI: get_gemini_service,
+            LLMProvider.OPENAI: get_openai_service,
+        }
     
     def initialize(self) -> None:
         """Initialize all services"""
@@ -39,8 +43,11 @@ class LLMFactory:
         try:
             # Initialize services
             self._services[LLMProvider.GEMINI] = get_gemini_service()
+            self._services[LLMProvider.GEMINI].initialize()
             self._services[LLMProvider.OPENAI] = get_openai_service() 
+            self._services[LLMProvider.OPENAI].initialize()
             self._embedding_service = get_embedding_service()
+            self._embedding_service.initialize()
             
             self._initialized = True
             self.logger.info("✅ LLM Factory initialized successfully")
@@ -51,12 +58,13 @@ class LLMFactory:
     
     def get_service(self, provider: LLMProvider) -> BaseLLMService:
         """Get LLM service by provider"""
-        if not self._initialized:
-            self.initialize()
-            
-        if provider not in self._services:
-            available = list(self._services.keys())
+        if provider not in self._service_getters:
+            available = list(self._service_getters.keys())
             raise ValueError(f"Provider '{provider}' not available. Available: {available}")
+
+        if provider not in self._services:
+            self.logger.info(f"Lazy loading LLM provider: {provider.value}")
+            self._services[provider] = self._service_getters[provider]()
             
         return self._services[provider]
     
@@ -70,8 +78,8 @@ class LLMFactory:
     
     def get_embedding_service(self):
         """Get embedding service"""
-        if not self._initialized:
-            self.initialize()
+        if self._embedding_service is None:
+            self._embedding_service = get_embedding_service()
         return self._embedding_service
     
     def get_model(self, provider: LLMProvider, model_name: Optional[str] = None):
@@ -87,11 +95,12 @@ class LLMFactory:
     
     def list_available_models(self) -> Dict[str, List[str]]:
         """Get all available models by provider"""
-        if not self._initialized:
-            self.initialize()
-            
         models = {}
-        for provider, service in self._services.items():
+        for provider, service_getter in self._service_getters.items():
+            service = self._services.get(provider)
+            if service is None:
+                service = service_getter()
+                self._services[provider] = service
             models[provider.value] = service.get_available_models()
         return models
     
@@ -108,5 +117,4 @@ def get_llm_factory() -> LLMFactory:
     global _factory_instance
     if _factory_instance is None:
         _factory_instance = LLMFactory()
-        _factory_instance.initialize()
     return _factory_instance

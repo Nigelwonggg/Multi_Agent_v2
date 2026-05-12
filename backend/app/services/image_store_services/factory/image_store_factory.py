@@ -26,6 +26,10 @@ class ImageStoreFactory:
         self.logger = get_logger("services.image_store_factory")
         self._stores: Dict[ImageStoreDomain, BaseImageStoreService] = {}
         self._initialized = False
+        self._store_classes = {
+            ImageStoreDomain.DATA_SCIENCE: DataScienceImageStore,
+            ImageStoreDomain.MEDICAL: MedicalImageStore,
+        }
     
     def initialize(self) -> None:
         """Initialize all image store services"""
@@ -35,9 +39,9 @@ class ImageStoreFactory:
         self.logger.info("🏭 Initializing Image Store Factory...")
         
         try:
-            # Initialize domain-specific stores
-            self._stores[ImageStoreDomain.DATA_SCIENCE] = DataScienceImageStore()
-            self._stores[ImageStoreDomain.MEDICAL] = MedicalImageStore()
+            for domain, store_class in self._store_classes.items():
+                if domain not in self._stores:
+                    self._stores[domain] = store_class()
             
             self._initialized = True
             self.logger.info("✅ Image Store Factory initialized successfully")
@@ -48,12 +52,14 @@ class ImageStoreFactory:
     
     def get_store(self, domain: ImageStoreDomain) -> BaseImageStoreService:
         """Get image store service by domain"""
-        if not self._initialized:
-            self.initialize()
-            
-        if domain not in self._stores:
-            available = list(self._stores.keys())
+        if domain not in self._store_classes:
+            available = list(self._store_classes.keys())
             raise ValueError(f"Domain '{domain}' not available. Available: {available}")
+
+        if domain not in self._stores:
+            self.logger.info(f"Lazy loading image store for domain: {domain.value}")
+            self._stores[domain] = self._store_classes[domain]()
+            self._initialized = len(self._stores) == len(self._store_classes)
             
         return self._stores[domain]
     
@@ -67,10 +73,7 @@ class ImageStoreFactory:
     
     def list_available_domains(self) -> Dict[str, str]:
         """Get all available domains"""
-        if not self._initialized:
-            self.initialize()
-            
-        return {domain.value: domain.name for domain in self._stores.keys()}
+        return {domain.value: domain.name for domain in self._store_classes.keys()}
     
     def is_initialized(self) -> bool:
         """Check if factory is initialized"""
@@ -94,5 +97,4 @@ def get_image_store_factory() -> ImageStoreFactory:
     global _image_store_factory_instance
     if _image_store_factory_instance is None:
         _image_store_factory_instance = ImageStoreFactory()
-        _image_store_factory_instance.initialize()
     return _image_store_factory_instance

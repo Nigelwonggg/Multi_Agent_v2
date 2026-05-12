@@ -63,5 +63,4 @@ def get_embedding_service() -> EmbeddingService:
     global _embedding_instance
     if _embedding_instance is None:
         _embedding_instance = EmbeddingService()
-        _embedding_instance.initialize()
     return _embedding_instance

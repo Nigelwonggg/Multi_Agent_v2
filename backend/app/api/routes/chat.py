@@ -1,4 +1,5 @@
 import base64
+import os
 import time
 import json
 from datetime import datetime
@@ -22,6 +23,14 @@ from app.utils.logging_config import get_logger
 logger = get_logger("api.routes.chat")
 
 router = APIRouter()
+
+
+def get_graph_recursion_limit() -> int:
+    try:
+        return max(4, int(os.getenv("CHAT_GRAPH_RECURSION_LIMIT", "8")))
+    except (TypeError, ValueError):
+        return 8
+
 
 def generate_request_id() -> str:
     """Generate a unique request ID for tracking"""
@@ -150,7 +159,10 @@ async def chat(
             db=db
         )
 
-        result = chat_graph.invoke(initial_state)
+        result = chat_graph.invoke(
+            initial_state,
+            config={"recursion_limit": get_graph_recursion_limit()}
+        )
         
         # DEBUG: Log the full graph result to see what keys are available
         logger.debug(f"🔍 Full graph result keys: {list(result.keys())}")

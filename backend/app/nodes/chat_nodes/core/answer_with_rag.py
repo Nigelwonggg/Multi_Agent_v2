@@ -140,8 +140,11 @@ class RAGAnswerNode(BaseNode):
 
         except Exception as e:
             self.logger.error(f"❌ Error generating RAG answer: {str(e)}")
+            fallback_answer = "I found relevant material, but the model service is busy right now. Please try again shortly."
             return {
-                "answer": f"Error generating answer: {str(e)}",
+                "text_answer": fallback_answer,
+                "final_answer": fallback_answer,
+                "used_docs": [],
             }
         
 answer_with_rag = RAGAnswerNode()

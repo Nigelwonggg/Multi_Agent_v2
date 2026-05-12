@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { FiArrowLeft, FiSave, FiUpload, FiX } from 'react-icons/fi';
 import { createImageDocument } from '../api/imageStoreApi';
 import './AddImagePage.css';
 
 const AddImagePage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const domain = searchParams.get('domain') || 'data_science';
   const [newImage, setNewImage] = useState({
     image_base64: '',
     image_summary: '',
@@ -49,9 +52,8 @@ const AddImagePage: React.FC = () => {
     setError(null);
 
     try {
-      await createImageDocument(newImage);
-      alert('Image document added successfully!');
-      navigate('/vector-database/image-store'); // Navigate back to the image store page
+      await createImageDocument(newImage, domain);
+      navigate(`/vector-database/image-store?domain=${encodeURIComponent(domain)}`);
     } catch (err) {
       console.error('Failed to add image document:', err);
       setError('Failed to add image document. Please try again.');
@@ -60,18 +62,46 @@ const AddImagePage: React.FC = () => {
     }
   };
 
-  const handleCancel = () => {
-    navigate('/vector-database/image-store'); // Go back to the image store page
+  const handleBack = () => {
+    navigate(`/vector-database/image-store?domain=${encodeURIComponent(domain)}`);
   };
+
+  const imagePreviewSrc = newImage.image_base64
+    ? `data:image/jpeg;base64,${newImage.image_base64}`
+    : null;
 
   return (
     <div className="add-image-container">
-      <h1>Add New Image Document</h1>
+      <div className="add-image-header">
+        <button type="button" className="back-btn" onClick={handleBack}>
+          <FiArrowLeft />
+          <span>Back</span>
+        </button>
+        <div>
+          <h1>Add New Image Document</h1>
+          <p>{domain.replace('_', ' ')} image store</p>
+        </div>
+      </div>
       <form onSubmit={handleSubmit} className="add-image-form">
         <div className="form-group">
           <label htmlFor="image_file">Upload Image:</label>
           <input type="file" id="image_file" accept="image/*" onChange={handleFileChange} />
-          {newImage.image_base64 && <p>File selected: {newImage.filename}</p>}
+          {newImage.image_base64 && (
+            <p className="selected-file-note">
+              <FiUpload />
+              <span>{newImage.filename}</span>
+            </p>
+          )}
+        </div>
+        <div className="form-group">
+          <label>Image Preview:</label>
+          <div className="image-preview-card">
+            {imagePreviewSrc ? (
+              <img src={imagePreviewSrc} alt="Selected document" className="current-document-image" />
+            ) : (
+              <span>No image selected</span>
+            )}
+          </div>
         </div>
         <div className="form-group">
           <label htmlFor="image_summary">Image Summary:</label>
@@ -90,11 +120,13 @@ const AddImagePage: React.FC = () => {
           <input type="number" id="page_number" name="page_number" value={newImage.page_number ?? ''} onChange={handleChange} />
         </div>
         <div className="form-actions">
-          <button type="submit" className="submit-btn" disabled={loading || !newImage.image_base64}>
-            {loading ? 'Adding...' : 'Submit'}
+          <button type="button" className="cancel-btn" onClick={handleBack} disabled={loading}>
+            <FiX />
+            <span>Cancel</span>
           </button>
-          <button type="button" className="cancel-btn" onClick={handleCancel} disabled={loading}>
-            Cancel
+          <button type="submit" className="submit-btn" disabled={loading || !newImage.image_base64}>
+            <FiSave />
+            <span>{loading ? 'Adding...' : 'Save'}</span>
           </button>
         </div>
         {error && <div className="error-message">{error}</div>}

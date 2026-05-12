@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { FiArrowLeft, FiSave, FiX } from 'react-icons/fi';
 import { getTextDocument, updateTextDocument } from '../api/textStoreApi';
 import type { TextDocument } from '../api/textStoreApi';
 import './EditDocumentPage.css';
@@ -11,6 +12,7 @@ const EditDocumentPage: React.FC = () => {
   const domain = searchParams.get('domain') || 'data_science';
   const [document, setDocument] = useState<TextDocument | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,6 +50,9 @@ const EditDocumentPage: React.FC = () => {
     e.preventDefault();
     if (!document || !docId) return;
 
+    setSaving(true);
+    setError(null);
+
     try {
       await updateTextDocument(docId, {
         summary_text: document.summary_text,
@@ -56,33 +61,51 @@ const EditDocumentPage: React.FC = () => {
         filename: document.filename,
         page_number: document.page_number,
       }, domain);
-      alert('Document updated successfully!');
       navigate(`/vector-database/text-store?domain=${encodeURIComponent(domain)}`);
     } catch (err) {
       console.error('Failed to update document:', err);
       setError('Failed to update document. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleCancel = () => {
+  const handleBack = () => {
     navigate(`/vector-database/text-store?domain=${encodeURIComponent(domain)}`);
   };
 
   if (loading) {
-    return <div className="edit-document-container">Loading document...</div>;
+    return <div className="edit-document-container edit-document-state">Loading document...</div>;
   }
 
-  if (error) {
-    return <div className="edit-document-container error-message">{error}</div>;
+  if (error && !document) {
+    return (
+      <div className="edit-document-container edit-document-state">
+        <button type="button" className="back-btn" onClick={handleBack}>
+          <FiArrowLeft />
+          <span>Back</span>
+        </button>
+        <div className="error-message">{error}</div>
+      </div>
+    );
   }
 
   if (!document) {
-    return <div className="edit-document-container">Document not found.</div>;
+    return <div className="edit-document-container edit-document-state">Document not found.</div>;
   }
 
   return (
     <div className="edit-document-container">
-      <h1>Edit Document</h1>
+      <div className="edit-document-header">
+        <button type="button" className="back-btn" onClick={handleBack}>
+          <FiArrowLeft />
+          <span>Back</span>
+        </button>
+        <div>
+          <h1>Edit Document</h1>
+          <p>{domain.replace('_', ' ')} text store</p>
+        </div>
+      </div>
       <form onSubmit={handleSubmit} className="edit-document-form">
         <div className="form-group">
           <label htmlFor="doc_id">Document ID:</label>
@@ -108,9 +131,16 @@ const EditDocumentPage: React.FC = () => {
           <label htmlFor="raw_text">Raw Text:</label>
           <textarea id="raw_text" name="raw_text" value={document.raw_text} onChange={handleChange} rows={15}></textarea>
         </div>
+        {error && <div className="error-message">{error}</div>}
         <div className="form-actions">
-          <button type="submit" className="submit-btn">Submit</button>
-          <button type="button" className="cancel-btn" onClick={handleCancel}>Cancel</button>
+          <button type="button" className="cancel-btn" onClick={handleBack} disabled={saving}>
+            <FiX />
+            <span>Cancel</span>
+          </button>
+          <button type="submit" className="submit-btn" disabled={saving}>
+            <FiSave />
+            <span>{saving ? 'Saving...' : 'Save'}</span>
+          </button>
         </div>
       </form>
     </div>

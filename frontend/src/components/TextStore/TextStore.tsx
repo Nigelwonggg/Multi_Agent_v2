@@ -24,6 +24,9 @@ const TextStore: React.FC = () => {
   });
   const [selectedDomain, setSelectedDomain] = useState(domainFromQuery);
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
+  const [deleteCandidate, setDeleteCandidate] = useState<TextDocument | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const pageSize = 10;
   const navigate = useNavigate();
 
@@ -62,14 +65,16 @@ const TextStore: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!domainFromQuery) {
-      return;
-    }
-
     // Sync only when URL query value itself changes.
-    setSelectedDomain(domainFromQuery);
-    setCurrentPage(1);
-    setFilters({ category: "", filename: "" });
+    setSelectedDomain((previousDomain) => {
+      if (previousDomain === domainFromQuery) {
+        return previousDomain;
+      }
+
+      setCurrentPage(1);
+      setFilters({ category: "", filename: "" });
+      return domainFromQuery;
+    });
   }, [domainFromQuery]);
 
   const handleFilterChange = useCallback((newFilters: {
@@ -80,24 +85,31 @@ const TextStore: React.FC = () => {
     setFilters(newFilters);
   }, []);
 
-  const handleDelete = async (docId: string) => {
-    if (window.confirm("Are you sure you want to delete this document?")) {
-      try {
-        await deleteTextDocument(docId, selectedDomain);
-        // Refetch documents after deletion
-        const response = await getTextDocuments(
-          currentPage,
-          pageSize,
-          filters.category || null,
-          filters.filename || null,
-          null,
-          selectedDomain
-        );
-        setDocuments(response.documents);
-        setTotalPages(Math.ceil(response.total / pageSize));
-      } catch (error) {
-        console.error("Failed to delete document:", error);
-      }
+  const handleDeleteRequest = (doc: TextDocument) => {
+    setDeleteCandidate(doc);
+    setDeleteError(null);
+  };
+
+  const handleDeleteCancel = () => {
+    if (deleting) return;
+    setDeleteCandidate(null);
+    setDeleteError(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteCandidate?.doc_id) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteTextDocument(deleteCandidate.doc_id, selectedDomain);
+      setDeleteCandidate(null);
+      await fetchDocuments();
+    } catch (error) {
+      console.error("Failed to delete document:", error);
+      setDeleteError("Failed to delete this document. Please try again.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -213,17 +225,19 @@ const TextStore: React.FC = () => {
                   <td>
                     <div className="action-buttons">
                       <button className="action-btn edit-btn" title="Edit" onClick={() => {
+                        if (!doc.doc_id) return;
                         sessionStorage.setItem('currentPage', currentPage.toString());
                         sessionStorage.setItem('filters', JSON.stringify(filters));
                         navigate(`/vector-database/text-store/edit/${doc.doc_id}?domain=${encodeURIComponent(selectedDomain)}`);
-                      }}>
+                      }} disabled={!doc.doc_id}>
                         <FiEdit />
                         <span>Edit</span>
                       </button>
                       <button
                         className="action-btn delete-btn"
                         title="Delete"
-                        onClick={() => handleDelete(doc.doc_id || '')}
+                        onClick={() => handleDeleteRequest(doc)}
+                        disabled={!doc.doc_id}
                       >
                         <FiTrash2 />
                         <span>Delete</span>
@@ -241,6 +255,35 @@ const TextStore: React.FC = () => {
             onPageChange={setCurrentPage}
           />
         </>
+      )}
+
+      {deleteCandidate && (
+        <div className="store-delete-modal-backdrop" role="presentation" onClick={handleDeleteCancel}>
+          <div
+            className="store-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="text-delete-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="store-delete-modal-icon">
+              <FiTrash2 />
+            </div>
+            <h2 id="text-delete-title">Delete text?</h2>
+            <p>
+              This will remove <strong>{deleteCandidate.filename || deleteCandidate.doc_id}</strong> from the {selectedDomain.replace('_', ' ')} text store.
+            </p>
+            {deleteError && <div className="store-delete-modal-error">{deleteError}</div>}
+            <div className="store-delete-modal-actions">
+              <button type="button" className="store-modal-cancel" onClick={handleDeleteCancel} disabled={deleting}>
+                Cancel
+              </button>
+              <button type="button" className="store-modal-delete" onClick={handleDeleteConfirm} disabled={deleting}>
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

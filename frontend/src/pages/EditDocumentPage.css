@@ -1,19 +1,73 @@
 .edit-document-container {
-  padding: 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  max-width: 800px;
+  max-width: 1120px;
   margin: 20px auto;
-  background-color: var(--background-color);
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+    'Helvetica Neue', sans-serif;
+  color: #e0e0e0;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
-.edit-document-container h1 {
-  color: var(--text-color);
-  margin-bottom: 20px;
-  text-align: center;
+.edit-document-state {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.edit-document-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.edit-document-header h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.8rem;
+  text-align: right;
+}
+
+.edit-document-header p {
+  margin: 4px 0 0;
+  color: #a0a0a0;
+  font-size: 0.9rem;
+  text-align: right;
+  text-transform: capitalize;
+}
+
+.back-btn,
+.edit-document-form .submit-btn,
+.edit-document-form .cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.back-btn {
+  padding: 10px 14px;
+  background: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.back-btn:hover,
+.edit-document-form .cancel-btn:hover {
+  background: #3a3a3a;
 }
 
 .edit-document-form .form-group {
@@ -24,27 +78,35 @@
   display: block;
   margin-bottom: 5px;
   font-weight: bold;
-  color: var(--text-color);
+  color: #e0e0e0;
 }
 
 .edit-document-form input[type="text"],
+.edit-document-form input[type="number"],
 .edit-document-form textarea {
-  width: calc(100% - 20px); /* Account for padding */
+  width: 100%;
   padding: 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
   font-size: 1rem;
-  background-color: var(--input-bg-color);
-  color: var(--text-color);
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+.edit-document-form input:focus,
+.edit-document-form textarea:focus {
+  outline: none;
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15);
 }
 
 .edit-document-form textarea {
   resize: vertical;
 }
 
-.edit-document-form input[type="text"]:disabled {
-  background-color: var(--disabled-bg-color);
-  color: var(--disabled-text-color);
+.edit-document-form input:disabled {
+  background-color: #0f0f0f;
+  color: #808080;
   cursor: not-allowed;
 }
 
@@ -57,27 +119,57 @@
 
 .edit-document-form .submit-btn,
 .edit-document-form .cancel-btn {
+  min-width: 110px;
   padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: bold;
 }
 
 .edit-document-form .submit-btn {
-  background-color: var(--primary-color);
-  color: white;
+  background-color: var(--accent, #d4af37);
+  color: #0d0900;
+}
+
+.edit-document-form .submit-btn:hover {
+  background-color: #e2bd45;
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
 }
 
 .edit-document-form .cancel-btn {
-  background-color: var(--secondary-color);
-  color: white;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.edit-document-form .submit-btn:disabled,
+.edit-document-form .cancel-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .edit-document-container .error-message {
-  color: var(--danger-color);
-  text-align: center;
-  margin-top: 20px;
+  padding: 10px 12px;
+  border: 1px solid rgba(220, 53, 69, 0.35);
+  border-radius: 6px;
+  background: rgba(220, 53, 69, 0.12);
+  color: #ffb4bd;
   font-weight: bold;
+}
+
+@media (max-width: 640px) {
+  .edit-document-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .edit-document-header h1,
+  .edit-document-header p {
+    text-align: left;
+  }
+
+  .edit-document-form .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .edit-document-form .submit-btn,
+  .edit-document-form .cancel-btn {
+    width: 100%;
+  }
 }

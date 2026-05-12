@@ -296,12 +296,12 @@ const QuizCreationPage: React.FC = () => {
             {q.type === "short" && (
               <div className="qc-options">
                 <p className="qc-short-note">
-                  Enter correct answer:
+                  Enter keywords (separate with commas for multiple required keywords):
                 </p>
 
                 <input
                   className="qc-input"
-                  placeholder="Correct answer"
+                  placeholder="e.g. DNA, helix, genetic"
                   value={q.shortAnswer || ""}
                   onChange={(e) =>
                     updateShortAnswer(q.id, e.target.value)

@@ -19,7 +19,9 @@ import RetrievedContentPage from './pages/RetrievedContentPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import QuizEditPage from './pages/QuizEditPage';
-// import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
+import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
+import QuizListPage from './pages/QuizListPage';
+import QuizTakePage from './pages/QuizTakePage';
 
 // Simple component to protect routes
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
@@ -55,6 +57,9 @@ function App() {
       <Route path="/quiz" element={<QuizPage />} />
       <Route path="/quiz/create" element={<QuizCreationPage />} />
       <Route path="/quiz/edit" element={<QuizEditPage />} />
+      <Route path="/quiz/edit/:id" element={<QuizEditDetailsPage />} />
+      <Route path="/quiz/list" element={<QuizListPage />} />
+      <Route path="/quiz/take/:id" element={<QuizTakePage />} />
     
       
       <Route path="/chat" element={

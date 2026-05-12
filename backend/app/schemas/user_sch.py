@@ -8,6 +8,7 @@ class UserBase(BaseModel):
     role: Optional[str] = "student" # Default to student
 
 class UserCreate(UserBase):
+    institutional_id: str
     password: str
     security_question: str
     security_answer: str
@@ -30,3 +31,42 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+
+class IdentityVerificationRequest(BaseModel):
+    institutional_id: str
+
+
+class IdentityVerificationResponse(BaseModel):
+    institutional_id: str
+    full_name: str
+    role: str
+    claimed: bool = False
+
+
+class IdentityRegistryEntryResponse(BaseModel):
+    id: int
+    institutional_id: str
+    full_name: str
+    role: str
+    claimed_by_user_id: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class IdentityRegistrySummary(BaseModel):
+    total_count: int
+    student_count: int
+    lecturer_count: int
+    claimed_count: int
+    unclaimed_count: int
+
+
+class IdentityRegistryUploadResponse(BaseModel):
+    created_count: int
+    updated_count: int
+    skipped_count: int
+    total_processed: int

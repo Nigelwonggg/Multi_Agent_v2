@@ -9,10 +9,16 @@ interface TopNavBarProps {
 const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  const activeStore = location.pathname.includes('/image-store') || params.get('tab') === 'image' ? 'image' : 'text';
+  const isRegistryPage = location.pathname.includes('/id-registry');
+  const activeStore = location.pathname.includes('/id-registry')
+    ? 'registry'
+    : location.pathname.includes('/image-store') || params.get('tab') === 'image'
+      ? 'image'
+      : 'text';
 
   let textStorePath: string;
   let imageStorePath: string;
+  let registryPath: string | null = null;
 
   if (basePath === '/retrieved-content') {
     const textParams = new URLSearchParams(location.search);
@@ -25,22 +31,40 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) 
   } else {
     textStorePath = `${basePath}/text-store`;
     imageStorePath = `${basePath}/image-store`;
+    registryPath = `${basePath}/id-registry`;
   }
 
   return (
     <nav className="top-nav-bar">
-      <div className="logo">Vector DB</div>
+      <div className="logo">{isRegistryPage ? 'Settings' : 'Vector DB'}</div>
       <div className="nav-links">
-        <Link
-          to={textStorePath}
-          className={`nav-link ${activeStore === 'text' ? 'active' : ''}`}>
-          Text Store
-        </Link>
-        <Link
-          to={imageStorePath}
-          className={`nav-link ${activeStore === 'image' ? 'active' : ''}`}>
-          Image Store
-        </Link>
+        {isRegistryPage ? (
+          <Link
+            to={registryPath || `${basePath}/id-registry`}
+            className={`nav-link ${activeStore === 'registry' ? 'active' : ''}`}>
+            User Registry
+          </Link>
+        ) : (
+          <>
+            <Link
+              to={textStorePath}
+              className={`nav-link ${activeStore === 'text' ? 'active' : ''}`}>
+              Text Store
+            </Link>
+            <Link
+              to={imageStorePath}
+              className={`nav-link ${activeStore === 'image' ? 'active' : ''}`}>
+              Image Store
+            </Link>
+            {registryPath && (
+              <Link
+                to={registryPath}
+                className={`nav-link ${activeStore === 'registry' ? 'active' : ''}`}>
+                User Registry
+              </Link>
+            )}
+          </>
+        )}
       </div>
     </nav>
   );

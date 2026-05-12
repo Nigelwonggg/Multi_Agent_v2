@@ -19,6 +19,7 @@ import RetrievedContentPage from './pages/RetrievedContentPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import QuizEditPage from './pages/QuizEditPage';
+import IdentityRegistryPage from './pages/IdentityRegistryPage';
 // import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
 
 // Simple component to protect routes
@@ -79,6 +80,7 @@ function App() {
         <Route path="image-store" element={<ImageStore />} />
         <Route path="image-store/add" element={<AddImagePage />} />
         <Route path="image-store/edit/:docId" element={<EditImagePage />} />
+        <Route path="id-registry" element={<IdentityRegistryPage />} />
       </Route>
 
       <Route path="/retrieved-content" element={
@@ -93,4 +95,3 @@ function App() {
 }
 
 export default App;
-

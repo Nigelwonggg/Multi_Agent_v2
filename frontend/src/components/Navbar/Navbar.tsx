@@ -63,10 +63,17 @@ const Navbar = () => {
     if (to === "/") return location.pathname === "/";
     if (to.startsWith("#")) return false; 
     if (to === "/vector-database") {
-      return location.pathname.startsWith("/vector-database") && !location.pathname.startsWith("/vector-database/id-registry");
+      return (
+        location.pathname.startsWith("/vector-database") &&
+        !location.pathname.startsWith("/vector-database/id-registry") &&
+        !location.pathname.startsWith("/vector-database/unit-manager")
+      );
     }
     if (to === "/vector-database/id-registry") {
-      return location.pathname.startsWith("/vector-database/id-registry");
+      return (
+        location.pathname.startsWith("/vector-database/id-registry") ||
+        location.pathname.startsWith("/vector-database/unit-manager")
+      );
     }
     return location.pathname.startsWith(to);
   };

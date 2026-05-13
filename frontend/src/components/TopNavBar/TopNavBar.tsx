@@ -9,9 +9,12 @@ interface TopNavBarProps {
 const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  const isRegistryPage = location.pathname.includes('/id-registry');
+  const isSettingsPage =
+    location.pathname.includes('/id-registry') || location.pathname.includes('/unit-manager');
   const activeStore = location.pathname.includes('/id-registry')
     ? 'registry'
+    : location.pathname.includes('/unit-manager')
+      ? 'units'
     : location.pathname.includes('/image-store') || params.get('tab') === 'image'
       ? 'image'
       : 'text';
@@ -19,6 +22,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) 
   let textStorePath: string;
   let imageStorePath: string;
   let registryPath: string | null = null;
+  let unitManagerPath: string | null = null;
 
   if (basePath === '/retrieved-content') {
     const textParams = new URLSearchParams(location.search);
@@ -32,18 +36,26 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) 
     textStorePath = `${basePath}/text-store`;
     imageStorePath = `${basePath}/image-store`;
     registryPath = `${basePath}/id-registry`;
+    unitManagerPath = `${basePath}/unit-manager`;
   }
 
   return (
     <nav className="top-nav-bar">
-      <div className="logo">{isRegistryPage ? 'Settings' : 'Vector DB'}</div>
+      <div className="logo">{isSettingsPage ? 'Settings' : 'Vector DB'}</div>
       <div className="nav-links">
-        {isRegistryPage ? (
-          <Link
-            to={registryPath || `${basePath}/id-registry`}
-            className={`nav-link ${activeStore === 'registry' ? 'active' : ''}`}>
-            User Registry
-          </Link>
+        {isSettingsPage ? (
+          <>
+            <Link
+              to={registryPath || `${basePath}/id-registry`}
+              className={`nav-link ${activeStore === 'registry' ? 'active' : ''}`}>
+              User Registry
+            </Link>
+            <Link
+              to={unitManagerPath || `${basePath}/unit-manager`}
+              className={`nav-link ${activeStore === 'units' ? 'active' : ''}`}>
+              Unit Manager
+            </Link>
+          </>
         ) : (
           <>
             <Link
@@ -61,6 +73,13 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) 
                 to={registryPath}
                 className={`nav-link ${activeStore === 'registry' ? 'active' : ''}`}>
                 User Registry
+              </Link>
+            )}
+            {unitManagerPath && (
+              <Link
+                to={unitManagerPath}
+                className={`nav-link ${activeStore === 'units' ? 'active' : ''}`}>
+                Unit Manager
               </Link>
             )}
           </>

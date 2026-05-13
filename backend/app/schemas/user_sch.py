@@ -44,12 +44,41 @@ class IdentityVerificationResponse(BaseModel):
     claimed: bool = False
 
 
+class UnitResponse(BaseModel):
+    id: int
+    unit_code: str
+    unit_name: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UnitCreateRequest(BaseModel):
+    unit_code: str
+    unit_name: str
+
+
+class UnitDeleteResponse(BaseModel):
+    deleted_unit_id: int
+    deleted_unit_code: str
+
+
+class UnitUploadResponse(BaseModel):
+    created_count: int
+    updated_count: int
+    skipped_count: int
+    total_processed: int
+
+
 class IdentityRegistryEntryResponse(BaseModel):
     id: int
     institutional_id: str
     full_name: str
     role: str
     claimed_by_user_id: Optional[int] = None
+    assigned_units: list[UnitResponse] = []
     created_at: datetime
     updated_at: datetime
 
@@ -70,3 +99,14 @@ class IdentityRegistryUploadResponse(BaseModel):
     updated_count: int
     skipped_count: int
     total_processed: int
+
+
+class IdentityRegistryDeleteResponse(BaseModel):
+    deleted_identity_id: int
+    deleted_institutional_id: str
+    deleted_user_account: bool
+    deleted_user_full_name: Optional[str] = None
+
+
+class AssignedUnitsUpdateRequest(BaseModel):
+    unit_ids: list[int]

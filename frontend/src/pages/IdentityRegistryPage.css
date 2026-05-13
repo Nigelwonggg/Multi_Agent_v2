@@ -40,6 +40,10 @@
   line-height: 1.6;
 }
 
+.identity-warning {
+  margin-top: 12px;
+}
+
 .identity-registry-summary {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -127,6 +131,50 @@
   cursor: not-allowed;
 }
 
+.secondary-action-button {
+  padding: 10px 12px;
+  border: 1px solid rgba(212, 175, 55, 0.24);
+  border-radius: 10px;
+  background: rgba(212, 175, 55, 0.08);
+  color: var(--accent, #d4af37);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.secondary-action-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: rgba(212, 175, 55, 0.14);
+  border-color: rgba(212, 175, 55, 0.38);
+}
+
+.secondary-action-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.delete-entry-button {
+  padding: 10px 12px;
+  border: 1px solid rgba(229, 81, 81, 0.28);
+  border-radius: 10px;
+  background: rgba(229, 81, 81, 0.12);
+  color: #ffaaaa;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.delete-entry-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: rgba(229, 81, 81, 0.18);
+  border-color: rgba(229, 81, 81, 0.4);
+}
+
+.delete-entry-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .status-message {
   padding: 12px 14px;
   border-radius: 12px;
@@ -153,6 +201,35 @@
   margin-bottom: 18px;
 }
 
+.registry-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.registry-toolbar-field label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-muted, #b6b6b6);
+  font-weight: 600;
+}
+
+.registry-toolbar-field input,
+.registry-toolbar-field select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border, rgba(212, 175, 55, 0.16));
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text, #ffffff);
+  box-sizing: border-box;
+}
+
+.registry-search-field {
+  min-width: 0;
+}
+
 .panel-chip {
   padding: 6px 10px;
   border-radius: 999px;
@@ -161,6 +238,34 @@
   color: var(--accent, #d4af37);
   text-transform: capitalize;
   font-size: 0.82rem;
+}
+
+.unit-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.unit-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--accent, #d4af37);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.empty-inline-text {
+  color: var(--text-muted, #b6b6b6);
+  font-size: 0.9rem;
+}
+
+.action-button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .registry-table-wrapper {
@@ -206,12 +311,81 @@
   color: var(--accent, #d4af37);
 }
 
+.unit-assignment-panel {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.unit-assignment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.unit-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.unit-checkbox-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(212, 175, 55, 0.16);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.unit-checkbox-card input {
+  margin-top: 2px;
+}
+
+.unit-checkbox-card strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.unit-checkbox-card span {
+  color: var(--text-muted, #b6b6b6);
+  line-height: 1.5;
+}
+
+.unit-assignment-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.inline-link {
+  color: var(--accent, #d4af37);
+  text-decoration: none;
+}
+
+.inline-link:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 1100px) {
   .identity-registry-summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .identity-registry-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .registry-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .unit-checkbox-grid {
     grid-template-columns: 1fr;
   }
 }

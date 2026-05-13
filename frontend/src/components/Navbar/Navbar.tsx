@@ -43,9 +43,8 @@ const Navbar = () => {
         { to: "/chat", label: "Chat" },
         { to: "/vector-database", label: "Vector DB" },
         { to: "/upload-pdf", label: "Upload PDF" },
-        { to: "/vector-database/id-registry", label: "Settings" },
         { to: "/quiz", label: "Quizzes" },
-      
+        { to: "/vector-database/id-registry", label: "Settings" },
       ];
     } else {
       // student role

@@ -14,7 +14,6 @@ const SignupPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('student');
   const [securityQuestion, setSecurityQuestion] = useState('');
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [verifying, setVerifying] = useState(false);
@@ -50,7 +49,6 @@ const SignupPage: React.FC = () => {
       }
 
       setVerifiedIdentity(payload);
-      setRole(payload.role);
       setSuccessMessage(`ID verified for ${payload.full_name}.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'ID verification failed.');
@@ -83,7 +81,7 @@ const SignupPage: React.FC = () => {
           email,
           full_name: verifiedIdentity.full_name,
           password,
-          role,
+          role: verifiedIdentity.role,
           security_question: securityQuestion,
           security_answer: securityAnswer,
         }),
@@ -160,18 +158,17 @@ const SignupPage: React.FC = () => {
             />
           </div>
           <div className="form-group">
-            <label>I am a:</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="role-select"
+            <label>Registered Role</label>
+            <input
+              type="text"
+              value={verifiedIdentity ? `${verifiedIdentity.role.charAt(0).toUpperCase()}${verifiedIdentity.role.slice(1)}` : ''}
+              readOnly
+              className="readonly-input"
+              placeholder="Verify your ID to load your assigned role"
               disabled={!verifiedIdentity}
-            >
-              <option value="student">Student</option>
-              <option value="lecturer">Lecturer</option>
-            </select>
+            />
             {verifiedIdentity && (
-              <p className="form-hint">This role must match the uploaded registry for the verified ID.</p>
+              <p className="form-hint">Your role is fixed by the uploaded registry and cannot be changed during sign up.</p>
             )}
           </div>
           <div className="form-row">

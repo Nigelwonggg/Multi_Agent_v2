@@ -50,6 +50,7 @@ const IdentityRegistryPage: React.FC = () => {
   const [summary, setSummary] = useState<RegistrySummary | null>(null);
   const [entries, setEntries] = useState<RegistryEntry[]>([]);
   const [availableUnits, setAvailableUnits] = useState<UnitRecord[]>([]);
+  const [uploadRole, setUploadRole] = useState<'student' | 'lecturer'>('student');
   const [selectedRole, setSelectedRole] = useState<'student' | 'lecturer'>('student');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -142,7 +143,7 @@ const IdentityRegistryPage: React.FC = () => {
     }
 
     const formData = new FormData();
-    formData.append('role', selectedRole);
+    formData.append('role', uploadRole);
     formData.append('file', selectedFile);
 
     try {
@@ -159,7 +160,7 @@ const IdentityRegistryPage: React.FC = () => {
 
       const result = payload as UploadResult;
       setMessage(
-        `Upload complete. ${result.created_count} created, ${result.updated_count} updated, ${result.skipped_count} skipped.`
+        `Upload complete for ${uploadRole} IDs. ${result.created_count} created, ${result.updated_count} updated, ${result.skipped_count} skipped.`
       );
       setSelectedFile(null);
       if (fileInputRef.current) {
@@ -314,13 +315,26 @@ const IdentityRegistryPage: React.FC = () => {
             CSV format: column 1 = institutional ID, column 2 = full name. If you still upload a third unit-code column, it will be kept only as legacy data and unit access should now be managed below.
           </p>
           <p className="panel-help">
-            The CSV will be uploaded into whichever registry type is currently selected in the Registered IDs panel.
+            Choose the role for this upload here. The table filter on the right is only for browsing and searching registered IDs.
           </p>
           <p className="panel-help identity-warning">
             Deleting a claimed ID from the table also deletes that user account and immediately blocks future logins.
           </p>
 
           <form onSubmit={handleUpload} className="identity-upload-form">
+            <div className="form-group">
+              <label htmlFor="registry-upload-role">Upload To</label>
+              <select
+                id="registry-upload-role"
+                value={uploadRole}
+                onChange={(e) => setUploadRole(e.target.value as 'student' | 'lecturer')}
+                disabled={uploading}
+              >
+                <option value="student">Student IDs</option>
+                <option value="lecturer">Lecturer IDs</option>
+              </select>
+            </div>
+
             <div className="form-group">
               <label htmlFor="registry-file">CSV File</label>
               <input

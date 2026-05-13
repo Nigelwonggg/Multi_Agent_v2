@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar/Navbar';
 import {
@@ -6,6 +6,7 @@ import {
   uploadPdfDocument,
 } from '../api/textStoreApi';
 import { usePdfUpload } from '../contexts/PdfUploadContext';
+import { FiUploadCloud, FiFile, FiCheckCircle, FiAlertCircle, FiTrash2, FiClock } from 'react-icons/fi';
 import './UploadPdfPage.css';
 
 const UploadPdfPage: React.FC = () => {
@@ -18,7 +19,10 @@ const UploadPdfPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [category, setCategory] = useState('general');
   const [domain, setDomain] = useState(initialDomain);
+  const [customDomain, setCustomDomain] = useState('');
+  const [showCustomDomain, setShowCustomDomain] = useState(false);
   const [domains, setDomains] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,23 +37,64 @@ const UploadPdfPage: React.FC = () => {
       .catch(() => setDomains(['data_science', 'medical']));
   }, []);
 
+  const handleDomainChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value === 'OTHER_CUSTOM_DOMAIN') {
+      setShowCustomDomain(true);
+      setDomain('');
+    } else {
+      setShowCustomDomain(false);
+      setDomain(value);
+    }
+  };
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        setSelectedFile(file);
+        setError(null);
+      } else {
+        setError('Please drop a valid PDF file.');
+      }
+    }
+  }, []);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
+
+    const finalDomain = showCustomDomain ? customDomain.trim().toLowerCase().replace(/\s+/g, '_') : domain;
+
+    if (!finalDomain) {
+      setError('Please select or enter a domain.');
+      return;
+    }
 
     if (!selectedFile) {
       setError('Please select a PDF file first.');
       return;
     }
 
-    if (!selectedFile.name.toLowerCase().endsWith('.pdf')) {
-      setError('Only .pdf files are supported.');
-      return;
-    }
-
     try {
       setUploading(true);
-      const response = await uploadPdfDocument(selectedFile, domain, category.trim() || 'general');
+      const response = await uploadPdfDocument(selectedFile, finalDomain, category.trim() || 'general');
       startTrackingJob(response.job_id);
     } catch (submitErr) {
       console.error('PDF upload failed:', submitErr);
@@ -60,10 +105,16 @@ const UploadPdfPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate(`/vector-database/text-store?domain=${encodeURIComponent(domain)}`);
+    const finalDomain = showCustomDomain ? customDomain.trim().toLowerCase().replace(/\s+/g, '_') : domain;
+    navigate(`/vector-database/text-store?domain=${encodeURIComponent(finalDomain)}`);
   };
 
   const isProcessing = activeJobStatus?.status === 'queued' || activeJobStatus?.status === 'processing';
+
+  const progressPercentage = useMemo(() => {
+    if (!activeJobStatus || activeJobStatus.total_pages === 0) return 0;
+    return Math.min(Math.round((activeJobStatus.processed_pages / activeJobStatus.total_pages) * 100), 100);
+  }, [activeJobStatus]);
 
   return (
     <div className="upload-pdf-page">
@@ -71,37 +122,36 @@ const UploadPdfPage: React.FC = () => {
       <div className="upload-pdf-hero">
         <div className="hero-content">
           <h1>Knowledge Ingestion</h1>
-          <p>Transform your PDF documents into searchable, AI-ready knowledge fragments.</p>
+          <p>Transform your documents into searchable, AI-ready knowledge fragments using advanced layout-aware processing.</p>
         </div>
       </div>
 
       <div className="upload-pdf-main">
         <div className="upload-grid">
-          <section className="upload-section">
+          <section className="upload-section animate-fade-in">
             <div className="card">
               <div className="card-header">
-                <h2>Document Upload</h2>
-                <p>Configure and select your PDF file</p>
+                <h2>Document Ingestion Hub</h2>
+                <p>Configure your target vector database and select source documents.</p>
               </div>
               
               <form onSubmit={handleSubmit} className="upload-pdf-form">
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="pdf-domain">Target Domain</label>
-                    <div className="select-wrapper">
-                      <select
-                        id="pdf-domain"
-                        value={domain}
-                        onChange={(e) => setDomain(e.target.value)}
-                        disabled={uploading || isProcessing}
-                      >
-                        {domains.map((item) => (
-                          <option key={item} value={item}>
-                            {item.replace('_', ' ').toUpperCase()}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <select
+                      id="pdf-domain"
+                      value={showCustomDomain ? 'OTHER_CUSTOM_DOMAIN' : domain}
+                      onChange={handleDomainChange}
+                      disabled={uploading || isProcessing}
+                    >
+                      {domains.map((item) => (
+                        <option key={item} value={item}>
+                          {item.replace('_', ' ').toUpperCase()}
+                        </option>
+                      ))}
+                      <option value="OTHER_CUSTOM_DOMAIN">+ CREATE NEW DOMAIN...</option>
+                    </select>
                   </div>
 
                   <div className="form-group">
@@ -111,33 +161,59 @@ const UploadPdfPage: React.FC = () => {
                       type="text"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      placeholder="e.g. Machine Learning"
+                      placeholder="e.g. Research, Documentation"
                       disabled={uploading || isProcessing}
                     />
                   </div>
                 </div>
 
+                {showCustomDomain && (
+                  <div className="form-group animate-fade-in">
+                    <label htmlFor="custom-domain">New Domain Identifier</label>
+                    <input
+                      id="custom-domain"
+                      type="text"
+                      value={customDomain}
+                      onChange={(e) => setCustomDomain(e.target.value)}
+                      placeholder="Enter a unique name for this domain"
+                      required
+                      disabled={uploading || isProcessing}
+                    />
+                  </div>
+                )}
+
                 <div className="form-group">
-                  <label>PDF Document</label>
-                  <div className={`file-drop-zone ${selectedFile ? 'has-file' : ''} ${(uploading || isProcessing) ? 'disabled' : ''}`}>
+                  <label>Source Document</label>
+                  <div 
+                    className={`file-drop-zone ${selectedFile ? 'has-file' : ''} ${isDragging ? 'dragging' : ''} ${(uploading || isProcessing) ? 'disabled' : ''}`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
                     <input
                       id="pdf-file"
                       type="file"
                       accept=".pdf,application/pdf"
-                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                      onChange={(e) => {
+                        setSelectedFile(e.target.files?.[0] || null);
+                        setError(null);
+                      }}
                       disabled={uploading || isProcessing}
                     />
                     <div className="drop-zone-content">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                      </svg>
                       {selectedFile ? (
-                        <div className="file-info">
-                          <span className="file-name">{selectedFile.name}</span>
-                          <span className="file-size">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
-                        </div>
+                        <>
+                          <FiFile size={40} />
+                          <div className="file-info">
+                            <span className="file-name">{selectedFile.name}</span>
+                            <span className="file-size">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                          </div>
+                        </>
                       ) : (
-                        <span>Choose a PDF or drag and drop here</span>
+                        <>
+                          <FiUploadCloud size={48} />
+                          <span>Drag and drop your PDF or click to browse</span>
+                        </>
                       )}
                     </div>
                   </div>
@@ -146,46 +222,50 @@ const UploadPdfPage: React.FC = () => {
                 <div className="upload-actions">
                   <button type="submit" className="primary-btn" disabled={uploading || isProcessing || !selectedFile}>
                     {uploading ? (
-                      <span className="btn-loading"><div className="spinner-mini"></div> Uploading...</span>
+                      <span><div className="spinner-mini"></div> INITIALIZING...</span>
                     ) : (
-                      'Initialize Ingestion'
+                      'START INGESTION'
                     )}
                   </button>
                   <button type="button" className="secondary-btn" onClick={handleBack} disabled={uploading}>
-                    Back to Store
+                    GO BACK
                   </button>
                 </div>
 
-                {error && <div className="error-alert">{error}</div>}
+                {error && (
+                  <div className="error-alert animate-fade-in">
+                    <FiAlertCircle style={{ marginRight: '8px' }} />
+                    {error}
+                  </div>
+                )}
               </form>
             </div>
           </section>
 
-          <section className="status-section">
+          <section className="status-section animate-fade-in">
             <div className="card">
               <div className="card-header">
                 <div className="header-with-action">
-                  <h2>Active Job Status</h2>
-                  {activeJobStatus && (
-                    <button className="text-btn" onClick={() => clearJob(activeJobStatus.job_id)}>Clear History</button>
+                  <h2>Processing Pipeline</h2>
+                  {activeJobStatus && !isProcessing && (
+                    <button className="text-btn" onClick={() => clearJob(activeJobStatus.job_id)}>
+                      <FiTrash2 size={14} /> CLEAR
+                    </button>
                   )}
                 </div>
-                <p>Real-time processing updates</p>
+                <p>Live status of your knowledge extraction job.</p>
               </div>
 
               {activeJobStatus ? (
-                <div className="job-details">
+                <div className="job-details animate-fade-in">
                   <div className="status-hero">
                     <div className={`status-pill ${activeJobStatus.status}`}>
+                      {activeJobStatus.status === 'processing' && <FiClock style={{ marginRight: '6px' }} />}
                       {activeJobStatus.status.toUpperCase()}
                     </div>
                     <div className="processed-counter">
-                      <span className="count">
-                        {activeJobStatus.total_pages > 0 
-                          ? Math.min(Math.round((activeJobStatus.processed_pages / activeJobStatus.total_pages) * 100), 100)
-                          : 0}%
-                      </span>
-                      <span className="label">OVERALL PROGRESS</span>
+                      <span className="count">{progressPercentage}%</span>
+                      <span className="label">PIPELINE PROGRESS</span>
                     </div>
                   </div>
 
@@ -194,49 +274,49 @@ const UploadPdfPage: React.FC = () => {
                       <div className="progress-bar-container">
                         <div 
                           className="progress-bar-fill" 
-                          style={{ width: `${activeJobStatus.total_pages > 0 ? (activeJobStatus.processed_pages / activeJobStatus.total_pages) * 100 : 0}%` }}
+                          style={{ width: `${progressPercentage}%` }}
                         ></div>
                       </div>
                       <div className="progress-text">
-                        Processing page {activeJobStatus.processed_pages} of {activeJobStatus.total_pages}
+                        Extracting content: page {activeJobStatus.processed_pages} of {activeJobStatus.total_pages}
                       </div>
                     </div>
                   )}
 
                   <div className="stats-grid">
                     <div className="stat-item">
-                      <span className="stat-label">Documents</span>
+                      <span className="stat-label">Text Fragments</span>
                       <span className="stat-value">{activeJobStatus.created_documents}</span>
                     </div>
                     <div className="stat-item">
-                      <span className="stat-label">Images Extracted</span>
+                      <span className="stat-label">Visual Assets</span>
                       <span className="stat-value">{activeJobStatus.created_images ?? 0}</span>
                     </div>
                     <div className="stat-item full-width">
-                      <span className="stat-label">Job ID</span>
+                      <span className="stat-label">Internal Job ID</span>
                       <span className="stat-value monospace">{activeJobStatus.job_id}</span>
                     </div>
                   </div>
 
                   {activeJobStatus.error && (
-                    <div className="error-card">
-                      <strong>Ingestion Error</strong>
+                    <div className="error-card animate-fade-in">
+                      <strong>Ingestion Failure</strong>
                       <p>{activeJobStatus.error}</p>
                     </div>
                   )}
 
                   {activeJobStatus.status === 'completed' && (
-                    <div className="success-footer">
-                      <p>✓ Ingestion completed successfully.</p>
-                      <button onClick={handleBack} className="primary-btn sm">View in Text Store</button>
+                    <div className="success-footer animate-fade-in">
+                      <p><FiCheckCircle /> Ingestion pipeline completed successfully.</p>
+                      <button onClick={handleBack} className="primary-btn sm">VIEW KNOWLEDGE BASE</button>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="empty-status">
-                  <div className="empty-icon">📁</div>
-                  <p>No active ingestion jobs found.</p>
-                  <span>Start an upload to track its progress here.</span>
+                  <div className="empty-icon"><FiFile /></div>
+                  <p>No active pipeline jobs</p>
+                  <span>Uploaded documents will appear here with real-time processing stats.</span>
                 </div>
               )}
             </div>

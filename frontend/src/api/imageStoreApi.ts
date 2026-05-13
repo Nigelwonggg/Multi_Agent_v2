@@ -67,16 +67,24 @@ export const getImageDocuments = async (
   return await response.json();
 };
 
-export const getImageDocument = async (docId: string): Promise<ImageDocument> => {
-  const response = await fetch(`${API_BASE}/api/image-store/${docId}`);
+export const getImageDocument = async (
+  docId: string,
+  domain: string = "data_science"
+): Promise<ImageDocument> => {
+  const params = new URLSearchParams({ domain });
+  const response = await fetch(`${API_BASE}/api/image-store/${docId}?${params}`);
   if (!response.ok) {
     throw new Error('Failed to fetch image document');
   }
   return await response.json();
 };
 
-export const createImageDocument = async (document: Omit<ImageDocument, 'id'>): Promise<ImageDocument> => {
-  const response = await fetch(`${API_BASE}/api/image-store/`, {
+export const createImageDocument = async (
+  document: Omit<ImageDocument, 'id'>,
+  domain: string = "data_science"
+): Promise<ImageDocument> => {
+  const params = new URLSearchParams({ domain });
+  const response = await fetch(`${API_BASE}/api/image-store/?${params}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -90,8 +98,13 @@ export const createImageDocument = async (document: Omit<ImageDocument, 'id'>): 
   return await response.json();
 };
 
-export const updateImageDocument = async (docId: string, document: Partial<ImageDocument>): Promise<ImageDocument> => {
-  const response = await fetch(`${API_BASE}/api/image-store/${docId}`, {
+export const updateImageDocument = async (
+  docId: string, 
+  document: Partial<ImageDocument>,
+  domain: string = "data_science"
+): Promise<ImageDocument> => {
+  const params = new URLSearchParams({ domain });
+  const response = await fetch(`${API_BASE}/api/image-store/${docId}?${params}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -105,8 +118,12 @@ export const updateImageDocument = async (docId: string, document: Partial<Image
   return await response.json();
 };
 
-export const deleteImageDocument = async (docId: string): Promise<void> => {
-  const response = await fetch(`${API_BASE}/api/image-store/${docId}`, {
+export const deleteImageDocument = async (
+  docId: string,
+  domain: string = "data_science"
+): Promise<void> => {
+  const params = new URLSearchParams({ domain });
+  const response = await fetch(`${API_BASE}/api/image-store/${docId}?${params}`, {
     method: 'DELETE',
   });
   
@@ -115,8 +132,17 @@ export const deleteImageDocument = async (docId: string): Promise<void> => {
   }
 };
 
-export const searchImageDocuments = async (query: string, limit: number = 10): Promise<ImageDocument[]> => {
-  const response = await fetch(`${API_BASE}/api/image-store/search/content?query=${encodeURIComponent(query)}&limit=${limit}`);
+export const searchImageDocuments = async (
+  query: string, 
+  limit: number = 10,
+  domain: string = "data_science"
+): Promise<ImageDocument[]> => {
+  const params = new URLSearchParams({
+    query: query,
+    limit: limit.toString(),
+    domain: domain
+  });
+  const response = await fetch(`${API_BASE}/api/image-store/search/content?${params}`);
   if (!response.ok) {
     throw new Error('Failed to search image documents');
   }
@@ -125,7 +151,8 @@ export const searchImageDocuments = async (query: string, limit: number = 10): P
 
 
 export const getImageDocumentsByIds = async (
-  docIds: string[]
+  docIds: string[],
+  domain: string = "data_science"
 ): Promise<ImageDocument[]> => {
   console.log("Fetching image documents by IDs:", docIds);
   
@@ -134,7 +161,8 @@ export const getImageDocumentsByIds = async (
   }
   
   try {
-    const response = await fetch(`${API_BASE}/api/image-store/by-ids`, {
+    const params = new URLSearchParams({ domain });
+    const response = await fetch(`${API_BASE}/api/image-store/by-ids?${params}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

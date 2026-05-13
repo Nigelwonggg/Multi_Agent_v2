@@ -9,6 +9,21 @@ export const getAvailableDomains = async (): Promise<string[]> => {
   return await response.json();
 };
 
+export const deleteDomain = async (domain: string): Promise<void> => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_BASE}/api/domains/${encodeURIComponent(domain)}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Failed to delete domain');
+  }
+};
+
 export interface TextDocument {
   id: number;
   doc_id?: string; // Made optional

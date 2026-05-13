@@ -43,15 +43,16 @@ const Navbar = () => {
         { to: "/chat", label: "Chat" },
         { to: "/vector-database", label: "Vector DB" },
         { to: "/upload-pdf", label: "Upload PDF" },
-        { to: "/quiz", label: "Upload Quiz" },
         { to: "/vector-database/id-registry", label: "Settings" },
+        { to: "/quiz", label: "Quizzes" },
+      
       ];
     } else {
       // student role
       return [
         ...commonLinks,
         { to: "/chat", label: "Chat" },
-        { to: "#quiz", label: "Quiz" },
+        { to: "/quiz", label: "Quizzes" },
       ];
     }
   };

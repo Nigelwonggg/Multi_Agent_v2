@@ -15,7 +15,7 @@ load_dotenv()
 
 # SQLite is used here for simplicity. Update the URL to point to a
 # different database such as PostgreSQL in production via .env
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./chat.db")
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
 # If the URL is just a filename (no protocol like sqlite:///), prepend sqlite:///
 if SQLALCHEMY_DATABASE_URL and "://" not in SQLALCHEMY_DATABASE_URL:
@@ -48,7 +48,7 @@ def init_db() -> None:
     handle migrations separately and might not call this function.
     """
     # Import models here to ensure they are registered with the Base
-    from app.models import chat_db_model, user_model
+    from app.models import chat_db_model, user_model, quiz, question
 
     Base.metadata.create_all(bind=engine)
     ensure_verified_identity_schema()

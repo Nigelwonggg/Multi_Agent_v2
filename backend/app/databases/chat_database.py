@@ -7,7 +7,7 @@ function for use with FastAPI endpoints.
 """
 
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
 from dotenv import load_dotenv
 
@@ -51,6 +51,7 @@ def init_db() -> None:
     from app.models import chat_db_model, user_model
 
     Base.metadata.create_all(bind=engine)
+    ensure_verified_identity_schema()
     logger.info("Chat database initialized and tables created.")
     
     # Create initial users
@@ -98,6 +99,26 @@ def create_initial_users():
         db.rollback()
     finally:
         db.close()
+
+
+def ensure_verified_identity_schema() -> None:
+    """Apply lightweight schema updates for the verified identity registry."""
+    inspector = inspect(engine)
+    if "verified_identities" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("verified_identities")}
+    if "unit_id" not in existing_columns:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE verified_identities ADD COLUMN unit_id VARCHAR"))
+        logger.info("Added unit_id column to verified_identities table.")
+
+    if "assigned_unit_ids" not in existing_columns:
+        with engine.begin() as connection:
+            connection.execute(
+                text("ALTER TABLE verified_identities ADD COLUMN assigned_unit_ids TEXT DEFAULT '[]' NOT NULL")
+            )
+        logger.info("Added assigned_unit_ids column to verified_identities table.")
 
 
 def get_db():

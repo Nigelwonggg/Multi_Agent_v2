@@ -9,10 +9,20 @@ interface TopNavBarProps {
 const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  const activeStore = location.pathname.includes('/image-store') || params.get('tab') === 'image' ? 'image' : 'text';
+  const isSettingsPage =
+    location.pathname.includes('/id-registry') || location.pathname.includes('/unit-manager');
+  const activeStore = location.pathname.includes('/id-registry')
+    ? 'registry'
+    : location.pathname.includes('/unit-manager')
+      ? 'units'
+    : location.pathname.includes('/image-store') || params.get('tab') === 'image'
+      ? 'image'
+      : 'text';
 
   let textStorePath: string;
   let imageStorePath: string;
+  let registryPath: string | null = null;
+  let unitManagerPath: string | null = null;
 
   if (basePath === '/retrieved-content') {
     const textParams = new URLSearchParams(location.search);
@@ -25,22 +35,55 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) 
   } else {
     textStorePath = `${basePath}/text-store`;
     imageStorePath = `${basePath}/image-store`;
+    registryPath = `${basePath}/id-registry`;
+    unitManagerPath = `${basePath}/unit-manager`;
   }
 
   return (
     <nav className="top-nav-bar">
-      <div className="logo">Vector DB</div>
+      <div className="logo">{isSettingsPage ? 'Settings' : 'Vector DB'}</div>
       <div className="nav-links">
-        <Link
-          to={textStorePath}
-          className={`nav-link ${activeStore === 'text' ? 'active' : ''}`}>
-          Text Store
-        </Link>
-        <Link
-          to={imageStorePath}
-          className={`nav-link ${activeStore === 'image' ? 'active' : ''}`}>
-          Image Store
-        </Link>
+        {isSettingsPage ? (
+          <>
+            <Link
+              to={registryPath || `${basePath}/id-registry`}
+              className={`nav-link ${activeStore === 'registry' ? 'active' : ''}`}>
+              User Registry
+            </Link>
+            <Link
+              to={unitManagerPath || `${basePath}/unit-manager`}
+              className={`nav-link ${activeStore === 'units' ? 'active' : ''}`}>
+              Unit Manager
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link
+              to={textStorePath}
+              className={`nav-link ${activeStore === 'text' ? 'active' : ''}`}>
+              Text Store
+            </Link>
+            <Link
+              to={imageStorePath}
+              className={`nav-link ${activeStore === 'image' ? 'active' : ''}`}>
+              Image Store
+            </Link>
+            {registryPath && (
+              <Link
+                to={registryPath}
+                className={`nav-link ${activeStore === 'registry' ? 'active' : ''}`}>
+                User Registry
+              </Link>
+            )}
+            {unitManagerPath && (
+              <Link
+                to={unitManagerPath}
+                className={`nav-link ${activeStore === 'units' ? 'active' : ''}`}>
+                Unit Manager
+              </Link>
+            )}
+          </>
+        )}
       </div>
     </nav>
   );

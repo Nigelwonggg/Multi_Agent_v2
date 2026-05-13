@@ -37,6 +37,7 @@ export interface PdfUploadJobStatus {
   category: string;
   status: 'queued' | 'processing' | 'completed' | 'failed';
   processed_pages: number;
+  total_pages: number;
   created_documents: number;
   created_images?: number;
   error?: string | null;

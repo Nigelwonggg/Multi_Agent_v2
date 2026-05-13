@@ -19,6 +19,7 @@ import tempfile
 import uuid
 
 import openai
+from pypdf import PdfReader
 from dotenv import load_dotenv
 from unstructured.partition.pdf import partition_pdf
 
@@ -47,6 +48,7 @@ class PdfUploadJob:
     category: str
     status: JobStatus = "queued"
     processed_pages: int = 0
+    total_pages: int = 0
     created_documents: int = 0
     created_images: int = 0
     error: Optional[str] = None
@@ -61,6 +63,7 @@ class PdfUploadJob:
             "category": self.category,
             "status": self.status,
             "processed_pages": self.processed_pages,
+            "total_pages": self.total_pages,
             "created_documents": self.created_documents,
             "created_images": self.created_images,
             "error": self.error,
@@ -189,6 +192,15 @@ class PdfIngestionService:
         self._update_job(job_id, status="processing", error=None)
 
         try:
+            # Get total pages first
+            try:
+                reader = PdfReader(str(file_path))
+                total_pages = len(reader.pages)
+                self._update_job(job_id, total_pages=total_pages)
+            except Exception as e:
+                self.logger.warning("Could not determine total pages for job %s: %s", job_id, e)
+                total_pages = 0
+
             text_store = self.text_factory.get_store_by_name(domain)
             image_store = self.image_factory.get_store_by_name(domain)
 

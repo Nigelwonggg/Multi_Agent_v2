@@ -261,6 +261,42 @@
   box-sizing: border-box;
 }
 
+/* ── Upload Indicator ── */
+.navbar__upload-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  padding: 0.35rem 0.8rem;
+  border-radius: 20px;
+  color: var(--accent, #d4af37);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  margin-left: 0.5rem;
+}
+
+.navbar__upload-indicator:hover {
+  background: rgba(212, 175, 55, 0.2);
+  transform: translateY(-1px);
+}
+
+.spinner-small {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(212, 175, 55, 0.3);
+  border-top: 2px solid var(--accent, #d4af37);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .navbar__links,

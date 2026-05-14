@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { usePdfUpload } from "../../contexts/PdfUploadContext";
 import "./Navbar.css";
 
 const Navbar = () => {
@@ -8,6 +9,9 @@ const Navbar = () => {
   const [user, setUser] = useState<{ full_name: string; role: string } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAnyJobProcessing, activeJobId, uploadJobs } = usePdfUpload();
+
+  const activeJob = activeJobId ? uploadJobs[activeJobId] : null;
 
   useEffect(() => {
     const checkUser = () => {

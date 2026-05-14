@@ -79,9 +79,17 @@ async def get_image_documents(
     )
 
 @router.get("/{doc_id}", response_model=ImageDocumentResponse)
-async def get_image_document(doc_id: str):
+async def get_image_document(
+    doc_id: str,
+    domain: Optional[str] = Query("data_science", description="Domain to query (data_science, medical)")
+):
     """Get a specific image document by doc_id"""
-    document = ds_image_store.get_document_by_doc_id(doc_id)
+    try:
+        image_store = image_factory.get_store_by_name(domain)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    document = image_store.get_document_by_doc_id(doc_id)
     
     if not document:
         raise HTTPException(status_code=404, detail="Image document not found")
@@ -89,15 +97,23 @@ async def get_image_document(doc_id: str):
     return document
 
 @router.post("/", response_model=ImageDocumentResponse)
-async def create_image_document(document_data: ImageDocumentCreate):
+async def create_image_document(
+    document_data: ImageDocumentCreate,
+    domain: Optional[str] = Query("data_science", description="Domain to store document in (data_science, medical)")
+):
     """Create a new image document"""
+    try:
+        image_store = image_factory.get_store_by_name(domain)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     if document_data.doc_id:
-        existing = ds_image_store.get_document_by_doc_id(document_data.doc_id)
+        existing = image_store.get_document_by_doc_id(document_data.doc_id)
         if existing:
             raise HTTPException(status_code=400, detail="Image document with this doc_id already exists")
     
-    doc_id = ds_image_store.add_document(document_data.dict())
-    created_doc = ds_image_store.get_document_by_doc_id(doc_id)
+    doc_id = image_store.add_document(document_data.dict())
+    created_doc = image_store.get_document_by_doc_id(doc_id)
     
     if not created_doc:
         raise HTTPException(status_code=500, detail="Failed to create image document")
@@ -105,21 +121,38 @@ async def create_image_document(document_data: ImageDocumentCreate):
     return created_doc
 
 @router.put("/{doc_id}", response_model=ImageDocumentResponse)
-async def update_image_document(doc_id: str, document_data: ImageDocumentUpdate):
+async def update_image_document(
+    doc_id: str, 
+    document_data: ImageDocumentUpdate,
+    domain: Optional[str] = Query("data_science", description="Domain to update document in (data_science, medical)")
+):
     """Update an existing image document"""
-    logger.info(f"Updating image document {doc_id}")
-    success = ds_image_store.update_document(doc_id, document_data.dict())
+    try:
+        image_store = image_factory.get_store_by_name(domain)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    logger.info(f"Updating image document {doc_id} in domain {domain}")
+    success = image_store.update_document(doc_id, document_data.dict())
     
     if not success:
         raise HTTPException(status_code=404, detail="Image document not found")
     
-    updated_doc = ds_image_store.get_document_by_doc_id(doc_id)
+    updated_doc = image_store.get_document_by_doc_id(doc_id)
     return updated_doc
 
 @router.delete("/{doc_id}", response_model=DeleteResponse)
-async def delete_image_document(doc_id: str):
+async def delete_image_document(
+    doc_id: str,
+    domain: Optional[str] = Query("data_science", description="Domain to delete document from (data_science, medical)")
+):
     """Delete an image document"""
-    success = ds_image_store.delete_document(doc_id)
+    try:
+        image_store = image_factory.get_store_by_name(domain)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    success = image_store.delete_document(doc_id)
     
     if not success:
         logger.error(f"Failed to delete image document {doc_id}")
@@ -129,18 +162,32 @@ async def delete_image_document(doc_id: str):
     return DeleteResponse(success=True)
 
 @router.get("/search/content", response_model=List[ImageDocumentResponse])
-async def search_image_documents_by_content(
+async def search_image_documents_by_query(
     query: str = Query(..., min_length=3),
-    limit: int = Query(10, ge=1, le=50)
+    limit: int = Query(10, ge=1, le=50),
+    domain: Optional[str] = Query("data_science", description="Domain to query (data_science, medical)")
 ):
     """Search image documents by content using query parameters"""
-    documents = ds_image_store.search_documents_by_content(query, limit)
+    try:
+        image_store = image_factory.get_store_by_name(domain)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    documents = image_store.search_documents_by_content(query, limit)
     return documents
 
 @router.post("/search", response_model=List[ImageDocumentResponse])
-async def search_image_documents_by_content_post(search_request: SearchRequest):
+async def search_image_documents_by_content_post(
+    search_request: SearchRequest,
+    domain: Optional[str] = Query("data_science", description="Domain to query (data_science, medical)")
+):
     """Search image documents using vector similarity"""
-    documents = ds_image_store.search_documents_by_content(
+    try:
+        image_store = image_factory.get_store_by_name(domain)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    documents = image_store.search_documents_by_content(
         search_request.query, 
         search_request.limit
     )
@@ -148,18 +195,22 @@ async def search_image_documents_by_content_post(search_request: SearchRequest):
 
 @router.post("/by-ids", response_model=List[ImageDocumentResponse])
 async def get_image_documents_by_ids(
-    request: ImageDocumentsByIdsRequest
+    request: ImageDocumentsByIdsRequest,
+    domain: Optional[str] = Query("data_science", description="Domain to query (data_science, medical)")
 ) -> List[ImageDocumentResponse]:
     """Get multiple image documents by their doc_ids (UUIDs)"""
     try:
-        logger.info(f"🖼️ Fetching {len(request.doc_ids)} image documents by IDs")
+        image_store = image_factory.get_store_by_name(domain)
+        logger.info(f"🖼️ Fetching {len(request.doc_ids)} image documents by IDs in domain {domain}")
         
         # Query documents by doc_ids using the service
-        documents = ds_image_store.get_documents_by_ids(request.doc_ids)
+        documents = image_store.get_documents_by_ids(request.doc_ids)
         
         logger.info(f"✅ Found {len(documents)} image documents")
         return documents
         
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"❌ Error fetching image documents by IDs: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch image documents: {str(e)}")

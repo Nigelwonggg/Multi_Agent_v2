@@ -75,21 +75,80 @@ class DomainConfigManager:
             raise
     
     def get_available_domains(self) -> List[str]:
-        """Get list of available domains"""
-        if not self._config:
-            return []
-        return list(self._config.domains.keys())
+        """Get list of available domains (from YAML and vector databases)"""
+        domains = set()
+        if self._config:
+            domains.update(self._config.domains.keys())
+        
+        # Also discover from vector databases
+        base_db_dir = Path("vector_databases")
+        if base_db_dir.exists():
+            # Check custom_domains for text stores
+            custom_dir = base_db_dir / "custom_domains"
+            if custom_dir.exists():
+                for d in custom_dir.iterdir():
+                    if d.is_dir():
+                        # Support multiple naming conventions
+                        if d.name.endswith("_text_db"):
+                            domains.add(d.name.replace("_text_db", ""))
+                        elif d.name.endswith("_db_llama"):
+                            domains.add(d.name.replace("_db_llama", ""))
+            
+            # Check custom_image_domains for image stores
+            custom_image_dir = base_db_dir / "custom_image_domains"
+            if custom_image_dir.exists():
+                for d in custom_image_dir.iterdir():
+                    if d.is_dir():
+                        if d.name.endswith("_image_db"):
+                            domains.add(d.name.replace("_image_db", ""))
+                        elif d.name.endswith("_db_llama"):
+                            domains.add(d.name.replace("_db_llama", ""))
+
+            # Check root vector_databases for legacy naming
+            # Use explicit mapping to avoid duplicates like 'med' vs 'medical'
+            legacy_mappings = {
+                "med_text_db": "medical",
+                "med_image_db": "medical",
+                "ds_text_db_llama": "data_science",
+                "ds_image_db_llama": "data_science"
+            }
+            
+            for d in base_db_dir.iterdir():
+                if d.is_dir():
+                    if d.name in legacy_mappings:
+                        domains.add(legacy_mappings[d.name])
+                    elif (d.name.endswith("_text_db") or d.name.endswith("_db_llama")) and "custom_domains" not in str(d):
+                        # Only add if it doesn't conflict with legacy or YAML
+                        if d.name.endswith("_text_db"):
+                            domain_name = d.name.replace("_text_db", "")
+                        else:
+                            domain_name = d.name.replace("_db_llama", "")
+                            
+                        # Basic check: if 'medical' or 'data_science' already there, 
+                        # don't add 'med' or 'ds' from folders
+                        if domain_name == "med" and "medical" in domains:
+                            continue
+                        if domain_name == "ds" and "data_science" in domains:
+                            continue
+                        domains.add(domain_name)
+
+        return sorted(list(domains))
     
     def get_domain_config(self, domain: str) -> DomainConfig:
-        """Get complete configuration for a domain"""
+        """Get complete configuration for a domain (with fallback to generic)"""
         if not self._config:
             raise RuntimeError("Configuration not loaded")
         
-        if domain not in self._config.domains:
-            available_domains = list(self._config.domains.keys())
-            raise ValueError(f"Domain '{domain}' not found. Available domains: {available_domains}")
+        if domain in self._config.domains:
+            return self._config.domains[domain]
         
-        return self._config.domains[domain]
+        # Fallback to a generic configuration for unknown domains
+        self.logger.info(f"🔍 Domain '{domain}' not found in YAML configs. Using generic fallback.")
+        return DomainConfig(
+            default_model_provider=LLMProviderType.GEMINI,
+            models={},
+            prompts={}
+        )
     
     def get_model_config(self, domain: str, node_name: str) -> ModelConfig:
         """Get model configuration for specific domain and node"""

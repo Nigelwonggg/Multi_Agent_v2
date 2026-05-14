@@ -19,6 +19,7 @@ import tempfile
 import uuid
 
 import openai
+from pypdf import PdfReader
 from dotenv import load_dotenv
 from unstructured.partition.pdf import partition_pdf
 
@@ -30,6 +31,8 @@ from app.services.pdf_summary_prompts import (
     ds_text_summary_prompt,
     med_image_summary_prompt,
     med_text_summary_prompt,
+    generic_image_summary_prompt,
+    generic_text_summary_prompt,
 )
 from app.utils.logging_config import get_logger
 
@@ -47,6 +50,7 @@ class PdfUploadJob:
     category: str
     status: JobStatus = "queued"
     processed_pages: int = 0
+    total_pages: int = 0
     created_documents: int = 0
     created_images: int = 0
     error: Optional[str] = None
@@ -61,6 +65,7 @@ class PdfUploadJob:
             "category": self.category,
             "status": self.status,
             "processed_pages": self.processed_pages,
+            "total_pages": self.total_pages,
             "created_documents": self.created_documents,
             "created_images": self.created_images,
             "error": self.error,
@@ -158,16 +163,14 @@ class PdfIngestionService:
             return default
 
     def create_job(self, filename: str, domain: str, category: str) -> str:
-        if domain not in AVAILABLE_DOMAINS:
-            raise ValueError(f"Domain '{domain}' not supported. Available domains: {AVAILABLE_DOMAINS}")
-
+        # Flexible domains: If not in AVAILABLE_DOMAINS, it will use generic prompts and stores
         job_id = str(uuid.uuid4())
         job = PdfUploadJob(job_id=job_id, filename=filename, domain=domain, category=category)
 
         with self._lock:
             self._jobs[job_id] = job
 
-        self.logger.info("Created PDF upload job %s for file %s", job_id, filename)
+        self.logger.info("Created PDF upload job %s for file %s in domain %s", job_id, filename, domain)
         return job_id
 
     def get_job(self, job_id: str) -> Optional[Dict[str, object]]:
@@ -189,6 +192,16 @@ class PdfIngestionService:
         self._update_job(job_id, status="processing", error=None)
 
         try:
+            # Get total pages first
+            try:
+                reader = PdfReader(str(file_path))
+                total_pages = len(reader.pages)
+                self._update_job(job_id, total_pages=total_pages)
+            except Exception as e:
+                self.logger.warning("Could not determine total pages for job %s: %s", job_id, e)
+                total_pages = 0
+
+            # Factories now handle dynamic domain creation via Generic stores
             text_store = self.text_factory.get_store_by_name(domain)
             image_store = self.image_factory.get_store_by_name(domain)
 
@@ -218,6 +231,7 @@ class PdfIngestionService:
                 )
                 summary_docs = self._create_text_db_document([summary], category)
                 for document in summary_docs:
+                    # Access the underlying Chroma store
                     text_store.text_store.add_documents([document], ids=[document.metadata["doc_id"]])
                 created_documents += len(summary_docs)
 
@@ -232,6 +246,7 @@ class PdfIngestionService:
                 summary = self._get_image_summary(image, domain, source_filename=filename)
                 summary_docs = self._create_image_db_document([summary], category)
                 for document in summary_docs:
+                    # Access the underlying Chroma store
                     image_store.image_store.add_documents([document], ids=[document.metadata["doc_id"]])
                 created_images += len(summary_docs)
 
@@ -315,8 +330,10 @@ class PdfIngestionService:
     def _make_text_summary_prompt(self, element: str, category: str, domain: str):
         if domain == "medical":
             prompt_text = med_text_summary_prompt(element, category)
-        else:
+        elif domain == "data_science":
             prompt_text = ds_text_summary_prompt(element, category)
+        else:
+            prompt_text = generic_text_summary_prompt(element, category, domain)
 
         return [
             {"role": "system", "content": "You are an assistant tasked with summarizing tables and text."},
@@ -326,8 +343,10 @@ class PdfIngestionService:
     def _make_image_summary_prompt(self, image: Dict[str, object], domain: str):
         if domain == "medical":
             prompt_text = med_image_summary_prompt(image)
-        else:
+        elif domain == "data_science":
             prompt_text = ds_image_summary_prompt(image)
+        else:
+            prompt_text = generic_image_summary_prompt(image, domain)
 
         return [
             {
@@ -401,6 +420,9 @@ class PdfIngestionService:
         if not self.client:
             return ""
 
+        # Determine if this is a vision request by checking if any message content is a list
+        is_vision = any(isinstance(m.get("content"), list) for m in messages)
+
         try:
             response = self.client.chat.completions.create(
                 model=model,
@@ -413,13 +435,14 @@ class PdfIngestionService:
         except openai.RateLimitError:
             self.logger.warning("PDF summary request hit rate limit on provider %s.", self.provider)
             if self.fallback_client and self.fallback_provider == "groq":
-                fallback_model = self.fallback_text_model if model == self.text_model else self.fallback_vision_model
+                # Correctly choose fallback based on request type, not just model name equality
+                fallback_model = self.fallback_vision_model if is_vision else self.fallback_text_model
                 try:
                     response = self.fallback_client.chat.completions.create(
                         model=fallback_model or model,
                         messages=list(messages),
                         temperature=0.6,
-                        max_completion_tokens=512,
+                        max_tokens=512,
                         top_p=0.95,
                     )
                     self.logger.info("PDF summary succeeded using fallback provider %s.", self.fallback_provider)

@@ -7,10 +7,13 @@ Provides common interface and functionality for different domains.
 
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional, Tuple
+import chromadb
+from chromadb.config import Settings
 from langchain_chroma import Chroma
 from langchain.schema.document import Document
 import os
 import uuid
+import time
 from app.utils.logging_config import get_logger
 from app.services.llm import get_embedding_service
 
@@ -25,24 +28,128 @@ class BaseImageStoreService(ABC):
         # Get domain-specific configuration
         self.config = self._get_domain_config()
         
+        # Ensure absolute path and directory exists
+        persist_dir = os.path.abspath(self.config["directory"])
+        
         # Initialize embeddings from centralized service
         embedding_service = get_embedding_service()
         self.embeddings = embedding_service.get_embeddings()
         
-        # Initialize vector store
-        self.image_store = Chroma(
-            collection_name=self.config["collection_name"] + collection_suffix,
-            embedding_function=self.embeddings,
-            persist_directory=self.config["directory"]
-        )
+        # Initialize vector store with explicit client for better reliability
+        collection_name = self.config["collection_name"] + collection_suffix
+        self.logger.info(f"🚀 Initializing Chroma for image domain '{domain}' at {persist_dir}")
+        
+        # Ensure directory exists only when we are about to initialize
+        os.makedirs(persist_dir, exist_ok=True)
+
+        try:
+            # Use a single, standard initialization path with explicit settings
+            # We match what langchain_chroma uses by default to avoid "different settings" errors
+            self.logger.info(f"🚀 Initializing Chroma for image domain '{domain}' at {persist_dir}")
+            
+            client_settings = Settings(
+                anonymized_telemetry=False, 
+                is_persistent=True,
+                persist_directory=persist_dir
+            )
+            
+            self.image_store = Chroma(
+                collection_name=collection_name,
+                embedding_function=self.embeddings,
+                persist_directory=persist_dir,
+                client_settings=client_settings
+            )
+            self.client = getattr(self.image_store, "_client", None)
+            self.logger.info(f"✅ {domain} image store initialized: {persist_dir}")
+            
+        except Exception as e:
+            error_str = str(e)
+            self.logger.error(f"❌ Failed to initialize Chroma for image domain {domain}: {error_str}")
+            
+            # If it already exists or has tenant issues, try the most basic connection
+            if "already exists" in error_str or "tenant" in error_str:
+                self.logger.info(f"🔄 Attempting simplified connection for image domain {domain}...")
+                try:
+                    self.image_store = Chroma(
+                        collection_name=collection_name,
+                        embedding_function=self.embeddings,
+                        persist_directory=persist_dir
+                    )
+                    self.client = getattr(self.image_store, "_client", None)
+                    self.logger.info(f"✅ {domain} image store connected (simplified)")
+                except Exception as e2:
+                    self.logger.error(f"❌ Simplified image connection also failed: {str(e2)}")
+                    raise e2
+            else:
+                raise e
         
         # Initialize retriever
         self.image_retriever = self.image_store.as_retriever(
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": 0.2}
         )
-        
-        self.logger.info(f"✅ {domain} image store initialized: {self.config['directory']}")
+
+    def cleanup(self) -> None:
+        """Explicitly release resources and close database connections"""
+        try:
+            if hasattr(self, 'image_store') and self.image_store:
+                self.logger.info(f"🧹 Performing aggressive cleanup for image domain '{self.domain}'")
+                
+                # 1. Clear retriever
+                self.image_retriever = None
+                
+                # 2. Try to close the internal client
+                # First check our stored client
+                if hasattr(self, 'client') and self.client:
+                    try:
+                        # For Chroma > 0.4.x, stop the system
+                        if hasattr(self.client, '_system'):
+                            self.client._system.stop()
+                            self.logger.info(f"✅ Stopped Chroma client system")
+                        
+                        # Explicit close if available
+                        if hasattr(self.client, 'close'):
+                            self.client.close()
+                            self.logger.info(f"✅ Closed Chroma client")
+                    except Exception as e:
+                        self.logger.warning(f"⚠️ Error closing stored client: {str(e)}")
+
+                # Try to find client inside the image_store object too
+                client = getattr(self.image_store, '_client', None)
+                if client:
+                    try:
+                        # Try explicit close if available
+                        if hasattr(client, 'close'):
+                            client.close()
+                            self.logger.info(f"✅ Closed internal Chroma client")
+                        
+                        # Try stopping the system (Chroma internal)
+                        if hasattr(client, '_system'):
+                            client._system.stop()
+                            self.logger.info(f"✅ Stopped internal Chroma system")
+                    except:
+                        pass
+                
+                # 3. Manually clear internal references from Chroma object
+                internal_attrs = ['_client', '_collection', '_api']
+                for attr in internal_attrs:
+                    if hasattr(self.image_store, attr):
+                        try:
+                            setattr(self.image_store, attr, None)
+                        except:
+                            pass
+                
+                # 4. Clear the store and client
+                self.image_store = None
+                self.client = None
+
+                # 5. Force GC
+                import gc
+                gc.collect()
+                
+                self.logger.info(f"🗑️ Released image store resources for domain '{self.domain}'")
+        except Exception as e:
+            self.logger.error(f"❌ Error during aggressive cleanup for image domain '{self.domain}': {str(e)}")
     
     @abstractmethod
     def _get_domain_config(self) -> Dict[str, str]:

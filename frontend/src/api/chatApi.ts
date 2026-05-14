@@ -341,8 +341,7 @@ export const updateChatTitle = async (
     return updatedChat;
   } catch (error) {
     console.error("Error updating chat title:", error);
-    chats = chats.map(chat => chat.id === chatId ? { ...chat, title } : chat);
-    return { id: chatId, title };
+    throw error;
   }
 };
 

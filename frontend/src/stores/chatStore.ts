@@ -6,6 +6,7 @@ const CHAT_LIST_CACHE_KEY = 'cachedChats';
 const CHAT_MESSAGE_CACHE_KEY = 'cachedChatMessages';
 const PENDING_CHAT_PREFIX = 'pending-chat-';
 const DEFAULT_CHAT_TITLE = "New Question";
+const UNTITLED_CHAT_TITLES = new Set(["New Chat", DEFAULT_CHAT_TITLE, "Untitled"]);
 const PENDING_MESSAGE_TTL_MS = 10 * 60 * 1000;
 const PENDING_POLL_INTERVAL_MS = 3500;
 
@@ -157,6 +158,10 @@ function updateChatTitleInCache(chatId: string, title: string) {
   notifyProgress();
 }
 
+function isUntitledChatTitle(title?: string | null) {
+  return !title || UNTITLED_CHAT_TITLES.has(title);
+}
+
 function removeChatFromCache(chatId: string) {
   setChats(chats.filter(chat => chat.id !== chatId));
   messageStates.delete(chatId);
@@ -169,11 +174,16 @@ function removeChatFromCache(chatId: string) {
 function replaceChatInCache(temporaryChatId: string, confirmedChat: Chat) {
   const temporaryState = messageStates.get(temporaryChatId);
   const temporaryListeners = messageListeners.get(temporaryChatId);
+  const temporaryChat = chats.find(chat => chat.id === temporaryChatId);
   const hasTemporaryChat = chats.some(chat => chat.id === temporaryChatId);
+  const shouldKeepTemporaryTitle = !isUntitledChatTitle(temporaryChat?.title);
+  const chatToStore = shouldKeepTemporaryTitle
+    ? { ...confirmedChat, title: temporaryChat!.title }
+    : confirmedChat;
   const deduplicatedChats = chats.filter(chat => chat.id !== confirmedChat.id);
   const nextChats = hasTemporaryChat
-    ? deduplicatedChats.map(chat => chat.id === temporaryChatId ? confirmedChat : chat)
-    : [confirmedChat, ...deduplicatedChats];
+    ? deduplicatedChats.map(chat => chat.id === temporaryChatId ? chatToStore : chat)
+    : [chatToStore, ...deduplicatedChats];
 
   if (temporaryState && !messageStates.has(confirmedChat.id)) {
     messageStates.set(confirmedChat.id, temporaryState);
@@ -191,6 +201,14 @@ function replaceChatInCache(temporaryChatId: string, confirmedChat: Chat) {
   notifyMessages(temporaryChatId);
   notifyMessages(confirmedChat.id);
   notifyProgress();
+
+  if (shouldKeepTemporaryTitle) {
+    updateChatTitle(chatToStore.id, chatToStore.title).then(updatedChat => {
+      updateChatTitleInCache(updatedChat.id, updatedChat.title);
+    }).catch(error => {
+      console.error("Failed to save pending chat title:", error);
+    });
+  }
 }
 
 function mergeFetchedMessages(currentMessages: Message[], fetchedMessages: Message[]) {
@@ -317,8 +335,7 @@ function generateChatTitleFromMessage(text: string) {
 
 function maybeTitleChatFromFirstMessage(chatId: string, text: string, existingMessageCount: number) {
   const chat = chats.find(existingChat => existingChat.id === chatId);
-  const untitledNames = new Set(["New Chat", DEFAULT_CHAT_TITLE, "Untitled"]);
-  const shouldRename = chat && existingMessageCount === 0 && (!chat.title || untitledNames.has(chat.title));
+  const shouldRename = chat && existingMessageCount === 0 && isUntitledChatTitle(chat.title);
 
   if (!shouldRename) {
     return;
@@ -465,6 +482,31 @@ export async function deleteChatInStore(chatId: string) {
     await deleteChat(chatId);
   } catch (error) {
     setChats(previousChats);
+    throw error;
+  }
+}
+
+export async function renameChatInStore(chatId: string, title: string) {
+  const normalizedTitle = title.trim().replace(/\s+/g, " ").slice(0, 80);
+
+  if (!normalizedTitle) {
+    throw new Error("Chat name cannot be empty.");
+  }
+
+  const previousChats = chats;
+  updateChatTitleInCache(chatId, normalizedTitle);
+
+  if (isPendingChatId(chatId)) {
+    return { id: chatId, title: normalizedTitle };
+  }
+
+  try {
+    const updatedChat = await updateChatTitle(chatId, normalizedTitle);
+    updateChatTitleInCache(updatedChat.id, updatedChat.title);
+    return updatedChat;
+  } catch (error) {
+    setChats(previousChats);
+    notifyProgress();
     throw error;
   }
 }

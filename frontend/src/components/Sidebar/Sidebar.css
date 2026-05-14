@@ -126,11 +126,21 @@
 
 .chat-title {
   flex-grow: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.delete-chat-btn {
+.chat-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.chat-action-btn {
   background: none;
   border: none;
   color: var(--text-muted);
@@ -140,22 +150,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
   transition: opacity 0.2s ease, color 0.2s ease;
-  margin-left: auto;
 }
 
-.chat-history-item:hover .delete-chat-btn {
+.chat-history-item:hover .chat-actions {
   opacity: 1;
 }
 
-.chat-history-item.active .delete-chat-btn {
-  color: rgb(12, 12, 12);
+.chat-history-item.active .chat-actions {
   opacity: 1;
+}
+
+.chat-history-item.active .chat-action-btn {
+  color: currentColor;
+}
+
+.rename-chat-btn:hover {
+  color: var(--accent2);
 }
 
 .delete-chat-btn:hover {
-  color: var(--accent2);
+  color: #ff8a80;
 }
 
 .loading-placeholder {
@@ -276,13 +291,151 @@
   box-shadow: 0 0 16px rgba(217, 45, 32, 0.3);
 }
 
+.rename-dialog {
+  width: min(460px, 100%);
+}
+
+.rename-dialog-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  color: var(--accent2);
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.32);
+}
+
+.rename-dialog-icon svg {
+  width: 22px;
+  height: 22px;
+  animation: deleteIconSettle 0.28s ease-out 0.06s both;
+}
+
+.rename-dialog-label {
+  display: block;
+  margin-top: 1.25rem;
+  margin-bottom: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rename-dialog-input {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.rename-dialog-input:focus {
+  border-color: rgba(212, 175, 55, 0.55);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.14);
+}
+
+.rename-dialog-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.rename-dialog-meta {
+  margin-top: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  text-align: right;
+}
+
+.rename-dialog-error {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(220, 53, 69, 0.35);
+  background: rgba(220, 53, 69, 0.12);
+  color: #ffb4bd;
+  font-weight: 600;
+}
+
+.rename-dialog-confirm {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #0d0900;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.rename-dialog-confirm:hover,
+.rename-dialog-confirm:focus-visible {
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.rename-dialog-confirm:disabled,
+.delete-dialog-cancel:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+:root[data-theme="light"] .delete-dialog {
+  background: #ffffff;
+  border-color: rgba(37, 99, 235, 0.18);
+  box-shadow: 0 18px 50px rgba(37, 99, 235, 0.16);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .delete-dialog-icon,
+:root[data-theme="light"] .rename-dialog-icon {
+  color: var(--accent);
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.22);
+}
+
+:root[data-theme="light"] .rename-dialog-input {
+  background: #f8fbff;
+  border-color: rgba(37, 99, 235, 0.2);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .rename-dialog-input:focus {
+  border-color: rgba(37, 99, 235, 0.48);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+:root[data-theme="light"] .rename-dialog-confirm {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .rename-dialog-error {
+  background: rgba(220, 53, 69, 0.08);
+  border-color: rgba(220, 53, 69, 0.22);
+  color: #b42318;
+}
+
 @media (max-width: 520px) {
   .delete-dialog-actions {
     flex-direction: column-reverse;
   }
 
   .delete-dialog-cancel,
-  .delete-dialog-confirm {
+  .delete-dialog-confirm,
+  .rename-dialog-confirm {
     width: 100%;
   }
 }
@@ -324,7 +477,8 @@
 @media (prefers-reduced-motion: reduce) {
   .delete-dialog-overlay,
   .delete-dialog,
-  .delete-dialog-icon svg {
+  .delete-dialog-icon svg,
+  .rename-dialog-icon svg {
     animation: none;
   }
 }

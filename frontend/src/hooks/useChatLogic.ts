@@ -7,6 +7,7 @@ import {
   getLastActiveChatId,
   refreshChats,
   rememberActiveChat,
+  renameChatInStore,
   subscribeChats,
 } from '../stores/chatStore';
 
@@ -144,6 +145,10 @@ export const useChatLogic = () => {
     }
   }, [activeChatId, chats, navigate]);
 
+  const handleRenameChat = useCallback(async (chatId: string, title: string) => {
+    await renameChatInStore(chatId, title);
+  }, []);
+
   return {
     chats,
     activeChatId,
@@ -151,5 +156,6 @@ export const useChatLogic = () => {
     handleSelectChat,
     handleNewChat,
     handleDeleteChat,
+    handleRenameChat,
   };
 };

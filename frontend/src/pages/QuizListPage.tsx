@@ -12,7 +12,10 @@ type Quiz = {
 
 const QuizListPage: React.FC = () => {
   const navigate = useNavigate();
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const storedUser = localStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
+
+  const [quizzes, setQuizzes] = useState<any[]>([]);
   const [search, setSearch] = useState("");
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
@@ -20,7 +23,8 @@ const QuizListPage: React.FC = () => {
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
-        const res = await fetch(`${API_BASE}/quizzes`);
+        const url = user ? `${API_BASE}/quizzes?user_id=${user.id}` : `${API_BASE}/quizzes`;
+        const res = await fetch(url);
         if (!res.ok) throw new Error("Failed to fetch quizzes");
         const data = await res.json();
         setQuizzes(data);
@@ -29,7 +33,7 @@ const QuizListPage: React.FC = () => {
       }
     };
     fetchQuizzes();
-  }, [API_BASE]);
+  }, [API_BASE, user]);
 
   const filteredQuizzes = quizzes.filter((quiz) =>
     quiz.title.toLowerCase().includes(search.toLowerCase())
@@ -40,6 +44,23 @@ const QuizListPage: React.FC = () => {
       <Navbar />
 
       <div className="qe-container">
+        <button 
+          onClick={() => navigate("/quiz")} 
+          className="qc-back-btn"
+          style={{ 
+            background: "transparent", 
+            border: "1px solid #fbbc05", 
+            color: "#fbbc05", 
+            padding: "8px 16px", 
+            borderRadius: "6px", 
+            cursor: "pointer",
+            fontWeight: "bold",
+            marginBottom: "20px"
+          }}
+        >
+          ← Back to Dashboard
+        </button>
+
         <div className="qe-header">
           <div>
             <h1>Available Quizzes</h1>
@@ -69,12 +90,26 @@ const QuizListPage: React.FC = () => {
                 </div>
 
                 <div className="qe-actions">
-                  <button
-                    className="qe-btn qe-edit"
-                    onClick={() => navigate(`/quiz/take/${quiz.id}`)}
-                  >
-                    Take Quiz
-                  </button>
+                  {quiz.completed ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                      <span style={{ color: "#4bb543", fontWeight: "bold", fontSize: "14px" }}>
+                        Completed ({quiz.score}/{quiz.total_questions})
+                      </span>
+                      <button
+                        className="qe-btn qe-results"
+                        onClick={() => navigate(`/quiz/take/${quiz.id}`)}
+                      >
+                        Review
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="qe-btn qe-edit"
+                      onClick={() => navigate(`/quiz/take/${quiz.id}`)}
+                    >
+                      Take Quiz
+                    </button>
+                  )}
                 </div>
               </div>
             ))

@@ -20,6 +20,9 @@ const QuizCreationPage: React.FC = () => {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [topic, setTopic] = useState("");
+  const [numQuestions, setNumQuestions] = useState(5);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [questions, setQuestions] = useState<Question[]>([
     {
@@ -31,6 +34,48 @@ const QuizCreationPage: React.FC = () => {
       shortAnswer: "",
     },
   ]);
+
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+  // 🤖 AI Generate Quiz
+  const handleAIGenerate = async () => {
+    if (!topic) {
+      alert("Please enter a topic for AI generation");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const res = await fetch(`${API_BASE}/quizzes/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, num_questions: numQuestions }),
+      });
+
+      if (!res.ok) throw new Error("Failed to generate quiz");
+
+      const data = await res.json();
+      
+      setTitle(data.title);
+      setDescription(data.description);
+      
+      const newQuestions: Question[] = data.questions.map((q: any, index: number) => ({
+        id: Date.now() + index,
+        type: q.type,
+        question: q.question,
+        options: q.options || [],
+        answer: q.type === "mcq" ? q.answer : null,
+        shortAnswer: q.type === "short" ? q.answer : "",
+      }));
+
+      setQuestions(newQuestions);
+    } catch (err) {
+      console.error(err);
+      alert("Error generating quiz with AI");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // ➕ Add question
   const addQuestion = () => {
@@ -180,6 +225,55 @@ const QuizCreationPage: React.FC = () => {
       <p className="qc-subtitle">Create and customize your quiz</p>
 
       <div className="qc-create-container">
+        <button 
+          onClick={() => navigate("/quiz")} 
+          className="qc-back-btn"
+          style={{ 
+            background: "transparent", 
+            border: "1px solid #fbbc05", 
+            color: "#fbbc05", 
+            padding: "8px 16px", 
+            borderRadius: "6px", 
+            cursor: "pointer",
+            fontWeight: "bold",
+            marginBottom: "20px"
+          }}
+        >
+          ← Back to Dashboard
+        </button>
+
+        {/* AI GENERATION */}
+        <div className="qc-card ai-gen-card">
+          <h2>🪄 Generate with AI</h2>
+          <p className="qc-short-note">Enter a topic and let AI create the quiz for you!</p>
+          <div className="qc-ai-row">
+            <input
+              className="qc-input"
+              placeholder="e.g. Molecular Biology, History of Rome, Python Basics"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              disabled={isGenerating}
+            />
+            <input
+              type="number"
+              className="qc-input"
+              style={{ width: "80px" }}
+              min={1}
+              max={20}
+              value={numQuestions}
+              onChange={(e) => setNumQuestions(parseInt(e.target.value))}
+              disabled={isGenerating}
+            />
+            <button 
+              className="qc-ai-btn" 
+              onClick={handleAIGenerate}
+              disabled={isGenerating}
+            >
+              {isGenerating ? "Generating..." : "Generate Quiz"}
+            </button>
+          </div>
+        </div>
+
         {/* QUIZ INFO */}
         <div className="qc-card">
           <h2>Quiz Title</h2>

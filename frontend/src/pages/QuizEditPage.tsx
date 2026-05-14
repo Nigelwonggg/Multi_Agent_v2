@@ -18,6 +18,27 @@ const QuizEditPage: React.FC = () => {
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+  // 🔥 Delete quiz
+  const handleDelete = async (quizId: number) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this quiz?");
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/quizzes/${quizId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setQuizzes((prev) => prev.filter((q) => q.id !== quizId));
+      } else {
+        alert("Failed to delete quiz");
+      }
+    } catch (err) {
+      console.error("Error deleting quiz:", err);
+      alert("Error deleting quiz");
+    }
+  };
+
   // 🔥 Fetch quizzes from backend
   useEffect(() => {
     const fetchQuizzes = async () => {
@@ -48,6 +69,23 @@ const QuizEditPage: React.FC = () => {
       <Navbar />
 
       <div className="qe-container">
+        <button 
+          onClick={() => navigate("/quiz")} 
+          className="qc-back-btn"
+          style={{ 
+            background: "transparent", 
+            border: "1px solid #fbbc05", 
+            color: "#fbbc05", 
+            padding: "8px 16px", 
+            borderRadius: "6px", 
+            cursor: "pointer",
+            fontWeight: "bold",
+            marginBottom: "20px"
+          }}
+        >
+          ← Back to Dashboard
+        </button>
+
         {/* HEADER */}
         <div className="qe-header">
           <div>
@@ -95,8 +133,11 @@ const QuizEditPage: React.FC = () => {
                     Results
                   </button>
 
-                  <button className="qe-btn qe-more">
-                    More ▾
+                  <button 
+                    className="qe-btn qe-delete"
+                    onClick={() => handleDelete(quiz.id)}
+                  >
+                    Delete
                   </button>
                 </div>
               </div>

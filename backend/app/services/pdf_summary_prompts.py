@@ -9,7 +9,58 @@ AVAILABLE_DOMAINS = ["data_science", "medical"]
 
 
 def get_available_domains():
+    """Returns a copy of known domains with specialized prompts."""
     return AVAILABLE_DOMAINS.copy()
+
+
+def generic_text_summary_prompt(element, category, domain):
+    return f"""
+You are a content processor preparing materials for a {domain} vector database. Carefully analyze the provided element and create a structured summary optimized for retrieval.
+
+Element to process:
+<element>
+{element}
+</element>
+
+<provided_category>
+{category}
+</provided_category>
+
+Follow these steps:
+1. **Identification** - Identify the primary subject, key technical terms, and practical applications within the context of {domain}.
+2. **Cognitive Summary Creation** - Synthesize the information into a concise summary that maintains the original context integrity.
+
+Format requirements:
+<Summary>
+[Your technical synthesis here]
+</Summary>
+
+<Validated Category>
+[Confirmed category after analyzing the content]
+</Validated Category>
+"""
+
+
+def generic_image_summary_prompt(image, domain):
+    return f"""
+You are a specialist helping create detailed image descriptions for {domain} content indexing. Your task is to analyze images and produce technical summaries optimized for retrieval in a vector database.
+
+Follow this analysis process:
+1. Identify the type of image (e.g., chart, diagram, photo).
+2. Recognize key visual elements and concepts related to {domain}.
+3. Create a descriptive title (6-10 words).
+4. Write a concise technical summary covering the purpose and key relationships shown in the image.
+
+Format your response as:
+<Summary>
+Title Line: [Descriptive title]
+[Technical summary]
+</Summary>
+
+<Thought>
+[Brief analysis of elements and concepts]
+</Thought>
+"""
 
 
 def ds_text_summary_prompt(element, category):

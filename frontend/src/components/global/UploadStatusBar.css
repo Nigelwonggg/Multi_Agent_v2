@@ -1,0 +1,154 @@
+.upload-status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1e1e1e;
+  border-top: 1px solid #333;
+  padding: 8px 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.status-bar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.status-label {
+  font-weight: 700;
+  color: var(--accent, #d4af37);
+}
+
+.status-filename {
+  color: #e0e0e0;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-metrics {
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+.status-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.view-details-link {
+  color: var(--accent, #d4af37);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.view-details-link:hover {
+  text-decoration: underline;
+}
+
+.hide-btn, .close-btn {
+  background: transparent;
+  border: 1px solid #444;
+  color: #ccc;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+}
+
+.hide-btn:hover, .close-btn:hover {
+  background: #333;
+  color: white;
+  border-color: #666;
+}
+
+.progress-bar-container {
+  height: 3px;
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent, #d4af37);
+  transition: width 0.4s ease;
+}
+
+.progress-bar-fill.indeterminate {
+  width: 30%;
+  animation: indeterminateProgress 1.5s infinite linear;
+}
+
+@keyframes indeterminateProgress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+/* Restore button when hidden */
+.upload-status-restore-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent, #d4af37);
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  transition: transform 0.2s;
+}
+
+.upload-status-restore-btn:hover {
+  transform: scale(1.1);
+}
+
+.spinner-mini {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(13, 9, 0, 0.2);
+  border-top: 2px solid #0d0900;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Color variations */
+.upload-status-bar.completed .status-label {
+  color: #4caf50;
+}
+
+.upload-status-bar.failed .status-label {
+  color: #f44336;
+}

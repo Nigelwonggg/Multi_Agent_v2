@@ -42,8 +42,11 @@ class RouterNode(BaseNode):
         messages = state["messages"]
         current_input = state["current_input"]
         
+        # Dynamically fetch available domains to include newly created ones
+        available_domains = self.domain_config_manager.get_available_domains()
+        
         self.logger.info(f"🔍 Router analyzing query: '{current_input}'")
-        self.logger.debug(f"📄 Available domains: {AVAIALABLE_DOMAINS}")
+        self.logger.debug(f"📄 Available domains: {available_domains}")
         
         # Use general router configuration (not domain-specific)
         model_config = self.router_config_manager.get_model_config()
@@ -56,7 +59,7 @@ class RouterNode(BaseNode):
         user_prompt = prompt_config.user_prompt_template.format(
             messages=messages,
             current_input=current_input,
-            available_domains=AVAIALABLE_DOMAINS
+            available_domains=available_domains
         )
         
         # Prepare messages for LLM
@@ -66,7 +69,7 @@ class RouterNode(BaseNode):
         ]
 
         # Use general router model configuration
-        # Note: Gemini doesn't support strict mode, only OpenAI does
+        # Gemini-2.0-flash-exp and similar models use method: "json_schema"
         structured_kwargs = {"method": "json_schema"}
         if model_config.provider.lower() == "openai":
             structured_kwargs["strict"] = True
@@ -86,7 +89,8 @@ class RouterNode(BaseNode):
             
             is_rag_needed = response.is_rag_needed
 
-            domains = response.domains if is_rag_needed else []
+            # Ensure we only use domains that actually exist
+            domains = [d for d in response.domains if d in available_domains] if is_rag_needed else []
 
             self.logger.info(f"✅ Router decision: is_rag_needed={is_rag_needed}, domains={domains}")
             

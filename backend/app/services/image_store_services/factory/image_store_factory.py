@@ -5,11 +5,12 @@ Factory pattern for managing image store services across different domains.
 Provides centralized access and singleton management.
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 from enum import Enum
 from ..base.image_store_base import BaseImageStoreService
 from ..domains.ds_image_store import DataScienceImageStore
 from ..domains.med_image_store import MedicalImageStore
+from ..domains.generic_image_store import GenericImageStore
 from app.utils.logging_config import get_logger
 
 
@@ -24,7 +25,7 @@ class ImageStoreFactory:
     
     def __init__(self):
         self.logger = get_logger("services.image_store_factory")
-        self._stores: Dict[ImageStoreDomain, BaseImageStoreService] = {}
+        self._stores: Dict[str, BaseImageStoreService] = {}
         self._initialized = False
         self._store_classes = {
             ImageStoreDomain.DATA_SCIENCE: DataScienceImageStore,
@@ -39,9 +40,9 @@ class ImageStoreFactory:
         self.logger.info("🏭 Initializing Image Store Factory...")
         
         try:
-            for domain, store_class in self._store_classes.items():
-                if domain not in self._stores:
-                    self._stores[domain] = store_class()
+            # Initialize domain-specific stores
+            self._stores[ImageStoreDomain.DATA_SCIENCE.value] = DataScienceImageStore()
+            self._stores[ImageStoreDomain.MEDICAL.value] = MedicalImageStore()
             
             self._initialized = True
             self.logger.info("✅ Image Store Factory initialized successfully")
@@ -50,18 +51,26 @@ class ImageStoreFactory:
             self.logger.error(f"❌ Failed to initialize Image Store Factory: {str(e)}")
             raise
     
-    def get_store(self, domain: ImageStoreDomain) -> BaseImageStoreService:
+    def get_store(self, domain: Union[ImageStoreDomain, str]) -> BaseImageStoreService:
         """Get image store service by domain"""
-        if domain not in self._store_classes:
-            available = list(self._store_classes.keys())
-            raise ValueError(f"Domain '{domain}' not available. Available: {available}")
-
-        if domain not in self._stores:
-            self.logger.info(f"Lazy loading image store for domain: {domain.value}")
-            self._stores[domain] = self._store_classes[domain]()
-            self._initialized = len(self._stores) == len(self._store_classes)
+        if not self._initialized:
+            self.initialize()
             
-        return self._stores[domain]
+        domain_name = domain.value if isinstance(domain, ImageStoreDomain) else domain.lower()
+            
+        if domain_name not in self._stores:
+            self.logger.info(f"🔍 Domain '{domain_name}' not found in active stores. Creating GenericImageStore...")
+            try:
+                # Dynamically create a generic store for the new domain
+                self._stores[domain_name] = GenericImageStore(domain_name)
+            except Exception as e:
+                import traceback
+                error_traceback = traceback.format_exc()
+                self.logger.error(f"❌ Failed to create GenericImageStore for '{domain_name}': {str(e)}")
+                self.logger.error(f"🔍 Traceback: {error_traceback}")
+                raise ValueError(f"Domain '{domain_name}' could not be initialized: {str(e)}")
+            
+        return self._stores[domain_name]
     
     def get_data_science_store(self) -> DataScienceImageStore:
         """Get Data Science image store (convenience method)"""
@@ -73,7 +82,10 @@ class ImageStoreFactory:
     
     def list_available_domains(self) -> Dict[str, str]:
         """Get all available domains"""
-        return {domain.value: domain.name for domain in self._store_classes.keys()}
+        if not self._initialized:
+            self.initialize()
+            
+        return {name: name.upper() for name in self._stores.keys()}
     
     def is_initialized(self) -> bool:
         """Check if factory is initialized"""
@@ -81,12 +93,24 @@ class ImageStoreFactory:
     
     def get_store_by_name(self, domain_name: str) -> BaseImageStoreService:
         """Get store by domain name string"""
-        try:
-            domain = ImageStoreDomain(domain_name.lower())
-            return self.get_store(domain)
-        except ValueError:
-            available = [d.value for d in ImageStoreDomain]
-            raise ValueError(f"Invalid domain name '{domain_name}'. Available: {available}")
+        return self.get_store(domain_name)
+
+    def remove_store(self, domain_name: str) -> bool:
+        """Remove a store from the factory cache and cleanup resources"""
+        domain_name = domain_name.lower()
+        if domain_name in self._stores:
+            store = self._stores[domain_name]
+            try:
+                store.cleanup()
+            except Exception as e:
+                self.logger.error(f"❌ Error during cleanup of image store '{domain_name}': {str(e)}")
+            
+            del self._stores[domain_name]
+            import gc
+            gc.collect()
+            self.logger.info(f"🗑️ Removed domain '{domain_name}' from Image Store Factory cache and ran GC")
+            return True
+        return False
 
 
 # Singleton factory instance

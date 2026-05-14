@@ -3,6 +3,8 @@ import uuid
 import shutil
 import base64
 import openai
+import chromadb
+from chromadb.config import Settings
 from dotenv import load_dotenv
 from unstructured.partition.pdf import partition_pdf
 from langchain_chroma import Chroma
@@ -90,19 +92,31 @@ class PDFProcessor:
         # Optionally remove old text DB
         if remove_old_db and os.path.exists(text_db_directory):
             shutil.rmtree(text_db_directory)
+        
+        os.makedirs(text_db_directory, exist_ok=True)
+        text_client = chromadb.PersistentClient(
+            path=text_db_directory,
+            settings=Settings(anonymized_telemetry=False, is_persistent=True)
+        )
         self.text_vectorstore = Chroma(
+            client=text_client,
             collection_name=text_db_directory,
             embedding_function=self.embeddings,
-            persist_directory=text_db_directory
         )
 
         # Optionally remove old image DB
         if remove_old_db and os.path.exists(image_db_directory):
             shutil.rmtree(image_db_directory)
+        
+        os.makedirs(image_db_directory, exist_ok=True)
+        image_client = chromadb.PersistentClient(
+            path=image_db_directory,
+            settings=Settings(anonymized_telemetry=False, is_persistent=True)
+        )
         self.image_vectorstore = Chroma(
+            client=image_client,
             collection_name=image_db_directory,
             embedding_function=self.embeddings,
-            persist_directory=image_db_directory
         )
 
         # Setup OpenAI client for text tasks (using configured API)

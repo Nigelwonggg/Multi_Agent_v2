@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { getImageDocuments, deleteImageDocument, getAvailableDomains } from "../../api/imageStoreApi";
+import { deleteDomain } from "../../api/textStoreApi";
 import type { ImageDocument } from "../../api/imageStoreApi";
 import FilterBar from "../../components/FilterBar/FilterBar"; // Reusing FilterBar
 import Pagination from "../../components/Pagination/Pagination";
-import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
+import { FiPlus, FiEdit, FiTrash2, FiAlertTriangle } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import "./ImageStore.css";
+
+const PROTECTED_DOMAINS = ["data_science", "medical"];
 
 const ImageStore: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -23,9 +27,7 @@ const ImageStore: React.FC = () => {
   });
   const [selectedDomain, setSelectedDomain] = useState(domainFromQuery);
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
-  const [deleteCandidate, setDeleteCandidate] = useState<ImageDocument | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const pageSize = 10;
   const navigate = useNavigate();
 
@@ -44,6 +46,8 @@ const ImageStore: React.FC = () => {
       setTotalPages(Math.ceil(response.total / pageSize));
     } catch (error) {
       console.error("Failed to fetch image documents:", error);
+      setDocuments([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -82,31 +86,43 @@ const ImageStore: React.FC = () => {
     setFilters(newFilters);
   }, []);
 
-  const handleDeleteRequest = (doc: ImageDocument) => {
-    setDeleteCandidate(doc);
-    setDeleteError(null);
+  const handleDelete = async (docId: string) => {
+    if (window.confirm("Are you sure you want to delete this image document?")) {
+      try {
+        await deleteImageDocument(docId, selectedDomain);
+        // Refetch documents after deletion
+        const response = await getImageDocuments(
+          currentPage,
+          pageSize,
+          filters.category || null,
+          filters.filename || null,
+          null,
+          selectedDomain
+        );
+        setDocuments(response.documents);
+        setTotalPages(Math.ceil(response.total / pageSize));
+      } catch (error) {
+        console.error("Failed to delete image document:", error);
+      }
+    }
   };
 
-  const handleDeleteCancel = () => {
-    if (deleting) return;
-    setDeleteCandidate(null);
-    setDeleteError(null);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!deleteCandidate?.doc_id) return;
-
-    setDeleting(true);
-    setDeleteError(null);
+  const handleDeleteDomainConfirm = async () => {
     try {
-      await deleteImageDocument(deleteCandidate.doc_id, selectedDomain);
-      setDeleteCandidate(null);
-      await fetchDocuments();
+      await deleteDomain(selectedDomain);
+      setIsDeleteModalOpen(false);
+      
+      // Refresh available domains and switch to data_science
+      const updatedDomains = await getAvailableDomains();
+      setAvailableDomains(updatedDomains);
+      
+      const nextDomain = updatedDomains.includes('data_science') ? 'data_science' : updatedDomains[0];
+      setSelectedDomain(nextDomain);
+      navigate(`/vector-database/image-store?domain=${encodeURIComponent(nextDomain)}`);
     } catch (error) {
-      console.error("Failed to delete image document:", error);
-      setDeleteError("Failed to delete this image. Please try again.");
-    } finally {
-      setDeleting(false);
+      console.error("Failed to delete domain:", error);
+      setIsDeleteModalOpen(false);
+      alert(error instanceof Error ? error.message : "Failed to delete domain");
     }
   };
 
@@ -180,6 +196,39 @@ const ImageStore: React.FC = () => {
         <span style={{ fontSize: '16px', color: '#666' }}>
           Showing images from the selected domain
         </span>
+
+        {!PROTECTED_DOMAINS.includes(selectedDomain) && (
+          <button 
+            className="delete-domain-btn"
+            onClick={() => setIsDeleteModalOpen(true)}
+            style={{
+              marginLeft: 'auto',
+              padding: '8px 16px',
+              backgroundColor: 'rgba(211, 47, 47, 0.1)',
+              color: '#ef5350',
+              border: '1px solid rgba(211, 47, 47, 0.3)',
+              borderRadius: '4px',
+              fontSize: '13px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(211, 47, 47, 0.2)';
+              e.currentTarget.style.borderColor = 'rgba(211, 47, 47, 0.5)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(211, 47, 47, 0.1)';
+              e.currentTarget.style.borderColor = 'rgba(211, 47, 47, 0.3)';
+            }}
+          >
+            <FiAlertTriangle />
+            <span>Delete Domain</span>
+          </button>
+        )}
       </div>
 
       <FilterBar 
@@ -258,34 +307,15 @@ const ImageStore: React.FC = () => {
         </>
       )}
 
-      {deleteCandidate && (
-        <div className="store-delete-modal-backdrop" role="presentation" onClick={handleDeleteCancel}>
-          <div
-            className="store-delete-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="image-delete-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="store-delete-modal-icon">
-              <FiTrash2 />
-            </div>
-            <h2 id="image-delete-title">Delete image?</h2>
-            <p>
-              This will remove <strong>{deleteCandidate.filename || deleteCandidate.doc_id}</strong> from the {selectedDomain.replace('_', ' ')} image store.
-            </p>
-            {deleteError && <div className="store-delete-modal-error">{deleteError}</div>}
-            <div className="store-delete-modal-actions">
-              <button type="button" className="store-modal-cancel" onClick={handleDeleteCancel} disabled={deleting}>
-                Cancel
-              </button>
-              <button type="button" className="store-modal-delete" onClick={handleDeleteConfirm} disabled={deleting}>
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        title="Delete Entire Domain?"
+        message={`WARNING: Are you sure you want to delete the domain "${selectedDomain.replace('_', ' ').toUpperCase()}"? This will permanently remove ALL associated documents and assets. This action is irreversible.`}
+        confirmLabel="Permanently Delete"
+        onConfirm={handleDeleteDomainConfirm}
+        onCancel={() => setIsDeleteModalOpen(false)}
+        isDestructive={true}
+      />
     </div>
   );
 };

@@ -42,6 +42,9 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
   return <>{children}</>;
 };
 
+import { PdfUploadProvider } from './contexts/PdfUploadContext';
+import UploadStatusBar from './components/global/UploadStatusBar';
+
 function App() {
   const location = useLocation();
 
@@ -59,7 +62,7 @@ function App() {
   }, [location.pathname, location.search]);
 
   return (
-    <>
+    <PdfUploadProvider>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -75,7 +78,8 @@ function App() {
         <Route path="/quiz" element={<QuizPage />} />
         <Route path="/quiz/create" element={<QuizCreationPage />} />
         <Route path="/quiz/edit" element={<QuizEditPage />} />
-
+      
+        
         <Route path="/chat" element={
           <ProtectedRoute>
             <Layout />
@@ -107,11 +111,11 @@ function App() {
             <RetrievedContentPage />
           </ProtectedRoute>
         } />
-
+        
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-      <ChatProgressToast />
-    </>
+      <UploadStatusBar />
+    </PdfUploadProvider>
   );
 }
 

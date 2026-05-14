@@ -5,6 +5,7 @@ import App from './App.tsx'
 import { initializeTheme } from './hooks/useTheme.ts'
 import './index.css'
 import './components/global/global.css'
+import './theme.css'
 
 initializeTheme()
 

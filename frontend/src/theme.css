@@ -378,3 +378,157 @@
   color: #ffffff;
   box-shadow: 0 8px 22px rgba(37, 99, 235, 0.18);
 }
+
+:root[data-theme="light"] .identity-registry-page,
+:root[data-theme="light"] .unit-manager-page {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.1), transparent 34vw),
+    radial-gradient(circle at top right, rgba(139, 92, 246, 0.1), transparent 30vw),
+    var(--bg) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="light"] .identity-registry-hero,
+:root[data-theme="light"] .identity-panel,
+:root[data-theme="light"] .summary-card,
+:root[data-theme="light"] .unit-manager-hero,
+:root[data-theme="light"] .unit-panel {
+  background: #ffffff !important;
+  border-color: rgba(37, 99, 235, 0.16) !important;
+  box-shadow: 0 14px 40px rgba(37, 99, 235, 0.1) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="light"] .identity-registry-hero h1,
+:root[data-theme="light"] .identity-panel h2,
+:root[data-theme="light"] .unit-manager-hero h1,
+:root[data-theme="light"] .unit-panel h2,
+:root[data-theme="light"] .unit-panel-header h2,
+:root[data-theme="light"] .unit-assignment-header h3 {
+  color: var(--text) !important;
+}
+
+:root[data-theme="light"] .identity-registry-subtitle,
+:root[data-theme="light"] .unit-manager-subtitle,
+:root[data-theme="light"] .panel-help,
+:root[data-theme="light"] .selected-file,
+:root[data-theme="light"] .summary-card span,
+:root[data-theme="light"] .registry-toolbar-field label,
+:root[data-theme="light"] .identity-upload-form label,
+:root[data-theme="light"] .unit-form label,
+:root[data-theme="light"] .unit-checkbox-card span,
+:root[data-theme="light"] .empty-inline-text,
+:root[data-theme="light"] .unit-table th,
+:root[data-theme="light"] .registry-table th {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="light"] .identity-upload-form input,
+:root[data-theme="light"] .identity-upload-form select,
+:root[data-theme="light"] .registry-toolbar-field input,
+:root[data-theme="light"] .registry-toolbar-field select,
+:root[data-theme="light"] .unit-form input,
+:root[data-theme="light"] .unit-search-bar input,
+:root[data-theme="light"] .unit-inline-input {
+  background: #f8fbff !important;
+  border-color: rgba(37, 99, 235, 0.2) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="light"] .identity-upload-form input:focus,
+:root[data-theme="light"] .identity-upload-form select:focus,
+:root[data-theme="light"] .registry-toolbar-field input:focus,
+:root[data-theme="light"] .registry-toolbar-field select:focus,
+:root[data-theme="light"] .unit-form input:focus,
+:root[data-theme="light"] .unit-search-bar input:focus,
+:root[data-theme="light"] .unit-inline-input:focus {
+  outline: none;
+  border-color: rgba(37, 99, 235, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+:root[data-theme="light"] .registry-table th,
+:root[data-theme="light"] .registry-table td,
+:root[data-theme="light"] .unit-table th,
+:root[data-theme="light"] .unit-table td {
+  border-bottom-color: rgba(37, 99, 235, 0.12) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="light"] .registry-table th,
+:root[data-theme="light"] .unit-table th {
+  background: #f8fbff !important;
+  color: #1e3a8a !important;
+}
+
+:root[data-theme="light"] .panel-chip,
+:root[data-theme="light"] .unit-pill {
+  background: rgba(37, 99, 235, 0.1) !important;
+  border-color: rgba(37, 99, 235, 0.18) !important;
+  color: var(--accent) !important;
+}
+
+:root[data-theme="light"] .unit-checkbox-card {
+  background: #f8fbff !important;
+  border-color: rgba(37, 99, 235, 0.16) !important;
+}
+
+:root[data-theme="light"] .unit-assignment-panel,
+:root[data-theme="light"] .unit-upload-divider {
+  border-color: rgba(37, 99, 235, 0.12) !important;
+}
+
+:root[data-theme="light"] .upload-button,
+:root[data-theme="light"] .unit-submit-button {
+  background: linear-gradient(135deg, var(--accent), var(--accent2)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.18);
+}
+
+:root[data-theme="light"] .secondary-action-button,
+:root[data-theme="light"] .edit-unit-button {
+  background: rgba(37, 99, 235, 0.1) !important;
+  border-color: rgba(37, 99, 235, 0.22) !important;
+  color: var(--accent) !important;
+}
+
+:root[data-theme="light"] .secondary-action-button:hover:not(:disabled),
+:root[data-theme="light"] .edit-unit-button:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.16) !important;
+  border-color: rgba(37, 99, 235, 0.35) !important;
+}
+
+:root[data-theme="light"] .cancel-unit-button {
+  background: #edf4ff !important;
+  border-color: rgba(37, 99, 235, 0.16) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="light"] .delete-entry-button,
+:root[data-theme="light"] .delete-unit-button {
+  background: rgba(220, 53, 69, 0.1) !important;
+  border-color: rgba(220, 53, 69, 0.22) !important;
+  color: #b42318 !important;
+}
+
+:root[data-theme="light"] .status-message.success,
+:root[data-theme="light"] .status-pill.available {
+  background: rgba(22, 163, 74, 0.1) !important;
+  border-color: rgba(22, 163, 74, 0.22) !important;
+  color: #15803d !important;
+}
+
+:root[data-theme="light"] .status-message.error {
+  background: rgba(220, 53, 69, 0.1) !important;
+  border-color: rgba(220, 53, 69, 0.22) !important;
+  color: #b42318 !important;
+}
+
+:root[data-theme="light"] .status-pill.claimed {
+  background: rgba(139, 92, 246, 0.12) !important;
+  color: #6d28d9 !important;
+}
+
+:root[data-theme="light"] .inline-link {
+  color: var(--accent) !important;
+}

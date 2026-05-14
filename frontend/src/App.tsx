@@ -20,10 +20,14 @@ import RetrievedContentPage from './pages/RetrievedContentPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import QuizEditPage from './pages/QuizEditPage';
+import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
+import QuizListPage from './pages/QuizListPage';
+import QuizTakePage from './pages/QuizTakePage';
 import ChatProgressToast from './components/ChatProgressToast/ChatProgressToast';
 import IdentityRegistryPage from './pages/IdentityRegistryPage';
 import UnitManagerPage from './pages/UnitManagerPage';
-// import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
+import QuickQuizPage from './pages/QuickQuizPage';
+
 
 // Simple component to protect routes
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
@@ -73,6 +77,15 @@ function App() {
           </ProtectedRoute>
         } />
 
+      <Route path="/vector-database/upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
+      <Route path="/vector-database/text-store/upload" element={<Navigate to="/upload-pdf" replace />} />
+      <Route path="/quiz" element={<QuizPage />} />
+      <Route path="/quiz/create" element={<QuizCreationPage />} />
+      <Route path="/quiz/quick" element={<QuickQuizPage />} />
+      <Route path="/quiz/edit" element={<QuizEditPage />} />
+      <Route path="/quiz/edit/:id" element={<QuizEditDetailsPage />} />
+      <Route path="/quiz/list" element={<QuizListPage />} />
+      <Route path="/quiz/take/:id" element={<QuizTakePage />} />
         <Route path="/vector-database/upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
         <Route path="/vector-database/text-store/upload" element={<Navigate to="/upload-pdf" replace />} />
         <Route path="/quiz" element={<QuizPage />} />
@@ -89,6 +102,26 @@ function App() {
           <Route path=":chatId" element={<ChatPage />} />
           <Route path="dummy" element={<DummyPage />} />
         </Route>
+      <Route path="/vector-database/upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
+      <Route path="/vector-database/text-store/upload" element={<Navigate to="/upload-pdf" replace />} />
+      <Route path="/quiz" element={<QuizPage />} />
+      <Route path="/quiz/create" element={<QuizCreationPage />} />
+      <Route path="/quiz/quick" element={<QuickQuizPage />} />
+      <Route path="/quiz/edit" element={<QuizEditPage />} />
+      <Route path="/quiz/edit/:id" element={<QuizEditDetailsPage />} />
+      <Route path="/quiz/list" element={<QuizListPage />} />
+      <Route path="/quiz/take/:id" element={<QuizTakePage />} />
+    
+      
+      <Route path="/chat" element={
+        <ProtectedRoute>
+          <Layout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<ChatWindow chatId={null} />} />
+        <Route path=":chatId" element={<ChatPage />} />
+        <Route path="dummy" element={<DummyPage />} />
+      </Route>
 
         <Route path="/vector-database" element={
           <ProtectedRoute allowedRoles={['lecturer']}>

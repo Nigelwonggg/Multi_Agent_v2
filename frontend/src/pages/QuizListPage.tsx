@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
-import "./QuizEditPage.css";
+import "./QuizEditPage.css"; // Reuse similar styling
 
 type Quiz = {
   id: number;
@@ -10,56 +10,31 @@ type Quiz = {
   description: string;
 };
 
-const QuizEditPage: React.FC = () => {
+const QuizListPage: React.FC = () => {
   const navigate = useNavigate();
+  const storedUser = localStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
 
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
   const [search, setSearch] = useState("");
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
-  // 🔥 Delete quiz
-  const handleDelete = async (quizId: number) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this quiz?");
-    if (!confirmDelete) return;
-
-    try {
-      const res = await fetch(`${API_BASE}/quizzes/${quizId}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        setQuizzes((prev) => prev.filter((q) => q.id !== quizId));
-      } else {
-        alert("Failed to delete quiz");
-      }
-    } catch (err) {
-      console.error("Error deleting quiz:", err);
-      alert("Error deleting quiz");
-    }
-  };
-
-  // 🔥 Fetch quizzes from backend
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
-        const res = await fetch(`${API_BASE}/quizzes`);
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch quizzes");
-        }
-
+        const url = user ? `${API_BASE}/quizzes?user_id=${user.id}` : `${API_BASE}/quizzes`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Failed to fetch quizzes");
         const data = await res.json();
         setQuizzes(data);
       } catch (err) {
         console.error("Error loading quizzes:", err);
       }
     };
-
     fetchQuizzes();
-  }, []);
+  }, [API_BASE, user]);
 
-  // 🔍 Filter quizzes by search
   const filteredQuizzes = quizzes.filter((quiz) =>
     quiz.title.toLowerCase().includes(search.toLowerCase())
   );
@@ -86,11 +61,10 @@ const QuizEditPage: React.FC = () => {
           ← Back to Dashboard
         </button>
 
-        {/* HEADER */}
         <div className="qe-header">
           <div>
-            <h1>Edit Existing Quiz</h1>
-            <p>Modify or manage your past quizzes</p>
+            <h1>Available Quizzes</h1>
+            <p>Select a quiz to start your attempt</p>
           </div>
 
           <input
@@ -101,18 +75,14 @@ const QuizEditPage: React.FC = () => {
           />
         </div>
 
-        {/* QUIZ LIST */}
         <div className="qe-list">
           {filteredQuizzes.length === 0 ? (
-            <p style={{ marginTop: "20px" }}>
-              No quizzes found.
-            </p>
+            <p style={{ marginTop: "20px" }}>No quizzes available at the moment.</p>
           ) : (
             filteredQuizzes.map((quiz) => (
               <div className="qe-card" key={quiz.id}>
                 <div className="qe-left">
-                  <div className="qe-icon">📘</div>
-
+                  <div className="qe-icon">📝</div>
                   <div>
                     <h2>{quiz.title}</h2>
                     <p>{quiz.description}</p>
@@ -120,25 +90,26 @@ const QuizEditPage: React.FC = () => {
                 </div>
 
                 <div className="qe-actions">
-                  <button
-                    className="qe-btn qe-edit"
-                    onClick={() =>
-                      navigate(`/quiz/edit/${quiz.id}`)
-                    }
-                  >
-                    Edit
-                  </button>
-
-                  <button className="qe-btn qe-results">
-                    Results
-                  </button>
-
-                  <button 
-                    className="qe-btn qe-delete"
-                    onClick={() => handleDelete(quiz.id)}
-                  >
-                    Delete
-                  </button>
+                  {quiz.completed ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                      <span style={{ color: "#4bb543", fontWeight: "bold", fontSize: "14px" }}>
+                        Completed ({quiz.score}/{quiz.total_questions})
+                      </span>
+                      <button
+                        className="qe-btn qe-results"
+                        onClick={() => navigate(`/quiz/take/${quiz.id}`)}
+                      >
+                        Review
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="qe-btn qe-edit"
+                      onClick={() => navigate(`/quiz/take/${quiz.id}`)}
+                    >
+                      Take Quiz
+                    </button>
+                  )}
                 </div>
               </div>
             ))
@@ -151,4 +122,4 @@ const QuizEditPage: React.FC = () => {
   );
 };
 
-export default QuizEditPage;
+export default QuizListPage;

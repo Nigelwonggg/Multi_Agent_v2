@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text
-from app.databases.session import Base
+from sqlalchemy import Column, Integer, String, Text, ForeignKey
+from app.databases.chat_database import Base
 
 class Quiz(Base):
     __tablename__ = "quizzes"

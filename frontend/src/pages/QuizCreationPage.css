@@ -48,6 +48,14 @@ textarea.quiz-input {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
+.result-correct {
+  border: 1px solid #4bb543;
+}
+
+.result-wrong {
+  border: 1px solid #ff4d4f;
+}
+
 /* INPUT STYLE */
 .qc-input {
   width: 100%;
@@ -145,6 +153,46 @@ textarea.quiz-input {
 
 .qc-actions-bottom button:hover {
   background-color: #e6aa00;
+}
+
+/* AI GENERATION SECTION */
+.ai-gen-card {
+  border: 1px solid #fbbc05;
+  background: rgba(251, 188, 5, 0.05);
+}
+
+.ai-gen-card h2 {
+  color: #fbbc05;
+  margin-bottom: 5px;
+}
+
+.qc-ai-row {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.qc-ai-btn {
+  background-color: #fbbc05;
+  color: black;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.qc-ai-btn:hover:not(:disabled) {
+  background-color: #e6aa00;
+  transform: translateY(-1px);
+}
+
+.qc-ai-btn:disabled {
+  background-color: #555;
+  color: #888;
+  cursor: not-allowed;
 }
 
 /* SAVE BUTTON */

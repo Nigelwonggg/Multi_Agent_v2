@@ -47,6 +47,25 @@
   font-weight: bold;
 }
 
+.quick-quiz-input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  color: white;
+  outline: none;
+}
+
+.quick-quiz-input:focus {
+  border-color: #f5c542;
+}
+
+.quick-ai-card {
+  border: 1px solid rgba(245, 197, 66, 0.3);
+}
+
 footer {
   margin-top: 80px;
 }

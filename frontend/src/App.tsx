@@ -22,6 +22,8 @@ import SignupPage from './pages/SignupPage';
 import QuizEditPage from './pages/QuizEditPage';
 import ChatProgressToast from './components/ChatProgressToast/ChatProgressToast';
 import './theme.css';
+import IdentityRegistryPage from './pages/IdentityRegistryPage';
+import UnitManagerPage from './pages/UnitManagerPage';
 // import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
 
 // Simple component to protect routes
@@ -98,6 +100,21 @@ function App() {
           <Route path="image-store/add" element={<AddImagePage />} />
           <Route path="image-store/edit/:docId" element={<EditImagePage />} />
         </Route>
+      <Route path="/vector-database" element={
+        <ProtectedRoute allowedRoles={['lecturer']}>
+          <DatabaseLayout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<Navigate to="text-store" />} />
+        <Route path="text-store" element={<TextStore />} />
+        <Route path="text-store/add" element={<AddDocumentPage />} />
+        <Route path="text-store/edit/:docId" element={<EditDocumentPage />} />
+        <Route path="image-store" element={<ImageStore />} />
+        <Route path="image-store/add" element={<AddImagePage />} />
+        <Route path="image-store/edit/:docId" element={<EditImagePage />} />
+        <Route path="id-registry" element={<IdentityRegistryPage />} />
+        <Route path="unit-manager" element={<UnitManagerPage />} />
+      </Route>
 
         <Route path="/retrieved-content" element={
           <ProtectedRoute>
@@ -113,4 +130,3 @@ function App() {
 }
 
 export default App;
-

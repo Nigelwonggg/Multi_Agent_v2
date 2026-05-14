@@ -56,6 +56,9 @@ app.include_router(chat_router)
 from app.api.routes.auth import router as auth_router
 app.include_router(auth_router)
 
+from app.api.routes.identity_registry import router as identity_registry_router
+app.include_router(identity_registry_router)
+
 from app.api.routes.text_store import router as text_store_router
 app.include_router(text_store_router)
 

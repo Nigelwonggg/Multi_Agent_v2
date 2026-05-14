@@ -1,4 +1,5 @@
 import base64
+import os
 import time
 import json
 from datetime import datetime
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.schemas.chat_sch import (
     MessageRequest, MessageResponse, MessagesRequest, 
     ChatResponse, MessagesResponse, MessageHistoryResponse,
-    ChatsResponse
+    ChatsResponse, ChatTitleUpdate
 )
 from app.graph_logics.chat_graph import chat_graph 
 from app.databases.chat_database import get_db
@@ -22,6 +23,14 @@ from app.utils.logging_config import get_logger
 logger = get_logger("api.routes.chat")
 
 router = APIRouter()
+
+
+def get_graph_recursion_limit() -> int:
+    try:
+        return max(4, int(os.getenv("CHAT_GRAPH_RECURSION_LIMIT", "8")))
+    except (TypeError, ValueError):
+        return 8
+
 
 def generate_request_id() -> str:
     """Generate a unique request ID for tracking"""
@@ -150,7 +159,10 @@ async def chat(
             db=db
         )
 
-        result = chat_graph.invoke(initial_state)
+        result = chat_graph.invoke(
+            initial_state,
+            config={"recursion_limit": get_graph_recursion_limit()}
+        )
         
         # DEBUG: Log the full graph result to see what keys are available
         logger.debug(f"🔍 Full graph result keys: {list(result.keys())}")
@@ -302,7 +314,7 @@ def create_chat(
     current_user: User = Depends(get_current_user)
 ) -> Chat:
     """Create a new chat session and return it."""
-    chat = Chat(user_id=current_user.id, title="New Chat")
+    chat = Chat(user_id=current_user.id, title="New Question")
     db.add(chat)
     db.commit()
     db.refresh(chat)
@@ -320,6 +332,35 @@ def list_chats(
     """
     chats = db.query(Chat).filter(Chat.user_id == current_user.id).order_by(Chat.created_at).all()
     return ChatsResponse(chats=chats)
+
+@router.patch("/api/chat/{thread_id}/title", response_model=ChatResponse)
+def update_chat_title(
+    thread_id: str,
+    title_update: ChatTitleUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Chat:
+    """Update a chat title after the user's first message."""
+    try:
+        chat_id = int(thread_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid chat ID format")
+
+    chat = db.query(Chat).filter(Chat.id == chat_id).first()
+    if chat is None:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    if chat.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this chat")
+
+    normalized_title = title_update.title.strip()[:80]
+    if not normalized_title:
+        raise HTTPException(status_code=400, detail="Title cannot be empty")
+
+    chat.title = normalized_title
+    db.commit()
+    db.refresh(chat)
+    return chat
 
 @router.delete("/api/chat/{thread_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_chat(

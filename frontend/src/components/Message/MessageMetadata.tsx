@@ -14,11 +14,25 @@ interface MessageMetadataProps {
   };
 }
 
+const canCurrentUserOpenReferences = () => {
+  const storedUser = localStorage.getItem('user');
+
+  if (!storedUser) return false;
+
+  try {
+    const user = JSON.parse(storedUser) as { role?: string };
+    return user.role === 'lecturer' || user.role === 'admin';
+  } catch {
+    return false;
+  }
+};
+
 const MessageMetadata: React.FC<MessageMetadataProps> = ({ metadata }) => {
   const { is_rag_used, processing_time, docs, image_docs } = metadata;
+  const canOpenReferences = canCurrentUserOpenReferences();
 
   const handleRagTagClick = () => {
-    if (is_rag_used && (docs?.length || image_docs?.length)) {
+    if (canOpenReferences && is_rag_used && (docs?.length || image_docs?.length)) {
       console.log('🔍 RAG tag clicked - Raw metadata:', { docs, image_docs });
       console.log('🔍 Doc types:', { 
         docsType: docs ? typeof docs[0] : 'none', 
@@ -29,7 +43,7 @@ const MessageMetadata: React.FC<MessageMetadataProps> = ({ metadata }) => {
       const queryParams = new URLSearchParams();
       
       // Always default to text tab
-      let defaultTab = 'text';
+      const defaultTab = 'text';
       
       if (docs && docs.length > 0) {
         // Group documents by domain for efficient fetching
@@ -75,14 +89,17 @@ const MessageMetadata: React.FC<MessageMetadataProps> = ({ metadata }) => {
     <div className="metadata-container">
       {is_rag_used && (
         <div 
-          className="metadata-tag-wrapper rag-tag" 
-          onClick={handleRagTagClick}
+          className={`metadata-tag-wrapper rag-tag ${canOpenReferences ? '' : 'reference-disabled'}`}
+          onClick={canOpenReferences ? handleRagTagClick : undefined}
+          aria-disabled={!canOpenReferences}
         >
           <div className="metadata-tag">
             <FiCheckCircle className="tag-icon" />
             <span>References</span>
           </div>
-          <div className="tooltip">RAG Used: Yes. Click to view retrieved content.</div>
+          <div className="tooltip">
+            {canOpenReferences ? 'RAG Used: Yes. Click to view retrieved content.' : 'References are available to admin accounts only.'}
+          </div>
         </div>
       )}
 

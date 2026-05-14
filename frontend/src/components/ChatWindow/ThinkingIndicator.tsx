@@ -1,12 +1,12 @@
 import React from 'react';
-import { FiCpu } from 'react-icons/fi';
+import { FaRobot } from 'react-icons/fa';
 import './ThinkingIndicator.css';
 
 const ThinkingIndicator: React.FC = () => {
   return (
     <div className="message bot">
       <div className="avatar">
-        <FiCpu />
+        <FaRobot />
       </div>
       <div className="thinking-indicator-bubble">
         <div className="thinking-dots">

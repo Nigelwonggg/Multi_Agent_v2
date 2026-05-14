@@ -147,7 +147,14 @@ class EvaluatorNode(BaseNode):
             }
         except Exception as e:
             self.logger.error(f"❌ Failed to evaluate: {str(e)}")
-            return {}
+            return {
+                "final_answer": final_answer,
+                "selected_image": selected_image,
+                "is_approved": True,
+                "evaluation": f"Evaluation skipped after error: {str(e)}",
+                "improvement_feedback": "None",
+                "include_image": bool(selected_image),
+            }
 
 # Create an instance of the EvaluatorNode
 evaluator = EvaluatorNode()

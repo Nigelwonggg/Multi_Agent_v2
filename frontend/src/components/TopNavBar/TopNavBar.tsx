@@ -1,5 +1,6 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import SmoothLink from '../SmoothLink/SmoothLink';
 import './TopNavBar.css';
 
 interface TopNavBarProps {
@@ -21,8 +22,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) 
 
   let textStorePath: string;
   let imageStorePath: string;
-  let registryPath: string | null = null;
-  let unitManagerPath: string | null = null;
+  const registryPath = `${basePath}/id-registry`;
+  const unitManagerPath = `${basePath}/unit-manager`;
 
   if (basePath === '/retrieved-content') {
     const textParams = new URLSearchParams(location.search);
@@ -35,8 +36,6 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) 
   } else {
     textStorePath = `${basePath}/text-store`;
     imageStorePath = `${basePath}/image-store`;
-    registryPath = `${basePath}/id-registry`;
-    unitManagerPath = `${basePath}/unit-manager`;
   }
 
   return (
@@ -45,43 +44,29 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) 
       <div className="nav-links">
         {isSettingsPage ? (
           <>
-            <Link
-              to={registryPath || `${basePath}/id-registry`}
+            <SmoothLink
+              to={registryPath}
               className={`nav-link ${activeStore === 'registry' ? 'active' : ''}`}>
-              User Registry
-            </Link>
-            <Link
-              to={unitManagerPath || `${basePath}/unit-manager`}
+              Unit Registry
+            </SmoothLink>
+            <SmoothLink
+              to={unitManagerPath}
               className={`nav-link ${activeStore === 'units' ? 'active' : ''}`}>
               Unit Manager
-            </Link>
+            </SmoothLink>
           </>
         ) : (
           <>
-            <Link
+            <SmoothLink
               to={textStorePath}
               className={`nav-link ${activeStore === 'text' ? 'active' : ''}`}>
               Text Store
-            </Link>
-            <Link
+            </SmoothLink>
+            <SmoothLink
               to={imageStorePath}
               className={`nav-link ${activeStore === 'image' ? 'active' : ''}`}>
               Image Store
-            </Link>
-            {registryPath && (
-              <Link
-                to={registryPath}
-                className={`nav-link ${activeStore === 'registry' ? 'active' : ''}`}>
-                User Registry
-              </Link>
-            )}
-            {unitManagerPath && (
-              <Link
-                to={unitManagerPath}
-                className={`nav-link ${activeStore === 'units' ? 'active' : ''}`}>
-                Unit Manager
-              </Link>
-            )}
+            </SmoothLink>
           </>
         )}
       </div>

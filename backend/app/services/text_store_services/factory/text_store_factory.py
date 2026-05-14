@@ -27,6 +27,10 @@ class TextStoreFactory:
         self.logger = get_logger("services.text_store_factory")
         self._stores: Dict[str, BaseTextStoreService] = {}
         self._initialized = False
+        self._store_classes = {
+            TextStoreDomain.DATA_SCIENCE: DataScienceTextStore,
+            TextStoreDomain.MEDICAL: MedicalTextStore,
+        }
     
     def initialize(self) -> None:
         """Initialize all text store services"""
@@ -117,5 +121,4 @@ def get_text_store_factory() -> TextStoreFactory:
     global _text_store_factory_instance
     if _text_store_factory_instance is None:
         _text_store_factory_instance = TextStoreFactory()
-        _text_store_factory_instance.initialize()
     return _text_store_factory_instance

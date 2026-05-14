@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { FiArrowLeft, FiSave, FiX } from 'react-icons/fi';
 import { createTextDocument } from '../api/textStoreApi';
 import './AddDocumentPage.css';
 
@@ -34,7 +35,6 @@ const AddDocumentPage: React.FC = () => {
 
     try {
       await createTextDocument(newDocument, domain);
-      alert('Document added successfully!');
       navigate(`/vector-database/text-store?domain=${encodeURIComponent(domain)}`);
     } catch (err) {
       console.error('Failed to add document:', err);
@@ -44,13 +44,22 @@ const AddDocumentPage: React.FC = () => {
     }
   };
 
-  const handleCancel = () => {
+  const handleBack = () => {
     navigate(`/vector-database/text-store?domain=${encodeURIComponent(domain)}`);
   };
 
   return (
     <div className="add-document-container">
-      <h1>Add New Document</h1>
+      <div className="add-document-header">
+        <button type="button" className="back-btn" onClick={handleBack}>
+          <FiArrowLeft />
+          <span>Back</span>
+        </button>
+        <div>
+          <h1>Add New Document</h1>
+          <p>{domain.replace('_', ' ')} text store</p>
+        </div>
+      </div>
       <form onSubmit={handleSubmit} className="add-document-form">
         <div className="form-group">
           <label htmlFor="category">Category:</label>
@@ -73,11 +82,13 @@ const AddDocumentPage: React.FC = () => {
           <textarea id="raw_text" name="raw_text" value={newDocument.raw_text} onChange={handleChange} rows={15}></textarea>
         </div>
         <div className="form-actions">
-          <button type="submit" className="submit-btn" disabled={loading}>
-            {loading ? 'Adding...' : 'Submit'}
+          <button type="button" className="cancel-btn" onClick={handleBack} disabled={loading}>
+            <FiX />
+            <span>Cancel</span>
           </button>
-          <button type="button" className="cancel-btn" onClick={handleCancel} disabled={loading}>
-            Cancel
+          <button type="submit" className="submit-btn" disabled={loading}>
+            <FiSave />
+            <span>{loading ? 'Adding...' : 'Save'}</span>
           </button>
         </div>
         {error && <div className="error-message">{error}</div>}

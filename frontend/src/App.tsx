@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './pages/Layout';
 import ChatPage from './pages/ChatPage';
 import DummyPage from './pages/DummyPage';
@@ -19,6 +20,7 @@ import RetrievedContentPage from './pages/RetrievedContentPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import QuizEditPage from './pages/QuizEditPage';
+import ChatProgressToast from './components/ChatProgressToast/ChatProgressToast';
 import IdentityRegistryPage from './pages/IdentityRegistryPage';
 import UnitManagerPage from './pages/UnitManagerPage';
 // import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
@@ -44,6 +46,21 @@ import { PdfUploadProvider } from './contexts/PdfUploadContext';
 import UploadStatusBar from './components/global/UploadStatusBar';
 
 function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const className = 'page-elements-entering';
+    document.body.classList.remove(className);
+    void document.body.offsetWidth;
+    document.body.classList.add(className);
+
+    const timeoutId = window.setTimeout(() => {
+      document.body.classList.remove(className);
+    }, 1200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [location.pathname, location.search]);
+
   return (
     <PdfUploadProvider>
       <Routes>
@@ -97,6 +114,7 @@ function App() {
         
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+      <ChatProgressToast />
       <UploadStatusBar />
     </PdfUploadProvider>
   );

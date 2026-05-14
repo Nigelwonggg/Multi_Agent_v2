@@ -32,6 +32,19 @@
   flex-shrink: 0;
 }
 
+.avatar svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.message.bot .avatar {
+  background: color-mix(in srgb, var(--accent, #d4af37) 14%, transparent);
+  color: var(--accent, #d4af37);
+  border: 1px solid color-mix(in srgb, var(--accent, #d4af37) 28%, transparent);
+  box-shadow: 0 0 12px var(--accent-glow, rgba(212, 175, 55, 0.2));
+}
+
 /* 
   Generic message content styling that applies to both text and image messages.
   This ensures consistent padding, borders, and colors.

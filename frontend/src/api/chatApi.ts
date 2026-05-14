@@ -6,6 +6,7 @@ import testData from "./test_data.json";
 import newTestData from "./test_data_new.json";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const DEFAULT_CHAT_TITLE = "New Question";
 
 // Helper to process JSON responses and throw errors when requests fail.
 async function handleResponse(response: Response) {
@@ -99,11 +100,29 @@ export interface Message {
   };
 }
 
+interface BackendChat {
+  id: string | number;
+  title?: string | null;
+}
+
+interface BackendMessage {
+  thread_id: string | number;
+  final_answer?: string | null;
+  role: string;
+  timestamp?: string;
+  image_url?: string | null;
+  routes?: string[] | string | null;
+  is_rag_used?: boolean | null;
+  processing_time?: number | null;
+  docs?: string[] | DomainDocReference[] | null;
+  image_docs?: string[] | DomainDocReference[] | null;
+}
+
 // --- IN-MEMORY DATABASE ---
 // Load initial data from the JSON file.
 // In a real app, you'd fetch this from a server.
 let chats: Chat[] = testData.chats;
-let messages: Record<string, Message[]> = testData.messages as Record<
+const messages: Record<string, Message[]> = testData.messages as Record<
   string,
   Message[]
 >;
@@ -130,12 +149,12 @@ export const getChats = async (): Promise<Chat[]> => {
 
     // Extract chats from the nested response structure
     // The response has: { result: { chats: [...] } }
-    const chatList = data?.result?.chats || data?.chats || [];
+    const chatList: BackendChat[] = data?.result?.chats || data?.chats || [];
 
     // Map the backend response to match the frontend Chat interface
-    const chatMapped = chatList.map((chat: any) => ({
+    const chatMapped = chatList.map((chat: BackendChat) => ({
       id: String(chat.id), // Convert to string as expected by frontend
-      title: chat.title || "New Chat", // Provide fallback title
+      title: chat.title || DEFAULT_CHAT_TITLE,
     }));
 
     return chatMapped;
@@ -165,10 +184,10 @@ export const getMessages = async (chatId: string): Promise<Message[]> => {
     });
 
     const data = await handleResponse(response);
-    const messageList = data?.messages || [];
+    const messageList: BackendMessage[] = data?.messages || [];
 
     const convertedMessages: Message[] = messageList.map(
-      (msg: any, index: number) => {
+      (msg: BackendMessage, index: number) => {
         // Base message structure
         const baseMessage = {
           id: `${msg.thread_id}-${index}`,
@@ -233,7 +252,7 @@ export const createNewChat = async (): Promise<Chat> => {
     // Convert backend response to frontend Chat interface
     const newChat: Chat = {
       id: String(data.id), // Convert backend number to frontend string
-      title: data.title || "New Chat", // Use "New Chat" if no title
+      title: data.title || DEFAULT_CHAT_TITLE,
     };
 
     // Add to local chats cache (prepend to start)
@@ -250,7 +269,7 @@ export const createNewChat = async (): Promise<Chat> => {
     const fallbackId = String(Date.now());
     const fallbackChat: Chat = {
       id: fallbackId,
-      title: "New Chat", // Use "New Chat" format for fallback too
+      title: DEFAULT_CHAT_TITLE,
     };
 
     // Add to local state
@@ -289,6 +308,40 @@ export const deleteChat = async (
   } catch (error) {
     console.error("Error deleting chat:", error);
     throw error; // Re-throw to let components handle the error
+  }
+};
+
+/**
+ * Updates the title of a chat conversation.
+ * @param chatId - The ID of the chat to rename.
+ * @param title - The new title for the chat.
+ * @returns A promise that resolves to the updated chat object.
+ */
+export const updateChatTitle = async (
+  chatId: string,
+  title: string
+): Promise<Chat> => {
+  try {
+    const response = await fetch(`${API_BASE}/api/chat/${chatId}/title`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ title }),
+    });
+
+    const data = await handleResponse(response);
+    const updatedChat: Chat = {
+      id: String(data.id),
+      title: data.title || title,
+    };
+
+    chats = chats.map(chat => chat.id === chatId ? updatedChat : chat);
+    return updatedChat;
+  } catch (error) {
+    console.error("Error updating chat title:", error);
+    throw error;
   }
 };
 

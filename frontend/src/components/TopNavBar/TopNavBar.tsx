@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import SmoothLink from '../SmoothLink/SmoothLink';
 import './TopNavBar.css';
 
@@ -85,6 +85,16 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) 
             )}
           </>
         )}
+        <SmoothLink
+          to={textStorePath}
+          className={`nav-link ${activeStore === 'text' ? 'active' : ''}`}>
+          Text Store
+        </SmoothLink>
+        <SmoothLink
+          to={imageStorePath}
+          className={`nav-link ${activeStore === 'image' ? 'active' : ''}`}>
+          Image Store
+        </SmoothLink>
       </div>
     </nav>
   );

@@ -6,6 +6,9 @@
   right: 0;
   z-index: 999;
   view-transition-name: app-navbar;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+    'Helvetica Neue', sans-serif;
   /* Always semi-transparent from the start */
   background: rgba(8, 6, 2, 0.55);
   backdrop-filter: blur(16px);
@@ -145,12 +148,17 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  min-width: 0;
 }
 
 .navbar__user-greeting {
   font-weight: 500;
   color: var(--text, #f0ead8);
   font-size: 1.1rem;
+  max-width: clamp(8rem, 14vw, 13rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .btn-outline-accent {

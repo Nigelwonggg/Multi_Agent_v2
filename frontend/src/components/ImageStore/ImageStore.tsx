@@ -6,7 +6,7 @@ import FilterBar from "../../components/FilterBar/FilterBar"; // Reusing FilterB
 import Pagination from "../../components/Pagination/Pagination";
 import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
 import { FiPlus, FiEdit, FiTrash2, FiAlertTriangle } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import "./ImageStore.css";
 
 const PROTECTED_DOMAINS = ["data_science", "medical"];
@@ -28,6 +28,9 @@ const ImageStore: React.FC = () => {
   const [selectedDomain, setSelectedDomain] = useState(domainFromQuery);
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteCandidate, setDeleteCandidate] = useState<ImageDocument | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const pageSize = 10;
   const navigate = useNavigate();
 
@@ -86,24 +89,31 @@ const ImageStore: React.FC = () => {
     setFilters(newFilters);
   }, []);
 
-  const handleDelete = async (docId: string) => {
-    if (window.confirm("Are you sure you want to delete this image document?")) {
-      try {
-        await deleteImageDocument(docId, selectedDomain);
-        // Refetch documents after deletion
-        const response = await getImageDocuments(
-          currentPage,
-          pageSize,
-          filters.category || null,
-          filters.filename || null,
-          null,
-          selectedDomain
-        );
-        setDocuments(response.documents);
-        setTotalPages(Math.ceil(response.total / pageSize));
-      } catch (error) {
-        console.error("Failed to delete image document:", error);
-      }
+  const handleDeleteRequest = (doc: ImageDocument) => {
+    setDeleteCandidate(doc);
+    setDeleteError(null);
+  };
+
+  const handleDeleteCancel = () => {
+    if (deleting) return;
+    setDeleteCandidate(null);
+    setDeleteError(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteCandidate?.doc_id) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteImageDocument(deleteCandidate.doc_id, selectedDomain);
+      setDeleteCandidate(null);
+      await fetchDocuments();
+    } catch (error) {
+      console.error("Failed to delete image document:", error);
+      setDeleteError("Failed to delete this image. Please try again.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -316,6 +326,35 @@ const ImageStore: React.FC = () => {
         onCancel={() => setIsDeleteModalOpen(false)}
         isDestructive={true}
       />
+
+      {deleteCandidate && (
+        <div className="store-delete-modal-backdrop" role="presentation" onClick={handleDeleteCancel}>
+          <div
+            className="store-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="image-delete-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="store-delete-modal-icon">
+              <FiTrash2 />
+            </div>
+            <h2 id="image-delete-title">Delete image?</h2>
+            <p>
+              This will remove <strong>{deleteCandidate.filename || deleteCandidate.doc_id}</strong> from the {selectedDomain.replace('_', ' ')} image store.
+            </p>
+            {deleteError && <div className="store-delete-modal-error">{deleteError}</div>}
+            <div className="store-delete-modal-actions">
+              <button type="button" className="store-modal-cancel" onClick={handleDeleteCancel} disabled={deleting}>
+                Cancel
+              </button>
+              <button type="button" className="store-modal-delete" onClick={handleDeleteConfirm} disabled={deleting}>
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

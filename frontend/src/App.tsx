@@ -114,6 +114,7 @@ function App() {
         
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+      <ChatProgressToast />
       <UploadStatusBar />
     </PdfUploadProvider>
   );

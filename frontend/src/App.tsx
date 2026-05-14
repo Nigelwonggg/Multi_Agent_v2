@@ -48,9 +48,11 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
 
 import { PdfUploadProvider } from './contexts/PdfUploadContext';
 import UploadStatusBar from './components/global/UploadStatusBar';
+import { useSessionTimeout } from './hooks/useSessionTimeout';
 
 function App() {
   const location = useLocation();
+  useSessionTimeout();
 
   useEffect(() => {
     const className = 'page-elements-entering';

@@ -81,6 +81,19 @@
   color: #e0e0e0;
 }
 
+:root[data-theme="light"] .text-store-container .document-table .markdown-cell {
+  background-color: #f8fbff;
+  border-color: rgba(37, 99, 235, 0.16);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.04);
+}
+
+:root[data-theme="light"] .text-store-container .document-table .markdown-cell .markdown-renderer {
+  background: transparent;
+  border-color: transparent;
+  color: inherit;
+}
+
 .action-buttons {
   display: flex;
   flex-direction: column;

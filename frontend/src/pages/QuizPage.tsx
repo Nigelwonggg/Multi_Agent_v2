@@ -44,14 +44,28 @@ const QuizDashboard: React.FC = () => {
         )}
 
         {!isLecturer && (
-          <div className="quiz-card">
-            <div className="icon">🎓</div>
-            <h2>Take Quizzes</h2>
-            <p>View available quizzes and test your knowledge</p>
-            <button onClick={() => navigate("/quiz/list")}>
-              Go to Quizzes
-            </button>
-          </div>
+          <>
+            <div className="quiz-card">
+              <div className="icon">🎓</div>
+              <h2>Take Quizzes</h2>
+              <p>View available quizzes and test your knowledge</p>
+              <button onClick={() => navigate("/quiz/list")}>
+                Go to Quizzes
+              </button>
+            </div>
+
+            {/* QUICK AI QUIZ FOR STUDENTS */}
+            <div className="quiz-card quick-ai-card">
+              <div className="icon">🪄</div>
+              <h2>Quick AI Quiz</h2>
+              <p>Generate a custom study quiz instantly using AI!</p>
+              <button 
+                onClick={() => navigate("/quiz/quick")}
+              >
+                Create Quick Quiz
+              </button>
+            </div>
+          </>
         )}
       </div>
 

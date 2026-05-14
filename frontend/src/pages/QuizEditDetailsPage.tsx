@@ -209,6 +209,23 @@ const QuizEditDetailsPage: React.FC = () => {
       <p className="qc-subtitle">Modify and customize your quiz</p>
 
       <div className="qc-create-container">
+        <button 
+          onClick={() => navigate("/quiz/edit")} 
+          className="qc-back-btn"
+          style={{ 
+            background: "transparent", 
+            border: "1px solid #fbbc05", 
+            color: "#fbbc05", 
+            padding: "8px 16px", 
+            borderRadius: "6px", 
+            cursor: "pointer",
+            fontWeight: "bold",
+            marginBottom: "20px"
+          }}
+        >
+          ← Back to List
+        </button>
+
         {/* QUIZ INFO */}
         <div className="qc-card">
           <h2>Quiz Title</h2>

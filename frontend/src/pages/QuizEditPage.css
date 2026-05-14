@@ -119,3 +119,13 @@
 .qe-edit:hover {
   opacity: 0.9;
 }
+
+.qe-delete {
+  background: #ff4d4f;
+  color: white;
+  border: none;
+}
+
+.qe-delete:hover {
+  background: #d9363e;
+}

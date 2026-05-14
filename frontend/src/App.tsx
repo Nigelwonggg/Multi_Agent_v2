@@ -24,6 +24,7 @@ import QuizListPage from './pages/QuizListPage';
 import QuizTakePage from './pages/QuizTakePage';
 import IdentityRegistryPage from './pages/IdentityRegistryPage';
 import UnitManagerPage from './pages/UnitManagerPage';
+import QuickQuizPage from './pages/QuickQuizPage';
 
 // Simple component to protect routes
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
@@ -58,6 +59,7 @@ function App() {
       <Route path="/vector-database/text-store/upload" element={<Navigate to="/upload-pdf" replace />} />
       <Route path="/quiz" element={<QuizPage />} />
       <Route path="/quiz/create" element={<QuizCreationPage />} />
+      <Route path="/quiz/quick" element={<QuickQuizPage />} />
       <Route path="/quiz/edit" element={<QuizEditPage />} />
       <Route path="/quiz/edit/:id" element={<QuizEditDetailsPage />} />
       <Route path="/quiz/list" element={<QuizListPage />} />

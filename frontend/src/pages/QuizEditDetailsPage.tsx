@@ -15,6 +15,20 @@ type Question = {
   shortAnswer?: string;  // short answer correct text
 };
 
+type ExistingQuestion =
+  | {
+      type: "mcq";
+      question: string;
+      options?: string[];
+      answer: number | string;
+    }
+  | {
+      type: "short";
+      question: string;
+      options?: string[];
+      answer: string;
+    };
+
 const QuizEditDetailsPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -22,8 +36,35 @@ const QuizEditDetailsPage: React.FC = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [highlightedQuestionIds, setHighlightedQuestionIds] = useState<number[]>([]);
+  const [popupState, setPopupState] = useState<{
+    title: string;
+    message: string;
+    focusQuestionId?: number;
+  } | null>(null);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+  const clearQuestionHighlight = (questionId: number) => {
+    setHighlightedQuestionIds((prev) => prev.filter((id) => id !== questionId));
+  };
+
+  const scrollToQuestion = (questionId?: number) => {
+    if (!questionId) return;
+
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`quiz-edit-question-${questionId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  };
+
+  const closePopup = () => {
+    const focusQuestionId = popupState?.focusQuestionId;
+    setPopupState(null);
+    scrollToQuestion(focusQuestionId);
+  };
 
   // 📥 Load quiz from backend
   useEffect(() => {
@@ -38,7 +79,7 @@ const QuizEditDetailsPage: React.FC = () => {
         setDescription(data.description);
         
         // Map backend questions to our frontend state with IDs
-        const mappedQuestions = (data.questions || []).map((q: any, idx: number) => ({
+        const mappedQuestions: Question[] = ((data.questions || []) as ExistingQuestion[]).map((q, idx: number) => ({
           id: idx + Date.now(),
           type: q.type,
           question: q.question,
@@ -48,6 +89,8 @@ const QuizEditDetailsPage: React.FC = () => {
         }));
 
         setQuestions(mappedQuestions);
+        setPopupState(null);
+        setHighlightedQuestionIds([]);
       } catch (err) {
         console.error("Failed to load quiz", err);
       }
@@ -73,6 +116,7 @@ const QuizEditDetailsPage: React.FC = () => {
 
   // ❌ Delete question
   const deleteQuestion = (id: number) => {
+    clearQuestionHighlight(id);
     setQuestions((prev) => prev.filter((q) => q.id !== id));
   };
 
@@ -87,6 +131,7 @@ const QuizEditDetailsPage: React.FC = () => {
 
   // 🔄 Change type
   const changeType = (id: number, type: QuestionType) => {
+    clearQuestionHighlight(id);
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === id
@@ -104,6 +149,7 @@ const QuizEditDetailsPage: React.FC = () => {
 
   // ✏️ MCQ option update
   const updateOption = (qId: number, i: number, value: string) => {
+    clearQuestionHighlight(qId);
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === qId
@@ -120,6 +166,7 @@ const QuizEditDetailsPage: React.FC = () => {
 
   // 🎯 MCQ answer select
   const setAnswer = (qId: number, index: number) => {
+    clearQuestionHighlight(qId);
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === qId ? { ...q, answer: index } : q
@@ -161,6 +208,7 @@ const QuizEditDetailsPage: React.FC = () => {
 
   // ✏️ Short answer update
   const updateShortAnswer = (qId: number, value: string) => {
+    clearQuestionHighlight(qId);
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === qId ? { ...q, shortAnswer: value } : q
@@ -170,6 +218,72 @@ const QuizEditDetailsPage: React.FC = () => {
 
   // 💾 Save updated quiz
   const handleUpdate = async () => {
+    if (isSaving) return;
+
+    if (questions.length === 0) {
+      setPopupState({
+        title: "Add at least one question",
+        message: "A quiz must contain at least one question before it can be saved.",
+      });
+      return;
+    }
+
+    const invalidMcqQuestions = questions
+      .map((question, index) => ({ question, index }))
+      .filter(({ question }) => {
+        if (question.type !== "mcq") return false;
+
+        const filledOptions = question.options.filter((option) => option.trim() !== "");
+        const selectedOption =
+          question.answer !== null ? question.options[question.answer]?.trim() ?? "" : "";
+
+        return filledOptions.length < 2 || selectedOption === "";
+      });
+
+    const invalidShortAnswerQuestions = questions
+      .map((question, index) => ({ question, index }))
+      .filter(
+        ({ question }) =>
+          question.type === "short" && (!question.shortAnswer || question.shortAnswer.trim() === "")
+      );
+
+    if (invalidMcqQuestions.length > 0) {
+      const questionNumbers = invalidMcqQuestions.map(({ index }) => index + 1).join(", ");
+
+      setHighlightedQuestionIds(
+        invalidMcqQuestions.map(({ question }) => question.id)
+      );
+      setPopupState({
+        title:
+          invalidMcqQuestions.length === 1
+            ? "Complete the MCQ options"
+            : "Complete the MCQ options",
+        message:
+          invalidMcqQuestions.length === 1
+            ? `Question ${questionNumbers} needs at least two filled options, and the selected correct answer must be one of them.`
+            : `Questions ${questionNumbers} need at least two filled options, and each selected correct answer must be one of them.`,
+        focusQuestionId: invalidMcqQuestions[0]?.question.id,
+      });
+      return;
+    }
+
+    if (invalidShortAnswerQuestions.length > 0) {
+      const questionNumbers = invalidShortAnswerQuestions.map(({ index }) => index + 1).join(", ");
+
+      setHighlightedQuestionIds(
+        invalidShortAnswerQuestions.map(({ question }) => question.id)
+      );
+      setPopupState({
+        title: "Complete the short answer",
+        message:
+          invalidShortAnswerQuestions.length === 1
+            ? `Question ${questionNumbers} needs a correct short answer before saving this quiz.`
+            : `Questions ${questionNumbers} need correct short answers before saving this quiz.`,
+        focusQuestionId: invalidShortAnswerQuestions[0]?.question.id,
+      });
+      return;
+    }
+
     const payload = {
       title,
       description,
@@ -182,6 +296,7 @@ const QuizEditDetailsPage: React.FC = () => {
     };
 
     try {
+      setIsSaving(true);
       const res = await fetch(`${API_BASE}/quizzes/${id}`, {
         method: "PUT",
         headers: { 
@@ -193,11 +308,28 @@ const QuizEditDetailsPage: React.FC = () => {
       if (res.ok) {
         navigate("/quiz/edit");
       } else {
-        alert("Failed to update quiz");
+        let errorMessage = "Something went wrong while updating this quiz. Please try again.";
+        try {
+          const errorData = await res.json();
+          if (typeof errorData?.detail === "string" && errorData.detail.trim() !== "") {
+            errorMessage = errorData.detail;
+          }
+        } catch {
+          // Ignore JSON parsing errors and fall back to the default message.
+        }
+        setPopupState({
+          title: "Unable to save changes",
+          message: errorMessage,
+        });
       }
     } catch (err) {
       console.error(err);
-      alert("Error updating quiz");
+      setPopupState({
+        title: "Unable to save changes",
+        message: "Something went wrong while updating this quiz. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -246,8 +378,15 @@ const QuizEditDetailsPage: React.FC = () => {
         </div>
 
         {/* QUESTIONS */}
-        {questions.map((q, index) => (
-          <div className="qc-card" key={q.id}>
+        {questions.map((q, index) => {
+          const isHighlighted = highlightedQuestionIds.includes(q.id);
+
+          return (
+          <div
+            className={`qc-card ${isHighlighted ? "qc-card-warning" : ""}`}
+            key={q.id}
+            id={`quiz-edit-question-${q.id}`}
+          >
             <div className="qc-card-header">
               <h2>Question {index + 1}</h2>
 
@@ -279,6 +418,12 @@ const QuizEditDetailsPage: React.FC = () => {
                 updateQuestion(q.id, e.target.value)
               }
             />
+
+            {isHighlighted && (
+              <div className="qc-inline-warning">
+                Complete the required answer for this question before saving.
+              </div>
+            )}
 
             {/* MCQ */}
             {q.type === "mcq" && (
@@ -356,17 +501,38 @@ const QuizEditDetailsPage: React.FC = () => {
               </div>
             )}
           </div>
-        ))}
+        )})}
 
         {/* ACTIONS */}
         <div className="qc-actions-bottom">
           <button onClick={addQuestion}>+ Add Question</button>
 
-          <button className="qc-save-btn" onClick={handleUpdate}>
-            Save Changes
+          <button className="qc-save-btn" onClick={handleUpdate} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
+
+      {popupState && (
+        <div className="qc-popup-overlay" role="presentation" onClick={closePopup}>
+          <div
+            className="qc-popup"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quiz-edit-popup-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="qc-popup-icon" aria-hidden="true">
+              !
+            </div>
+            <h2 id="quiz-edit-popup-title">{popupState.title}</h2>
+            <p>{popupState.message}</p>
+            <button className="qc-popup-btn" onClick={closePopup}>
+              {popupState.focusQuestionId ? "Review questions" : "Close"}
+            </button>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

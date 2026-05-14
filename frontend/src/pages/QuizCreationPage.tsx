@@ -15,6 +15,20 @@ type Question = {
   shortAnswer?: string;  // short answer correct text
 };
 
+type GeneratedQuestion =
+  | {
+      type: "mcq";
+      question: string;
+      options?: string[];
+      answer: number;
+    }
+  | {
+      type: "short";
+      question: string;
+      options?: string[];
+      answer: string;
+    };
+
 const QuizCreationPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -23,6 +37,15 @@ const QuizCreationPage: React.FC = () => {
   const [topic, setTopic] = useState("");
   const [numQuestions, setNumQuestions] = useState(5);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isTopicHighlighted, setIsTopicHighlighted] = useState(false);
+  const [highlightedQuestionIds, setHighlightedQuestionIds] = useState<number[]>([]);
+  const [popupState, setPopupState] = useState<{
+    title: string;
+    message: string;
+    focusQuestionId?: number;
+    focusTarget?: "topic";
+  } | null>(null);
 
   const [questions, setQuestions] = useState<Question[]>([
     {
@@ -37,10 +60,47 @@ const QuizCreationPage: React.FC = () => {
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+  const clearQuestionHighlight = (questionId: number) => {
+    setHighlightedQuestionIds((prev) => prev.filter((id) => id !== questionId));
+  };
+
+  const scrollToQuestion = (questionId?: number) => {
+    if (!questionId) return;
+
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`quiz-question-${questionId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  };
+
+  const closePopup = () => {
+    const focusQuestionId = popupState?.focusQuestionId;
+    const focusTarget = popupState?.focusTarget;
+    setPopupState(null);
+
+    if (focusTarget === "topic") {
+      requestAnimationFrame(() => {
+        document
+          .getElementById("quiz-ai-topic-input")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        (document.getElementById("quiz-ai-topic-input") as HTMLInputElement | null)?.focus();
+      });
+      return;
+    }
+
+    scrollToQuestion(focusQuestionId);
+  };
+
   // 🤖 AI Generate Quiz
   const handleAIGenerate = async () => {
-    if (!topic) {
-      alert("Please enter a topic for AI generation");
+    if (!topic.trim()) {
+      setIsTopicHighlighted(true);
+      setPopupState({
+        title: "Enter a topic first",
+        message: "Please enter a topic before generating a quiz with AI.",
+        focusTarget: "topic",
+      });
       return;
     }
 
@@ -55,11 +115,14 @@ const QuizCreationPage: React.FC = () => {
       if (!res.ok) throw new Error("Failed to generate quiz");
 
       const data = await res.json();
-      
+
       setTitle(data.title);
       setDescription(data.description);
+      setPopupState(null);
+      setIsTopicHighlighted(false);
+      setHighlightedQuestionIds([]);
       
-      const newQuestions: Question[] = data.questions.map((q: any, index: number) => ({
+      const newQuestions: Question[] = (data.questions as GeneratedQuestion[]).map((q, index: number) => ({
         id: Date.now() + index,
         type: q.type,
         question: q.question,
@@ -71,7 +134,10 @@ const QuizCreationPage: React.FC = () => {
       setQuestions(newQuestions);
     } catch (err) {
       console.error(err);
-      alert("Error generating quiz with AI");
+      setPopupState({
+        title: "Unable to generate quiz",
+        message: "Something went wrong while generating the quiz. Please try again in a moment.",
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -94,6 +160,7 @@ const QuizCreationPage: React.FC = () => {
 
   // ❌ Delete question
   const deleteQuestion = (id: number) => {
+    clearQuestionHighlight(id);
     setQuestions((prev) => prev.filter((q) => q.id !== id));
   };
 
@@ -108,6 +175,7 @@ const QuizCreationPage: React.FC = () => {
 
   // 🔄 Change type
   const changeType = (id: number, type: QuestionType) => {
+    clearQuestionHighlight(id);
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === id
@@ -141,6 +209,7 @@ const QuizCreationPage: React.FC = () => {
 
   // 🎯 MCQ answer select
   const setAnswer = (qId: number, index: number) => {
+    clearQuestionHighlight(qId);
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === qId ? { ...q, answer: index } : q
@@ -182,6 +251,7 @@ const QuizCreationPage: React.FC = () => {
 
   // ✏️ Short answer update
   const updateShortAnswer = (qId: number, value: string) => {
+    clearQuestionHighlight(qId);
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === qId ? { ...q, shortAnswer: value } : q
@@ -191,31 +261,120 @@ const QuizCreationPage: React.FC = () => {
 
   // 💾 Save quiz
   const handleSave = async () => {
-  const payload = {
-    title,
-    description,
-    questions: questions.map((q) => ({
-      type: q.type,
-      question: q.question,
-      options: q.type === "mcq" ? q.options : [],
-      answer: q.type === "mcq" ? q.answer : q.shortAnswer,
-    })),
+    if (isSaving) return;
+
+    if (questions.length === 0) {
+      setPopupState({
+        title: "Add at least one question",
+        message: "A quiz must contain at least one question before it can be saved.",
+      });
+      return;
+    }
+
+    const invalidMcqQuestions = questions
+      .map((question, index) => ({ question, index }))
+      .filter(({ question }) => {
+        if (question.type !== "mcq") return false;
+
+        const filledOptions = question.options.filter((option) => option.trim() !== "");
+        const selectedOption =
+          question.answer !== null ? question.options[question.answer]?.trim() ?? "" : "";
+
+        return filledOptions.length < 2 || selectedOption === "";
+      });
+
+    const invalidShortAnswerQuestions = questions
+      .map((question, index) => ({ question, index }))
+      .filter(
+        ({ question }) =>
+          question.type === "short" && (!question.shortAnswer || question.shortAnswer.trim() === "")
+      );
+
+    if (invalidMcqQuestions.length > 0) {
+      const questionNumbers = invalidMcqQuestions.map(({ index }) => index + 1);
+      const questionList = questionNumbers.join(", ");
+
+      setHighlightedQuestionIds(
+        invalidMcqQuestions.map(({ question }) => question.id)
+      );
+      setPopupState({
+        title:
+          invalidMcqQuestions.length === 1
+            ? "Complete the MCQ options"
+            : "Complete the MCQ options",
+        message:
+          invalidMcqQuestions.length === 1
+            ? `Question ${questionList} needs at least two filled options, and the selected correct answer must be one of them.`
+            : `Questions ${questionList} need at least two filled options, and each selected correct answer must be one of them.`,
+        focusQuestionId: invalidMcqQuestions[0]?.question.id,
+      });
+      return;
+    }
+
+    if (invalidShortAnswerQuestions.length > 0) {
+      const questionNumbers = invalidShortAnswerQuestions.map(({ index }) => index + 1);
+      const questionList = questionNumbers.join(", ");
+
+      setHighlightedQuestionIds(
+        invalidShortAnswerQuestions.map(({ question }) => question.id)
+      );
+      setPopupState({
+        title: "Complete the short answer",
+        message:
+          invalidShortAnswerQuestions.length === 1
+            ? `Question ${questionList} needs a correct short answer before saving this quiz.`
+            : `Questions ${questionList} need correct short answers before saving this quiz.`,
+        focusQuestionId: invalidShortAnswerQuestions[0]?.question.id,
+      });
+      return;
+    }
+
+    const payload = {
+      title,
+      description,
+      questions: questions.map((q) => ({
+        type: q.type,
+        question: q.question,
+        options: q.type === "mcq" ? q.options : [],
+        answer: q.type === "mcq" ? q.answer : q.shortAnswer,
+      })),
+    };
+
+    setIsSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/quizzes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        let errorMessage = "Failed to save quiz";
+        try {
+          const errorData = await res.json();
+          if (typeof errorData?.detail === "string" && errorData.detail.trim() !== "") {
+            errorMessage = errorData.detail;
+          }
+        } catch {
+          // Ignore JSON parsing errors and fall back to the default message.
+        }
+        throw new Error(errorMessage);
+      }
+
+      navigate("/quiz");
+    } catch (error) {
+      console.error(error);
+      setPopupState({
+        title: "Unable to save quiz",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Something went wrong while saving. Please try again in a moment.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
-
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-
-  const res = await fetch(`${API_BASE}/quizzes`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (res.ok) {
-    navigate("/quiz");
-  } else {
-    alert("Failed to save quiz");
-  }
-};
 
   return (
     <div className="qc-dashboard">
@@ -248,10 +407,16 @@ const QuizCreationPage: React.FC = () => {
           <p className="qc-short-note">Enter a topic and let AI create the quiz for you!</p>
           <div className="qc-ai-row">
             <input
-              className="qc-input"
+              id="quiz-ai-topic-input"
+              className={`qc-input ${isTopicHighlighted ? "qc-input-warning" : ""}`}
               placeholder="e.g. Molecular Biology, History of Rome, Python Basics"
               value={topic}
-              onChange={(e) => setTopic(e.target.value)}
+              onChange={(e) => {
+                setTopic(e.target.value);
+                if (e.target.value.trim()) {
+                  setIsTopicHighlighted(false);
+                }
+              }}
               disabled={isGenerating}
             />
             <input
@@ -294,8 +459,15 @@ const QuizCreationPage: React.FC = () => {
         </div>
 
         {/* QUESTIONS */}
-        {questions.map((q, index) => (
-          <div className="qc-card" key={q.id}>
+        {questions.map((q, index) => {
+          const isHighlighted = highlightedQuestionIds.includes(q.id);
+
+          return (
+          <div
+            className={`qc-card ${isHighlighted ? "qc-card-warning" : ""}`}
+            key={q.id}
+            id={`quiz-question-${q.id}`}
+          >
             <div className="qc-card-header">
               <h2>Question {index + 1}</h2>
 
@@ -327,6 +499,12 @@ const QuizCreationPage: React.FC = () => {
                 updateQuestion(q.id, e.target.value)
               }
             />
+
+            {isHighlighted && (
+              <div className="qc-inline-warning">
+                Complete the required answer for this question before saving.
+              </div>
+            )}
 
             {/* MCQ */}
             {q.type === "mcq" && (
@@ -404,17 +582,38 @@ const QuizCreationPage: React.FC = () => {
               </div>
             )}
           </div>
-        ))}
+        )})}
 
         {/* ACTIONS */}
         <div className="qc-actions-bottom">
           <button onClick={addQuestion}>+ Add Question</button>
 
-          <button className="qc-save-btn" onClick={handleSave}>
-            Save Quiz
+          <button className="qc-save-btn" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Quiz"}
           </button>
         </div>
       </div>
+
+      {popupState && (
+        <div className="qc-popup-overlay" role="presentation" onClick={closePopup}>
+          <div
+            className="qc-popup"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quiz-creation-popup-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="qc-popup-icon" aria-hidden="true">
+              !
+            </div>
+            <h2 id="quiz-creation-popup-title">{popupState.title}</h2>
+            <p>{popupState.message}</p>
+            <button className="qc-popup-btn" onClick={closePopup}>
+              {popupState.focusQuestionId ? "Review questions" : "Close"}
+            </button>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

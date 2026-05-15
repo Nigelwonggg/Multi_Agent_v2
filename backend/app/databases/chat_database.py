@@ -141,6 +141,17 @@ def ensure_quiz_schema() -> None:
             connection.execute(text("ALTER TABLE quizzes ADD COLUMN created_by_user_id INTEGER"))
         logger.info("Added created_by_user_id column to quizzes table.")
 
+    if "is_active" not in existing_columns:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE quizzes ADD COLUMN is_active INTEGER DEFAULT 0 NOT NULL"))
+        logger.info("Added is_active column to quizzes table.")
+
+    if "is_locked" not in existing_columns:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE quizzes ADD COLUMN is_locked INTEGER DEFAULT 0 NOT NULL"))
+            connection.execute(text("UPDATE quizzes SET is_locked = 1 WHERE is_active = 1"))
+        logger.info("Added is_locked column to quizzes table.")
+
 
 def ensure_attempt_schema() -> None:
     """Apply lightweight schema updates for stored quiz review data."""

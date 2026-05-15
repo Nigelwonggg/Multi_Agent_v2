@@ -39,8 +39,22 @@ type QuizDetailsResponse = {
   title: string;
   description: string;
   unit_id?: number | null;
+  is_active?: boolean;
+  is_locked?: boolean;
   can_manage?: boolean;
   questions?: ExistingQuestion[];
+};
+
+type QuizSavePayload = {
+  title: string;
+  description: string;
+  unit_id: number;
+  questions: Array<{
+    type: QuestionType;
+    question: string;
+    options: string[];
+    answer: number | string | null | undefined;
+  }>;
 };
 
 const QuizEditDetailsPage: React.FC = () => {
@@ -53,7 +67,11 @@ const QuizEditDetailsPage: React.FC = () => {
   const [selectedUnitId, setSelectedUnitId] = useState<number | "">("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [canManage, setCanManage] = useState(true);
+  const [isActive, setIsActive] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
+  const [showActivateConfirm, setShowActivateConfirm] = useState(false);
   const [isLoadingUnits, setIsLoadingUnits] = useState(true);
   const [isUnitHighlighted, setIsUnitHighlighted] = useState(false);
   const [highlightedQuestionIds, setHighlightedQuestionIds] = useState<number[]>([]);
@@ -153,6 +171,8 @@ const QuizEditDetailsPage: React.FC = () => {
         setDescription(data.description);
         setSelectedUnitId(typeof data.unit_id === "number" ? data.unit_id : "");
         setCanManage(data.can_manage !== false);
+        setIsActive(Boolean(data.is_active));
+        setIsLocked(Boolean(data.is_locked));
         
         // Map backend questions to our frontend state with IDs
         const mappedQuestions: Question[] = ((data.questions || []) as ExistingQuestion[]).map((q, idx: number) => ({
@@ -292,16 +312,13 @@ const QuizEditDetailsPage: React.FC = () => {
     );
   };
 
-  // 💾 Save updated quiz
-  const handleUpdate = async () => {
-    if (isSaving) return;
-
+  const buildValidatedPayload = (): QuizSavePayload | null => {
     if (questions.length === 0) {
       setPopupState({
         title: "Add at least one question",
         message: "A quiz must contain at least one question before it can be saved.",
       });
-      return;
+      return null;
     }
 
     if (selectedUnitId === "") {
@@ -311,7 +328,7 @@ const QuizEditDetailsPage: React.FC = () => {
         message: "Please choose one of your assigned units before saving this quiz.",
         focusTarget: "unit",
       });
-      return;
+      return null;
     }
 
     const invalidMcqQuestions = questions
@@ -350,7 +367,7 @@ const QuizEditDetailsPage: React.FC = () => {
             : `Questions ${questionNumbers} need at least two filled options, and each selected correct answer must be one of them.`,
         focusQuestionId: invalidMcqQuestions[0]?.question.id,
       });
-      return;
+      return null;
     }
 
     if (invalidShortAnswerQuestions.length > 0) {
@@ -367,10 +384,10 @@ const QuizEditDetailsPage: React.FC = () => {
             : `Questions ${questionNumbers} need correct short answers before saving this quiz.`,
         focusQuestionId: invalidShortAnswerQuestions[0]?.question.id,
       });
-      return;
+      return null;
     }
 
-    const payload = {
+    return {
       title,
       description,
       unit_id: selectedUnitId,
@@ -381,6 +398,14 @@ const QuizEditDetailsPage: React.FC = () => {
         answer: q.type === "mcq" ? q.answer : q.shortAnswer,
       })),
     };
+  };
+
+  // 💾 Save updated quiz
+  const handleUpdate = async () => {
+    if (isSaving) return;
+
+    const payload = buildValidatedPayload();
+    if (!payload) return;
 
     try {
       setIsSaving(true);
@@ -420,13 +445,69 @@ const QuizEditDetailsPage: React.FC = () => {
     }
   };
 
+  const handleActivate = async () => {
+    if (isActivating) return;
+
+    const payload = buildValidatedPayload();
+    if (!payload) return;
+
+    try {
+      setIsActivating(true);
+      const saveResponse = await fetchWithAuth(`${API_BASE}/quizzes/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!saveResponse.ok) {
+        const savePayload = await saveResponse.json().catch(() => null);
+        throw new Error(savePayload?.detail || "Failed to save the latest draft before activation.");
+      }
+
+      const response = await fetchWithAuth(`${API_BASE}/quizzes/${id}/activate`, {
+        method: "POST",
+      });
+
+      const activationPayload = await response.json();
+      if (!response.ok) {
+        throw new Error(activationPayload.detail || "Failed to activate quiz.");
+      }
+
+      setIsActive(true);
+      setIsLocked(true);
+      setShowActivateConfirm(false);
+      setPopupState({
+        title: "Quiz is now active",
+        message: "Students in the assigned unit can now see this quiz, and it can no longer be edited.",
+      });
+    } catch (error) {
+      console.error(error);
+      setPopupState({
+        title: "Unable to activate quiz",
+        message: error instanceof Error ? error.message : "Failed to activate quiz.",
+      });
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
+  const isReadOnly = !canManage || isLocked;
+
   return (
     <div className="qc-dashboard">
       <Navbar />
 
-      <h1 className="qc-title">{canManage ? "Edit Quiz" : "View Quiz"}</h1>
+      <h1 className="qc-title">{canManage && !isLocked ? "Edit Quiz" : "View Quiz"}</h1>
       <p className="qc-subtitle">
-        {canManage ? "Modify and customize your quiz" : "This quiz is shared through one of your assigned units."}
+        {isLocked
+          ? isActive
+            ? "This quiz is active and locked from further editing."
+            : "This quiz is hidden from students and locked from further editing."
+          : canManage
+          ? "Modify and customize your quiz while it is still in draft."
+          : "This quiz is shared through one of your assigned units."}
       </p>
 
       <div className="qc-create-container">
@@ -447,6 +528,24 @@ const QuizEditDetailsPage: React.FC = () => {
           ← Back to List
         </button>
 
+        <div className={`qc-card ${isActive ? "qc-card-success" : "qc-card-draft"}`} style={{ marginTop: "0" }}>
+          <div className="qc-status-row">
+            <div>
+              <h2 style={{ margin: 0 }}>{isLocked ? (isActive ? "Active Quiz" : "Hidden Quiz") : "Draft Quiz"}</h2>
+              <p className="qc-short-note" style={{ marginTop: "8px" }}>
+                {isLocked
+                  ? isActive
+                    ? "Students can now see this quiz, and further editing is disabled."
+                    : "This quiz is hidden from students, but it remains locked from further editing."
+                  : "This quiz is hidden from students until you activate it."}
+              </p>
+            </div>
+            <span className={`qc-status-pill ${isActive ? "qc-status-pill-active" : "qc-status-pill-draft"}`}>
+              {isLocked ? (isActive ? "Active" : "Hidden") : "Draft"}
+            </span>
+          </div>
+        </div>
+
         {/* QUIZ INFO */}
         <div className="qc-card">
           <h2>Quiz Title</h2>
@@ -456,7 +555,7 @@ const QuizEditDetailsPage: React.FC = () => {
             placeholder="Enter quiz title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            disabled={!canManage}
+            disabled={isReadOnly}
           />
 
           <textarea
@@ -464,7 +563,7 @@ const QuizEditDetailsPage: React.FC = () => {
             placeholder="Enter quiz description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            disabled={!canManage}
+            disabled={isReadOnly}
           />
 
           <div style={{ marginTop: "18px" }}>
@@ -485,7 +584,7 @@ const QuizEditDetailsPage: React.FC = () => {
                   setIsUnitHighlighted(false);
                 }
               }}
-              disabled={!canManage || isLoadingUnits || assignedUnits.length === 0}
+              disabled={isReadOnly || isLoadingUnits || assignedUnits.length === 0}
             >
               <option value="">
                 {isLoadingUnits ? "Loading units..." : "Select one of your assigned units"}
@@ -523,7 +622,7 @@ const QuizEditDetailsPage: React.FC = () => {
                   onChange={(e) =>
                     changeType(q.id, e.target.value as QuestionType)
                   }
-                  disabled={!canManage}
+                  disabled={isReadOnly}
                 >
                   <option value="mcq">MCQ</option>
                   <option value="short">Short Answer</option>
@@ -532,7 +631,7 @@ const QuizEditDetailsPage: React.FC = () => {
                 <button
                   className="qc-delete-btn"
                   onClick={() => deleteQuestion(q.id)}
-                  disabled={!canManage}
+                  disabled={isReadOnly}
                 >
                   Delete
                 </button>
@@ -546,7 +645,7 @@ const QuizEditDetailsPage: React.FC = () => {
               onChange={(e) =>
                 updateQuestion(q.id, e.target.value)
               }
-              disabled={!canManage}
+              disabled={isReadOnly}
             />
 
             {isHighlighted && (
@@ -568,7 +667,7 @@ const QuizEditDetailsPage: React.FC = () => {
                       type="radio"
                       checked={q.answer === i}
                       onChange={() => setAnswer(q.id, i)}
-                      disabled={!canManage}
+                      disabled={isReadOnly}
                     />
 
                     <input
@@ -578,13 +677,13 @@ const QuizEditDetailsPage: React.FC = () => {
                       onChange={(e) =>
                         updateOption(q.id, i, e.target.value)
                       }
-                      disabled={!canManage}
+                      disabled={isReadOnly}
                     />
 
                     <button
                       type="button"
                       onClick={() => removeOption(q.id, i)}
-                      disabled={!canManage}
+                      disabled={isReadOnly}
                       style={{
                         background: "transparent",
                         border: "none",
@@ -601,7 +700,7 @@ const QuizEditDetailsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => addOption(q.id)}
-                  disabled={!canManage}
+                  disabled={isReadOnly}
                   style={{
                     marginTop: "10px",
                     backgroundColor: "#fbbc05",
@@ -631,7 +730,7 @@ const QuizEditDetailsPage: React.FC = () => {
                   onChange={(e) =>
                     updateShortAnswer(q.id, e.target.value)
                   }
-                  disabled={!canManage}
+                  disabled={isReadOnly}
                 />
               </div>
             )}
@@ -640,13 +739,53 @@ const QuizEditDetailsPage: React.FC = () => {
 
         {/* ACTIONS */}
         <div className="qc-actions-bottom">
-          <button onClick={addQuestion} disabled={!canManage}>+ Add Question</button>
+          <button onClick={addQuestion} disabled={isReadOnly}>+ Add Question</button>
 
-          <button className="qc-save-btn" onClick={handleUpdate} disabled={!canManage || isSaving}>
-            {!canManage ? "View Only" : isSaving ? "Saving..." : "Save Changes"}
-          </button>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {canManage && !isLocked && (
+              <button
+                className="qc-activate-btn"
+                onClick={() => setShowActivateConfirm(true)}
+                disabled={isSaving || isActivating}
+              >
+                {isActivating ? "Activating..." : "Make Active"}
+              </button>
+            )}
+
+            <button className="qc-save-btn" onClick={handleUpdate} disabled={isReadOnly || isSaving}>
+              {!canManage ? "View Only" : isLocked ? (isActive ? "Active Quiz" : "Hidden Quiz") : isSaving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
         </div>
       </div>
+
+      {showActivateConfirm && (
+        <div className="qc-popup-overlay" role="presentation" onClick={() => setShowActivateConfirm(false)}>
+          <div
+            className="qc-popup"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quiz-activate-popup-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="qc-popup-icon" aria-hidden="true">
+              !
+            </div>
+            <h2 id="quiz-activate-popup-title">Activate this quiz?</h2>
+            <p>
+              Once activated, students in the assigned unit can see this quiz and it cannot be edited again.
+            </p>
+            <div className="qc-popup-actions">
+              <button className="qc-popup-secondary-btn" onClick={() => setShowActivateConfirm(false)} disabled={isActivating}>
+                Cancel
+              </button>
+              <button className="qc-popup-btn" onClick={handleActivate} disabled={isActivating}>
+                {isActivating ? "Activating..." : "Confirm Activation"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {popupState && (
         <div className="qc-popup-overlay" role="presentation" onClick={closePopup}>

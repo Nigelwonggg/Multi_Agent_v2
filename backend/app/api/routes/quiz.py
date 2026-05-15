@@ -176,6 +176,39 @@ def validate_quiz_payload(payload: QuizBase) -> None:
             )
 
 
+def build_quiz_payload_from_rows(quiz: Quiz, question_rows: list[Question]) -> QuizBase:
+    questions_payload = []
+
+    for question_row in question_rows:
+        try:
+            options = json.loads(question_row.options) if question_row.options else []
+        except Exception:
+            options = []
+
+        answer: int | str = question_row.answer
+        if question_row.type == "mcq":
+            try:
+                answer = int(question_row.answer)
+            except (TypeError, ValueError):
+                answer = question_row.answer
+
+        questions_payload.append(
+            {
+                "type": question_row.type,
+                "question": question_row.question,
+                "options": options,
+                "answer": answer,
+            }
+        )
+
+    return QuizBase(
+        title=quiz.title or "",
+        description=quiz.description or "",
+        unit_id=quiz.unit_id,
+        questions=questions_payload,
+    )
+
+
 def get_user_unit_map(db: Session, current_user: User) -> dict[int, Unit]:
     assigned_units = get_assigned_units_for_user(db, current_user)
     return {unit.id: unit for unit in assigned_units}
@@ -188,6 +221,10 @@ def require_lecturer(current_user: User) -> None:
 
 def can_manage_quiz(quiz: Quiz, current_user: User) -> bool:
     return current_user.role == "lecturer" and quiz.created_by_user_id in (None, current_user.id)
+
+
+def can_edit_quiz(quiz: Quiz, current_user: User) -> bool:
+    return can_manage_quiz(quiz, current_user) and not bool(quiz.is_locked)
 
 
 def ensure_quiz_access(
@@ -204,6 +241,9 @@ def ensure_quiz_access(
         if not owns_quiz and not is_legacy_quiz and not can_access_unit:
             raise HTTPException(status_code=403, detail="You do not have access to this quiz")
         return
+
+    if not quiz.is_active:
+        raise HTTPException(status_code=403, detail="This quiz is still in draft mode.")
 
     if quiz.unit_id not in user_units_by_id:
         raise HTTPException(status_code=403, detail="You do not have access to this quiz")
@@ -229,7 +269,7 @@ def get_quizzes(
         unit_ids = list(user_units_by_id.keys())
         if not unit_ids:
             return []
-        quizzes_query = quizzes_query.filter(Quiz.unit_id.in_(unit_ids))
+        quizzes_query = quizzes_query.filter(Quiz.unit_id.in_(unit_ids), Quiz.is_active.is_(True))
 
     quizzes = quizzes_query.order_by(Quiz.id.desc()).all()
     result = []
@@ -243,6 +283,8 @@ def get_quizzes(
             "unit_id": quiz.unit_id,
             "unit_code": unit.unit_code if unit else None,
             "unit_name": unit.unit_name if unit else None,
+            "is_active": bool(quiz.is_active),
+            "is_locked": bool(quiz.is_locked),
             "can_manage": can_manage_quiz(quiz, current_user),
         }
         
@@ -283,6 +325,8 @@ def get_quiz(
         "unit_id": quiz.unit_id,
         "unit_code": unit.unit_code if unit else None,
         "unit_name": unit.unit_name if unit else None,
+        "is_active": bool(quiz.is_active),
+        "is_locked": bool(quiz.is_locked),
         "can_manage": can_manage_quiz(quiz, current_user),
         "questions": []
     }
@@ -327,6 +371,8 @@ def create_quiz(
             description=payload.description,
             unit_id=payload.unit_id,
             created_by_user_id=current_user.id,
+            is_active=False,
+            is_locked=False,
         )
 
         db.add(quiz)
@@ -378,6 +424,9 @@ def update_quiz(
     if quiz.created_by_user_id not in (None, current_user.id):
         raise HTTPException(status_code=403, detail="You can only edit quizzes that you created.")
 
+    if quiz.is_locked:
+        raise HTTPException(status_code=400, detail="Published quizzes cannot be edited.")
+
     validate_quiz_payload(payload)
     user_units_by_id = get_user_unit_map(db, current_user)
     if payload.unit_id not in user_units_by_id:
@@ -421,6 +470,9 @@ def delete_quiz(
 
     if quiz.created_by_user_id not in (None, current_user.id):
         raise HTTPException(status_code=403, detail="You can only delete quizzes that you created.")
+
+    if quiz.is_locked:
+        raise HTTPException(status_code=400, detail="Published quizzes cannot be deleted.")
     
     # Delete associated attempts
     db.query(Attempt).filter(Attempt.quiz_id == quiz_id).delete()
@@ -431,6 +483,95 @@ def delete_quiz(
     db.delete(quiz)
     db.commit()
     return {"message": "Quiz deleted successfully"}
+
+
+@router.post("/{quiz_id}/activate")
+def activate_quiz(
+    quiz_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_lecturer(current_user)
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+
+    if not can_manage_quiz(quiz, current_user):
+        raise HTTPException(status_code=403, detail="You can only activate quizzes that you manage.")
+
+    if quiz.is_active:
+        raise HTTPException(status_code=400, detail="This quiz is already active.")
+
+    if quiz.unit_id is None:
+        raise HTTPException(status_code=400, detail="Please assign a unit before activating this quiz.")
+
+    question_rows = db.query(Question).filter(Question.quiz_id == quiz_id).all()
+    if not question_rows:
+        raise HTTPException(status_code=400, detail="Add at least one question before activating this quiz.")
+
+    validate_quiz_payload(build_quiz_payload_from_rows(quiz, question_rows))
+
+    quiz.is_active = True
+    quiz.is_locked = True
+    quiz.created_by_user_id = current_user.id
+    db.add(quiz)
+    db.commit()
+
+    return {"message": "Quiz activated successfully"}
+
+
+@router.post("/{quiz_id}/hide")
+def hide_quiz_from_students(
+    quiz_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_lecturer(current_user)
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+
+    if not can_manage_quiz(quiz, current_user):
+        raise HTTPException(status_code=403, detail="You can only hide quizzes that you manage.")
+
+    if not quiz.is_locked:
+        raise HTTPException(status_code=400, detail="Only published quizzes can be hidden from students.")
+
+    if not quiz.is_active:
+        raise HTTPException(status_code=400, detail="This quiz is already hidden from students.")
+
+    quiz.is_active = False
+    db.add(quiz)
+    db.commit()
+
+    return {"message": "Quiz hidden from students successfully"}
+
+
+@router.post("/{quiz_id}/show")
+def show_quiz_to_students(
+    quiz_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_lecturer(current_user)
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+
+    if not can_manage_quiz(quiz, current_user):
+        raise HTTPException(status_code=403, detail="You can only show quizzes that you manage.")
+
+    if not quiz.is_locked:
+        raise HTTPException(status_code=400, detail="Only published quizzes can be shown to students.")
+
+    if quiz.is_active:
+        raise HTTPException(status_code=400, detail="This quiz is already visible to students.")
+
+    quiz.is_active = True
+    db.add(quiz)
+    db.commit()
+
+    return {"message": "Quiz shown to students successfully"}
 
 @router.post("/submit", response_model=QuizAttemptResponse)
 def submit_quiz(

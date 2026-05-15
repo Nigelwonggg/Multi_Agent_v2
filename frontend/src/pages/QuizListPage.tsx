@@ -11,6 +11,7 @@ type Quiz = {
   unit_id: number | null;
   unit_code: string | null;
   unit_name: string | null;
+  is_active: boolean;
   completed: boolean;
   score?: number;
   total_questions?: number;

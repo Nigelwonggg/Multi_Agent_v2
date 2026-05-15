@@ -434,7 +434,8 @@ const QuizCreationPage: React.FC = () => {
         throw new Error(errorMessage);
       }
 
-      navigate("/quiz");
+      const data = await res.json();
+      navigate(data?.quiz_id ? `/quiz/edit/${data.quiz_id}` : "/quiz/edit");
     } catch (error) {
       console.error(error);
       setPopupState({
@@ -454,7 +455,7 @@ const QuizCreationPage: React.FC = () => {
       <Navbar />
 
       <h1 className="qc-title">Create New Quiz</h1>
-      <p className="qc-subtitle">Create and customize your quiz</p>
+      <p className="qc-subtitle">Create and customize your quiz. New quizzes start in draft mode until you activate them.</p>
 
       <div className="qc-create-container">
         <button 
@@ -698,7 +699,7 @@ const QuizCreationPage: React.FC = () => {
           <button onClick={addQuestion}>+ Add Question</button>
 
           <button className="qc-save-btn" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save Quiz"}
+            {isSaving ? "Saving..." : "Save Draft"}
           </button>
         </div>
       </div>

@@ -98,6 +98,11 @@ function App() {
           <QuizAttemptReviewPage />
         </ProtectedRoute>
       } />
+      <Route path="/quiz/review/:id" element={
+        <ProtectedRoute allowedRoles={['student']}>
+          <QuizAttemptReviewPage />
+        </ProtectedRoute>
+      } />
       <Route path="/quiz/list" element={<QuizListPage />} />
       <Route path="/quiz/take/:id" element={<QuizTakePage />} />
         <Route path="/vector-database/upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
@@ -130,6 +135,11 @@ function App() {
       } />
       <Route path="/quiz/results/:id/attempt/:attemptId" element={
         <ProtectedRoute allowedRoles={['lecturer']}>
+          <QuizAttemptReviewPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/quiz/review/:id" element={
+        <ProtectedRoute allowedRoles={['student']}>
           <QuizAttemptReviewPage />
         </ProtectedRoute>
       } />

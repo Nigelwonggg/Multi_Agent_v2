@@ -123,6 +123,66 @@ def is_answer_correct(question: dict, answer: Optional[int | str]) -> bool:
     return bool(keywords) and all(keyword in student_answer for keyword in keywords)
 
 
+def build_attempt_review_payload(
+    quiz: Quiz,
+    attempt: Attempt,
+    student: User,
+    unit: Unit | None,
+) -> dict:
+    snapshot_data = []
+    answers_data: list[Optional[int | str]] = []
+    review_available = bool(attempt.quiz_snapshot_json and attempt.answers_json)
+    review_message = None
+
+    if attempt.quiz_snapshot_json and attempt.answers_json:
+        try:
+            snapshot_data = json.loads(attempt.quiz_snapshot_json)
+            answers_data = json.loads(attempt.answers_json)
+        except (TypeError, ValueError):
+            review_available = False
+            review_message = "This attempt could not be decoded for detailed review."
+    else:
+        review_message = "Detailed answer review is not available for this older attempt."
+
+    review_questions = []
+    if review_available:
+        normalized_answers = normalize_user_answers(answers_data, len(snapshot_data))
+        for index, (question, answer) in enumerate(zip(snapshot_data, normalized_answers), start=1):
+            correct_answer = format_answer_for_review(question, question["answer"]) or "No correct answer recorded"
+            review_questions.append(
+                {
+                    "question_number": index,
+                    "type": question["type"],
+                    "question": question["question"],
+                    "options": question.get("options", []),
+                    "student_answer": format_answer_for_review(question, answer),
+                    "correct_answer": correct_answer,
+                    "is_correct": is_answer_correct(question, answer),
+                }
+            )
+
+    percentage = round((attempt.score / attempt.total_questions * 100), 1) if attempt.total_questions else 0.0
+
+    return {
+        "attempt_id": attempt.id,
+        "quiz_id": quiz.id,
+        "quiz_title": quiz.title,
+        "quiz_description": quiz.description,
+        "unit_id": quiz.unit_id,
+        "unit_code": unit.unit_code if unit else None,
+        "unit_name": unit.unit_name if unit else None,
+        "student_name": student.full_name or student.email,
+        "student_email": student.email,
+        "score": attempt.score,
+        "total_questions": attempt.total_questions,
+        "percentage": percentage,
+        "submitted_at": attempt.created_at.isoformat() if attempt.created_at else None,
+        "review_available": review_available,
+        "review_message": review_message,
+        "questions": review_questions,
+    }
+
+
 def validate_quiz_payload(payload: QuizBase) -> None:
     if payload.unit_id is None:
         raise HTTPException(
@@ -712,55 +772,30 @@ def get_quiz_attempt_review(
     attempt, student = attempt_row
     unit = user_units_by_id.get(quiz.unit_id) or db.query(Unit).filter(Unit.id == quiz.unit_id).first()
 
-    snapshot_data = []
-    answers_data: list[Optional[int | str]] = []
-    review_available = bool(attempt.quiz_snapshot_json and attempt.answers_json)
-    review_message = None
+    return build_attempt_review_payload(quiz, attempt, student, unit)
 
-    if attempt.quiz_snapshot_json and attempt.answers_json:
-        try:
-            snapshot_data = json.loads(attempt.quiz_snapshot_json)
-            answers_data = json.loads(attempt.answers_json)
-        except (TypeError, ValueError):
-            review_available = False
-            review_message = "This attempt could not be decoded for detailed review."
-    else:
-        review_message = "Detailed answer review is not available for this older attempt."
 
-    review_questions = []
-    if review_available:
-        normalized_answers = normalize_user_answers(answers_data, len(snapshot_data))
-        for index, (question, answer) in enumerate(zip(snapshot_data, normalized_answers), start=1):
-            correct_answer = format_answer_for_review(question, question["answer"]) or "No correct answer recorded"
-            review_questions.append(
-                {
-                    "question_number": index,
-                    "type": question["type"],
-                    "question": question["question"],
-                    "options": question.get("options", []),
-                    "student_answer": format_answer_for_review(question, answer),
-                    "correct_answer": correct_answer,
-                    "is_correct": is_answer_correct(question, answer),
-                }
-            )
+@router.get("/{quiz_id}/my-attempt-review", response_model=QuizAttemptReviewResponse)
+def get_my_quiz_attempt_review(
+    quiz_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != "student":
+        raise HTTPException(status_code=403, detail="Only students can review their own quiz attempts")
 
-    percentage = round((attempt.score / attempt.total_questions * 100), 1) if attempt.total_questions else 0.0
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
 
-    return {
-        "attempt_id": attempt.id,
-        "quiz_id": quiz.id,
-        "quiz_title": quiz.title,
-        "quiz_description": quiz.description,
-        "unit_id": quiz.unit_id,
-        "unit_code": unit.unit_code if unit else None,
-        "unit_name": unit.unit_name if unit else None,
-        "student_name": student.full_name or student.email,
-        "student_email": student.email,
-        "score": attempt.score,
-        "total_questions": attempt.total_questions,
-        "percentage": percentage,
-        "submitted_at": attempt.created_at.isoformat() if attempt.created_at else None,
-        "review_available": review_available,
-        "review_message": review_message,
-        "questions": review_questions,
-    }
+    attempt = (
+        db.query(Attempt)
+        .filter(Attempt.quiz_id == quiz_id, Attempt.user_id == current_user.id)
+        .order_by(Attempt.created_at.desc())
+        .first()
+    )
+    if not attempt:
+        raise HTTPException(status_code=404, detail="You have not submitted this quiz yet")
+
+    unit = db.query(Unit).filter(Unit.id == quiz.unit_id).first() if quiz.unit_id is not None else None
+    return build_attempt_review_payload(quiz, attempt, current_user, unit)

@@ -39,6 +39,7 @@ const QuizAttemptReviewPage: React.FC = () => {
   const [review, setReview] = useState<ReviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const isStudentReview = !attemptId;
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -58,7 +59,10 @@ const QuizAttemptReviewPage: React.FC = () => {
       try {
         setLoading(true);
         setError("");
-        const response = await fetchWithAuth(`${API_BASE}/quizzes/${id}/attempts/${attemptId}`);
+        const endpoint = isStudentReview
+          ? `${API_BASE}/quizzes/${id}/my-attempt-review`
+          : `${API_BASE}/quizzes/${id}/attempts/${attemptId}`;
+        const response = await fetchWithAuth(endpoint);
         const payload = await response.json();
 
         if (!response.ok) {
@@ -74,15 +78,15 @@ const QuizAttemptReviewPage: React.FC = () => {
     };
 
     loadReview();
-  }, [API_BASE, id, attemptId]);
+  }, [API_BASE, id, attemptId, isStudentReview]);
 
   return (
     <div className="qr-page">
       <Navbar />
 
       <div className="qr-container">
-        <button onClick={() => navigate(`/quiz/results/${id}`)} className="qr-back-btn">
-          ← Back to Results
+        <button onClick={() => navigate(isStudentReview ? "/quiz/list" : `/quiz/results/${id}`)} className="qr-back-btn">
+          {isStudentReview ? "← Back to Quizzes" : "← Back to Results"}
         </button>
 
         {loading ? (
@@ -93,9 +97,9 @@ const QuizAttemptReviewPage: React.FC = () => {
           <>
             <div className="qr-hero">
               <div>
-                <p className="qr-kicker">Submission Review</p>
-                <h1>{review.student_name}</h1>
-                <p className="qr-description">{review.student_email}</p>
+                <p className="qr-kicker">{isStudentReview ? "Your Quiz Review" : "Submission Review"}</p>
+                <h1>{isStudentReview ? review.quiz_title : review.student_name}</h1>
+                <p className="qr-description">{isStudentReview ? review.quiz_description : review.student_email}</p>
                 {review.unit_code && (
                   <p className="qr-unit-pill">
                     {review.unit_code} - {review.unit_name}
@@ -130,7 +134,7 @@ const QuizAttemptReviewPage: React.FC = () => {
             ) : (
               <div className="qr-attempt-list">
                 {review.questions.map((question) => (
-                  <div className="qr-attempt-card" key={question.question_number}>
+                  <div className={`qr-attempt-card ${isStudentReview ? "qr-student-card" : ""}`} key={question.question_number}>
                     <div className="qr-attempt-head">
                       <div>
                         <h2>
@@ -150,18 +154,71 @@ const QuizAttemptReviewPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {question.type === "mcq" && question.options.length > 0 && (
-                      <div className="qr-attempt-meta" style={{ marginTop: "16px" }}>
-                        Options: {question.options.join(" | ")}
-                      </div>
-                    )}
+                    {isStudentReview ? (
+                      <>
+                        {question.type === "mcq" && question.options.length > 0 ? (
+                          <div className="qr-student-options">
+                            {question.options.map((option) => {
+                              const isChosen = question.student_answer === option;
+                              const isCorrectOption = question.correct_answer === option;
 
-                    <div className="qr-attempt-meta" style={{ marginTop: "16px" }}>
-                      Your student answered: {question.student_answer || "No answer provided"}
-                    </div>
-                    <div className="qr-attempt-meta">
-                      Correct answer: {question.correct_answer}
-                    </div>
+                              return (
+                                <div
+                                  key={option}
+                                  className={`qr-student-option ${
+                                    isCorrectOption
+                                      ? "qr-student-option-correct"
+                                      : isChosen
+                                      ? "qr-student-option-selected"
+                                      : ""
+                                  }`}
+                                >
+                                  <span className="qr-student-option-indicator">
+                                    {isCorrectOption ? "✓" : isChosen ? "●" : "○"}
+                                  </span>
+                                  <span>{option}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="qr-student-answer-block">
+                            <div className="qr-student-answer-label">Your answer</div>
+                            <div className="qr-student-answer-value">
+                              {question.student_answer || "No answer provided"}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="qr-student-review-grid">
+                          <div className="qr-student-answer-block">
+                            <div className="qr-student-answer-label">Your answer</div>
+                            <div className="qr-student-answer-value">
+                              {question.student_answer || "No answer provided"}
+                            </div>
+                          </div>
+                          <div className="qr-student-answer-block qr-student-answer-correct">
+                            <div className="qr-student-answer-label">Correct answer</div>
+                            <div className="qr-student-answer-value">{question.correct_answer}</div>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {question.type === "mcq" && question.options.length > 0 && (
+                          <div className="qr-attempt-meta" style={{ marginTop: "16px" }}>
+                            Options: {question.options.join(" | ")}
+                          </div>
+                        )}
+
+                        <div className="qr-attempt-meta" style={{ marginTop: "16px" }}>
+                          Your answer: {question.student_answer || "No answer provided"}
+                        </div>
+                        <div className="qr-attempt-meta">
+                          Correct answer: {question.correct_answer}
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

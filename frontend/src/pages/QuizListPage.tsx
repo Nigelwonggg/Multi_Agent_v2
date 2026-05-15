@@ -117,7 +117,7 @@ const QuizListPage: React.FC = () => {
                       </span>
                       <button
                         className="qe-btn qe-results"
-                        onClick={() => navigate(`/quiz/take/${quiz.id}`)}
+                        onClick={() => navigate(`/quiz/review/${quiz.id}`)}
                       >
                         Review
                       </button>

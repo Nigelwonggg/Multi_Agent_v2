@@ -134,8 +134,11 @@ const QuizAttemptReviewPage: React.FC = () => {
               </div>
             ) : (
               <div className="qr-attempt-list">
-                {review.questions.map((question) => (
-                  <div className={`qr-attempt-card ${isStudentReview ? "qr-student-card" : ""}`} key={question.question_number}>
+                {review.questions.map((question) => {
+                  const answerLabel = isStudentReview ? "Your answer" : "Student answer";
+
+                  return (
+                  <div className={`qr-attempt-card ${isStudentReview ? "qr-student-card" : "qr-lecturer-card"}`} key={question.question_number}>
                     <div className="qr-attempt-head">
                       <div>
                         <h2>
@@ -155,73 +158,56 @@ const QuizAttemptReviewPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {isStudentReview ? (
-                      <>
-                        {question.type === "mcq" && question.options.length > 0 ? (
-                          <div className="qr-student-options">
-                            {question.options.map((option) => {
-                              const isChosen = question.student_answer === option;
-                              const isCorrectOption = question.correct_answer === option;
+                    {question.type === "mcq" && question.options.length > 0 ? (
+                      <div className="qr-student-options">
+                        {question.options.map((option) => {
+                          const isChosen = question.student_answer === option;
+                          const isCorrectOption = question.correct_answer === option;
 
-                              return (
-                                <div
-                                  key={option}
-                                  className={`qr-student-option ${
-                                    isCorrectOption
-                                      ? "qr-student-option-correct"
-                                      : isChosen
-                                      ? "qr-student-option-selected"
-                                      : ""
-                                  }`}
-                                >
-                                  <span className="qr-student-option-indicator">
-                                    {isCorrectOption ? "✓" : isChosen ? "●" : "○"}
-                                  </span>
-                                  <span>{option}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="qr-student-answer-block">
-                            <div className="qr-student-answer-label">Your answer</div>
-                            <div className="qr-student-answer-value">
-                              {question.student_answer || "No answer provided"}
+                          return (
+                            <div
+                              key={option}
+                              className={`qr-student-option ${
+                                isCorrectOption
+                                  ? "qr-student-option-correct"
+                                  : isChosen
+                                  ? "qr-student-option-selected"
+                                  : ""
+                              }`}
+                            >
+                              <span className="qr-student-option-indicator">
+                                {isCorrectOption ? "✓" : isChosen ? "●" : "○"}
+                              </span>
+                              <span>{option}</span>
                             </div>
-                          </div>
-                        )}
-
-                        <div className="qr-student-review-grid">
-                          <div className="qr-student-answer-block">
-                            <div className="qr-student-answer-label">Your answer</div>
-                            <div className="qr-student-answer-value">
-                              {question.student_answer || "No answer provided"}
-                            </div>
-                          </div>
-                          <div className="qr-student-answer-block qr-student-answer-correct">
-                            <div className="qr-student-answer-label">Correct answer</div>
-                            <div className="qr-student-answer-value">{question.correct_answer}</div>
-                          </div>
-                        </div>
-                      </>
+                          );
+                        })}
+                      </div>
                     ) : (
                       <>
-                        {question.type === "mcq" && question.options.length > 0 && (
-                          <div className="qr-attempt-meta" style={{ marginTop: "16px" }}>
-                            Options: {question.options.join(" | ")}
+                        <div className="qr-student-answer-block">
+                          <div className="qr-student-answer-label">{answerLabel}</div>
+                          <div className="qr-student-answer-value">
+                            {question.student_answer || "No answer provided"}
                           </div>
-                        )}
-
-                        <div className="qr-attempt-meta" style={{ marginTop: "16px" }}>
-                          Your answer: {question.student_answer || "No answer provided"}
-                        </div>
-                        <div className="qr-attempt-meta">
-                          Correct answer: {question.correct_answer}
                         </div>
                       </>
                     )}
+
+                    <div className="qr-student-review-grid">
+                      <div className="qr-student-answer-block">
+                        <div className="qr-student-answer-label">{answerLabel}</div>
+                        <div className="qr-student-answer-value">
+                          {question.student_answer || "No answer provided"}
+                        </div>
+                      </div>
+                      <div className="qr-student-answer-block qr-student-answer-correct">
+                        <div className="qr-student-answer-label">Correct answer</div>
+                        <div className="qr-student-answer-value">{question.correct_answer}</div>
+                      </div>
+                    </div>
                   </div>
-                ))}
+                )})}
               </div>
             )}
           </>

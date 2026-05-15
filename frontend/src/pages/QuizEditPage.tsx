@@ -11,6 +11,7 @@ type Quiz = {
   unit_id: number | null;
   unit_code: string | null;
   unit_name: string | null;
+  created_by_name?: string | null;
   is_active: boolean;
   is_locked: boolean;
   can_manage: boolean;
@@ -43,8 +44,12 @@ const QuizEditPage: React.FC = () => {
   };
 
   // 🔥 Delete quiz
-  const handleDelete = async (quizId: number) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this quiz?");
+  const handleDelete = async (quizId: number, isLocked: boolean) => {
+    const confirmDelete = window.confirm(
+      isLocked
+        ? "Are you sure you want to delete this published quiz? This will also remove all student attempts for it."
+        : "Are you sure you want to delete this quiz?"
+    );
     if (!confirmDelete) return;
 
     try {
@@ -186,6 +191,11 @@ const QuizEditPage: React.FC = () => {
                         {quiz.unit_code} - {quiz.unit_name}
                       </p>
                     )}
+                    {quiz.created_by_name && (
+                      <p style={{ color: "#c7d2fe", marginTop: "6px", fontSize: "13px" }}>
+                        Created by: {quiz.created_by_name}
+                      </p>
+                    )}
                     <p style={{ marginTop: "8px", color: quiz.is_active ? "#88d77f" : quiz.is_locked ? "#93c5fd" : "#ffbc99", fontWeight: 700 }}>
                       {quiz.is_active ? "Active" : quiz.is_locked ? "Hidden" : "Draft"}
                     </p>
@@ -245,10 +255,10 @@ const QuizEditPage: React.FC = () => {
                     </button>
                   )}
 
-                  {quiz.can_manage && !quiz.is_locked && (
+                  {quiz.can_manage && (
                     <button 
                       className="qe-btn qe-delete"
-                      onClick={() => handleDelete(quiz.id)}
+                      onClick={() => handleDelete(quiz.id, quiz.is_locked)}
                     >
                       Delete
                     </button>

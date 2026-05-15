@@ -339,9 +339,19 @@ def get_quizzes(
         quizzes_query = quizzes_query.filter(Quiz.unit_id.in_(unit_ids), Quiz.is_active.is_(True))
 
     quizzes = quizzes_query.order_by(Quiz.id.desc()).all()
+    creator_ids = {
+        quiz.created_by_user_id
+        for quiz in quizzes
+        if quiz.created_by_user_id is not None
+    }
+    creators_by_id = {
+        user.id: user
+        for user in db.query(User).filter(User.id.in_(creator_ids)).all()
+    } if creator_ids else {}
     result = []
     for quiz in quizzes:
         unit = user_units_by_id.get(quiz.unit_id)
+        creator = creators_by_id.get(quiz.created_by_user_id) if quiz.created_by_user_id is not None else None
         quiz_data = {
             "id": quiz.id,
             "title": quiz.title,
@@ -353,6 +363,7 @@ def get_quizzes(
             "is_active": bool(quiz.is_active),
             "is_locked": bool(quiz.is_locked),
             "time_limit_minutes": quiz.time_limit_minutes,
+            "created_by_name": creator.full_name or creator.email if creator else None,
             "can_manage": can_manage_quiz(quiz, current_user),
         }
         
@@ -385,6 +396,7 @@ def get_quiz(
 
     questions = db.query(Question).filter(Question.quiz_id == quiz_id).all()
     unit = user_units_by_id.get(quiz.unit_id) or db.query(Unit).filter(Unit.id == quiz.unit_id).first()
+    creator = db.query(User).filter(User.id == quiz.created_by_user_id).first() if quiz.created_by_user_id is not None else None
 
     quiz_data = {
         "id": quiz.id,
@@ -396,6 +408,7 @@ def get_quiz(
         "is_active": bool(quiz.is_active),
         "is_locked": bool(quiz.is_locked),
         "time_limit_minutes": quiz.time_limit_minutes,
+        "created_by_name": creator.full_name or creator.email if creator else None,
         "can_manage": can_manage_quiz(quiz, current_user),
         "questions": []
     }
@@ -542,9 +555,6 @@ def delete_quiz(
     if quiz.created_by_user_id not in (None, current_user.id):
         raise HTTPException(status_code=403, detail="You can only delete quizzes that you created.")
 
-    if quiz.is_locked:
-        raise HTTPException(status_code=400, detail="Published quizzes cannot be deleted.")
-    
     # Delete associated attempts
     db.query(Attempt).filter(Attempt.quiz_id == quiz_id).delete()
     

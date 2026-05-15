@@ -37,6 +37,8 @@ const QuizTakePage: React.FC = () => {
     title: string;
     message: string;
     redirectPath?: string;
+    mode?: "notice" | "confirmSubmit";
+    unansweredCount?: number;
   } | null>(null);
   const submitHandlerRef = useRef<(isAutoSubmitted?: boolean) => Promise<void>>(async () => {});
 
@@ -70,6 +72,11 @@ const QuizTakePage: React.FC = () => {
       navigate(redirectPath);
     }
   };
+
+  const getUnansweredQuestionCount = () =>
+    userAnswers.filter(
+      (answer) => answer === null || (typeof answer === "string" && answer.trim() === "")
+    ).length;
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -209,6 +216,26 @@ const QuizTakePage: React.FC = () => {
   };
   submitHandlerRef.current = handleSubmit;
 
+  const handleSubmitClick = () => {
+    if (!quiz || isSubmitting || submitted) return;
+
+    const unansweredCount = getUnansweredQuestionCount();
+    if (unansweredCount > 0) {
+      setPopupState({
+        title: "Submit with unanswered questions?",
+        message:
+          unansweredCount === 1
+            ? "You still have 1 unanswered question. Are you sure you want to submit your quiz now?"
+            : `You still have ${unansweredCount} unanswered questions. Are you sure you want to submit your quiz now?`,
+        mode: "confirmSubmit",
+        unansweredCount,
+      });
+      return;
+    }
+
+    void handleSubmit();
+  };
+
   useEffect(() => {
     if (remainingSeconds === 0 && quiz && !submitted && !isSubmitting) {
       void submitHandlerRef.current(true);
@@ -296,7 +323,7 @@ const QuizTakePage: React.FC = () => {
             ))}
 
             <div className="qc-actions-bottom">
-              <button className="qc-save-btn" onClick={() => handleSubmit()} disabled={isSubmitting}>
+              <button className="qc-save-btn" onClick={handleSubmitClick} disabled={isSubmitting}>
                 {isSubmitting ? "Submitting..." : "Submit Quiz"}
               </button>
             </div>
@@ -405,9 +432,27 @@ const QuizTakePage: React.FC = () => {
             </div>
             <h2 id="quiz-timer-popup-title">{popupState.title}</h2>
             <p>{popupState.message}</p>
-            <button className="qc-popup-btn" onClick={closePopup}>
-              {popupState.redirectPath ? "Back to Quizzes" : "Close"}
-            </button>
+            {popupState.mode === "confirmSubmit" ? (
+              <div className="qc-popup-actions">
+                <button className="qc-popup-secondary-btn" onClick={closePopup}>
+                  Continue Answering
+                </button>
+                <button
+                  className="qc-popup-btn"
+                  onClick={() => {
+                    setPopupState(null);
+                    void handleSubmit();
+                  }}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Anyway"}
+                </button>
+              </div>
+            ) : (
+              <button className="qc-popup-btn" onClick={closePopup}>
+                {popupState.redirectPath ? "Back to Quizzes" : "Close"}
+              </button>
+            )}
           </div>
         </div>
       )}

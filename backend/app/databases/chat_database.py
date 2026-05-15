@@ -152,6 +152,11 @@ def ensure_quiz_schema() -> None:
             connection.execute(text("UPDATE quizzes SET is_locked = 1 WHERE is_active = 1"))
         logger.info("Added is_locked column to quizzes table.")
 
+    if "time_limit_minutes" not in existing_columns:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE quizzes ADD COLUMN time_limit_minutes INTEGER"))
+        logger.info("Added time_limit_minutes column to quizzes table.")
+
 
 def ensure_attempt_schema() -> None:
     """Apply lightweight schema updates for stored quiz review data."""

@@ -42,6 +42,8 @@ const QuizCreationPage: React.FC = () => {
   const [description, setDescription] = useState("");
   const [topic, setTopic] = useState("");
   const [numQuestions, setNumQuestions] = useState(5);
+  const [timerMode, setTimerMode] = useState<"unlimited" | "timed">("unlimited");
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState("30");
   const [assignedUnits, setAssignedUnits] = useState<UnitRecord[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<number | "">("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -49,12 +51,13 @@ const QuizCreationPage: React.FC = () => {
   const [isLoadingUnits, setIsLoadingUnits] = useState(true);
   const [isTopicHighlighted, setIsTopicHighlighted] = useState(false);
   const [isUnitHighlighted, setIsUnitHighlighted] = useState(false);
+  const [isTimerHighlighted, setIsTimerHighlighted] = useState(false);
   const [highlightedQuestionIds, setHighlightedQuestionIds] = useState<number[]>([]);
   const [popupState, setPopupState] = useState<{
     title: string;
     message: string;
     focusQuestionId?: number;
-    focusTarget?: "topic" | "unit";
+    focusTarget?: "topic" | "unit" | "timer";
   } | null>(null);
 
   const [questions, setQuestions] = useState<Question[]>([
@@ -116,6 +119,16 @@ const QuizCreationPage: React.FC = () => {
           .getElementById("quiz-unit-select")
           ?.scrollIntoView({ behavior: "smooth", block: "center" });
         (document.getElementById("quiz-unit-select") as HTMLSelectElement | null)?.focus();
+      });
+      return;
+    }
+
+    if (focusTarget === "timer") {
+      requestAnimationFrame(() => {
+        document
+          .getElementById("quiz-time-limit-input")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        (document.getElementById("quiz-time-limit-input") as HTMLInputElement | null)?.focus();
       });
       return;
     }
@@ -343,6 +356,19 @@ const QuizCreationPage: React.FC = () => {
       return;
     }
 
+    if (timerMode === "timed") {
+      const parsedTimeLimit = Number(timeLimitMinutes);
+      if (!Number.isInteger(parsedTimeLimit) || parsedTimeLimit <= 0) {
+        setIsTimerHighlighted(true);
+        setPopupState({
+          title: "Enter a valid timer",
+          message: "Please enter a quiz time limit greater than zero minutes, or switch to unlimited time.",
+          focusTarget: "timer",
+        });
+        return;
+      }
+    }
+
     const invalidMcqQuestions = questions
       .map((question, index) => ({ question, index }))
       .filter(({ question }) => {
@@ -405,6 +431,7 @@ const QuizCreationPage: React.FC = () => {
       title,
       description,
       unit_id: selectedUnitId,
+      time_limit_minutes: timerMode === "timed" ? Number(timeLimitMinutes) : null,
       questions: questions.map((q) => ({
         type: q.type,
         question: q.question,
@@ -564,6 +591,56 @@ const QuizCreationPage: React.FC = () => {
               <p className="qc-short-note">
                 You do not have any assigned units yet. Ask an admin to assign one before creating quizzes.
               </p>
+            )}
+          </div>
+
+          <div style={{ marginTop: "20px" }}>
+            <label style={{ color: "#fbbc05", fontWeight: "bold", display: "block", marginBottom: "10px" }}>
+              Quiz Timer
+            </label>
+            <div className="qc-radio-group">
+              <label className="qc-radio-option">
+                <input
+                  type="radio"
+                  name="quiz-timer-mode"
+                  checked={timerMode === "unlimited"}
+                  onChange={() => {
+                    setTimerMode("unlimited");
+                    setIsTimerHighlighted(false);
+                  }}
+                />
+                <span>Unlimited time</span>
+              </label>
+              <label className="qc-radio-option">
+                <input
+                  type="radio"
+                  name="quiz-timer-mode"
+                  checked={timerMode === "timed"}
+                  onChange={() => setTimerMode("timed")}
+                />
+                <span>Set a timer</span>
+              </label>
+            </div>
+
+            {timerMode === "timed" && (
+              <div className="qc-timer-row">
+                <input
+                  id="quiz-time-limit-input"
+                  type="number"
+                  min={1}
+                  max={1440}
+                  className={`qc-input ${isTimerHighlighted ? "qc-input-warning" : ""}`}
+                  value={timeLimitMinutes}
+                  onChange={(e) => {
+                    setTimeLimitMinutes(e.target.value);
+                    if (e.target.value.trim()) {
+                      setIsTimerHighlighted(false);
+                    }
+                  }}
+                  placeholder="Enter minutes"
+                />
+                <span className="qc-short-note">minutes</span>
+              </div>
             )}
           </div>
         </div>

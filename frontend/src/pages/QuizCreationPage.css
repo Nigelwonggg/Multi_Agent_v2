@@ -329,6 +329,31 @@ textarea.quiz-input {
   border-color: rgba(251, 188, 5, 0.55);
 }
 
+.qc-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.qc-radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #f3f4f6;
+  font-weight: 600;
+}
+
+.qc-radio-option input {
+  accent-color: #fbbc05;
+}
+
+.qc-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .qc-card-draft {
   border-color: rgba(251, 188, 5, 0.24);
   background:
@@ -463,6 +488,10 @@ textarea.quiz-input {
   background: #eef4ff;
   border-color: rgba(37, 99, 235, 0.16);
   color: #1e293b;
+}
+
+:root[data-theme="light"] .qc-radio-option {
+  color: #1f2937;
 }
 
 :root[data-theme="light"] .qc-card-draft {

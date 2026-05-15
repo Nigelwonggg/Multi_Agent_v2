@@ -11,6 +11,7 @@ class QuizBase(BaseModel):
     title: str = Field(..., description="The title of the quiz")
     description: str = Field(..., description="A brief description of the quiz")
     unit_id: Optional[int] = Field(default=None, description="Assigned unit ID for this quiz")
+    time_limit_minutes: Optional[int] = Field(default=None, description="Optional time limit for the quiz in minutes")
     questions: List[QuestionBase] = Field(..., description="List of questions in the quiz")
 
 class QuizGenerateRequest(BaseModel):

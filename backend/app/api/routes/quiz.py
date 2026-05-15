@@ -130,6 +130,12 @@ def validate_quiz_payload(payload: QuizBase) -> None:
             detail="Please choose a unit for this quiz.",
         )
 
+    if payload.time_limit_minutes is not None and payload.time_limit_minutes <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Quiz time limit must be greater than zero minutes.",
+        )
+
     if len(payload.questions) == 0:
         raise HTTPException(
             status_code=400,
@@ -205,6 +211,7 @@ def build_quiz_payload_from_rows(quiz: Quiz, question_rows: list[Question]) -> Q
         title=quiz.title or "",
         description=quiz.description or "",
         unit_id=quiz.unit_id,
+        time_limit_minutes=quiz.time_limit_minutes,
         questions=questions_payload,
     )
 
@@ -285,6 +292,7 @@ def get_quizzes(
             "unit_name": unit.unit_name if unit else None,
             "is_active": bool(quiz.is_active),
             "is_locked": bool(quiz.is_locked),
+            "time_limit_minutes": quiz.time_limit_minutes,
             "can_manage": can_manage_quiz(quiz, current_user),
         }
         
@@ -327,6 +335,7 @@ def get_quiz(
         "unit_name": unit.unit_name if unit else None,
         "is_active": bool(quiz.is_active),
         "is_locked": bool(quiz.is_locked),
+        "time_limit_minutes": quiz.time_limit_minutes,
         "can_manage": can_manage_quiz(quiz, current_user),
         "questions": []
     }
@@ -373,6 +382,7 @@ def create_quiz(
             created_by_user_id=current_user.id,
             is_active=False,
             is_locked=False,
+            time_limit_minutes=payload.time_limit_minutes,
         )
 
         db.add(quiz)
@@ -437,6 +447,7 @@ def update_quiz(
         quiz.description = payload.description
         quiz.unit_id = payload.unit_id
         quiz.created_by_user_id = current_user.id
+        quiz.time_limit_minutes = payload.time_limit_minutes
 
         db.query(Question).filter(Question.quiz_id == quiz_id).delete()
 

@@ -41,6 +41,7 @@ type QuizDetailsResponse = {
   unit_id?: number | null;
   is_active?: boolean;
   is_locked?: boolean;
+  time_limit_minutes?: number | null;
   can_manage?: boolean;
   questions?: ExistingQuestion[];
 };
@@ -49,6 +50,7 @@ type QuizSavePayload = {
   title: string;
   description: string;
   unit_id: number;
+  time_limit_minutes: number | null;
   questions: Array<{
     type: QuestionType;
     question: string;
@@ -63,6 +65,8 @@ const QuizEditDetailsPage: React.FC = () => {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [timerMode, setTimerMode] = useState<"unlimited" | "timed">("unlimited");
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState("30");
   const [assignedUnits, setAssignedUnits] = useState<UnitRecord[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<number | "">("");
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -74,12 +78,13 @@ const QuizEditDetailsPage: React.FC = () => {
   const [showActivateConfirm, setShowActivateConfirm] = useState(false);
   const [isLoadingUnits, setIsLoadingUnits] = useState(true);
   const [isUnitHighlighted, setIsUnitHighlighted] = useState(false);
+  const [isTimerHighlighted, setIsTimerHighlighted] = useState(false);
   const [highlightedQuestionIds, setHighlightedQuestionIds] = useState<number[]>([]);
   const [popupState, setPopupState] = useState<{
     title: string;
     message: string;
     focusQuestionId?: number;
-    focusTarget?: "unit";
+    focusTarget?: "unit" | "timer";
   } | null>(null);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
@@ -120,6 +125,16 @@ const QuizEditDetailsPage: React.FC = () => {
           .getElementById("quiz-edit-unit-select")
           ?.scrollIntoView({ behavior: "smooth", block: "center" });
         (document.getElementById("quiz-edit-unit-select") as HTMLSelectElement | null)?.focus();
+      });
+      return;
+    }
+
+    if (focusTarget === "timer") {
+      requestAnimationFrame(() => {
+        document
+          .getElementById("quiz-edit-time-limit-input")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        (document.getElementById("quiz-edit-time-limit-input") as HTMLInputElement | null)?.focus();
       });
       return;
     }
@@ -173,6 +188,8 @@ const QuizEditDetailsPage: React.FC = () => {
         setCanManage(data.can_manage !== false);
         setIsActive(Boolean(data.is_active));
         setIsLocked(Boolean(data.is_locked));
+        setTimerMode(typeof data.time_limit_minutes === "number" && data.time_limit_minutes > 0 ? "timed" : "unlimited");
+        setTimeLimitMinutes(typeof data.time_limit_minutes === "number" && data.time_limit_minutes > 0 ? String(data.time_limit_minutes) : "30");
         
         // Map backend questions to our frontend state with IDs
         const mappedQuestions: Question[] = ((data.questions || []) as ExistingQuestion[]).map((q, idx: number) => ({
@@ -331,6 +348,19 @@ const QuizEditDetailsPage: React.FC = () => {
       return null;
     }
 
+    if (timerMode === "timed") {
+      const parsedTimeLimit = Number(timeLimitMinutes);
+      if (!Number.isInteger(parsedTimeLimit) || parsedTimeLimit <= 0) {
+        setIsTimerHighlighted(true);
+        setPopupState({
+          title: "Enter a valid timer",
+          message: "Please enter a quiz time limit greater than zero minutes, or switch to unlimited time.",
+          focusTarget: "timer",
+        });
+        return null;
+      }
+    }
+
     const invalidMcqQuestions = questions
       .map((question, index) => ({ question, index }))
       .filter(({ question }) => {
@@ -391,6 +421,7 @@ const QuizEditDetailsPage: React.FC = () => {
       title,
       description,
       unit_id: selectedUnitId,
+      time_limit_minutes: timerMode === "timed" ? Number(timeLimitMinutes) : null,
       questions: questions.map((q) => ({
         type: q.type,
         question: q.question,
@@ -599,6 +630,59 @@ const QuizEditDetailsPage: React.FC = () => {
               <p className="qc-short-note">
                 You do not have any assigned units yet. Ask an admin to assign one before editing quizzes.
               </p>
+            )}
+          </div>
+
+          <div style={{ marginTop: "20px" }}>
+            <label style={{ color: "#fbbc05", fontWeight: "bold", display: "block", marginBottom: "10px" }}>
+              Quiz Timer
+            </label>
+            <div className="qc-radio-group">
+              <label className="qc-radio-option">
+                <input
+                  type="radio"
+                  name="quiz-edit-timer-mode"
+                  checked={timerMode === "unlimited"}
+                  onChange={() => {
+                    setTimerMode("unlimited");
+                    setIsTimerHighlighted(false);
+                  }}
+                  disabled={isReadOnly}
+                />
+                <span>Unlimited time</span>
+              </label>
+              <label className="qc-radio-option">
+                <input
+                  type="radio"
+                  name="quiz-edit-timer-mode"
+                  checked={timerMode === "timed"}
+                  onChange={() => setTimerMode("timed")}
+                  disabled={isReadOnly}
+                />
+                <span>Set a timer</span>
+              </label>
+            </div>
+
+            {timerMode === "timed" && (
+              <div className="qc-timer-row">
+                <input
+                  id="quiz-edit-time-limit-input"
+                  type="number"
+                  min={1}
+                  max={1440}
+                  className={`qc-input ${isTimerHighlighted ? "qc-input-warning" : ""}`}
+                  value={timeLimitMinutes}
+                  onChange={(e) => {
+                    setTimeLimitMinutes(e.target.value);
+                    if (e.target.value.trim()) {
+                      setIsTimerHighlighted(false);
+                    }
+                  }}
+                  placeholder="Enter minutes"
+                  disabled={isReadOnly}
+                />
+                <span className="qc-short-note">minutes</span>
+              </div>
             )}
           </div>
         </div>

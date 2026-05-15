@@ -11,3 +11,4 @@ class Quiz(Base):
     created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     is_active = Column(Boolean, nullable=False, default=False)
     is_locked = Column(Boolean, nullable=False, default=False)
+    time_limit_minutes = Column(Integer, nullable=True)

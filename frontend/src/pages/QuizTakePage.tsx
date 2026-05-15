@@ -120,7 +120,8 @@ const QuizTakePage: React.FC = () => {
             user_id: user.id,
             quiz_id: Number(id),
             score: correctCount,
-            total_questions: quiz.questions.length
+            total_questions: quiz.questions.length,
+            user_answers: userAnswers,
           }),
         });
       } catch (err) {

@@ -142,14 +142,15 @@ const QuizEditPage: React.FC = () => {
                 <div className="qe-actions">
                   <button
                     className="qe-btn qe-edit"
-                    onClick={() =>
-                      navigate(`/quiz/edit/${quiz.id}`)
-                    }
+                    onClick={() => navigate(`/quiz/edit/${quiz.id}`)}
                   >
                     {quiz.can_manage ? "Edit" : "View"}
                   </button>
 
-                  <button className="qe-btn qe-results">
+                  <button
+                    className="qe-btn qe-results"
+                    onClick={() => navigate(`/quiz/results/${quiz.id}`)}
+                  >
                     Results
                   </button>
 

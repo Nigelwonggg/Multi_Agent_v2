@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, Float, DateTime
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, Text
 from sqlalchemy.sql import func
 from app.databases.chat_database import Base
 
@@ -10,4 +10,6 @@ class Attempt(Base):
     quiz_id = Column(Integer, ForeignKey("quizzes.id"))
     score = Column(Integer)
     total_questions = Column(Integer)
+    answers_json = Column(Text, nullable=True)
+    quiz_snapshot_json = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -53,6 +53,7 @@ def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     ensure_verified_identity_schema()
     ensure_quiz_schema()
+    ensure_attempt_schema()
     logger.info("Chat database initialized and tables created.")
     
     # Create initial users
@@ -139,6 +140,25 @@ def ensure_quiz_schema() -> None:
         with engine.begin() as connection:
             connection.execute(text("ALTER TABLE quizzes ADD COLUMN created_by_user_id INTEGER"))
         logger.info("Added created_by_user_id column to quizzes table.")
+
+
+def ensure_attempt_schema() -> None:
+    """Apply lightweight schema updates for stored quiz review data."""
+    inspector = inspect(engine)
+    if "quiz_attempts" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("quiz_attempts")}
+
+    if "answers_json" not in existing_columns:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE quiz_attempts ADD COLUMN answers_json TEXT"))
+        logger.info("Added answers_json column to quiz_attempts table.")
+
+    if "quiz_snapshot_json" not in existing_columns:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE quiz_attempts ADD COLUMN quiz_snapshot_json TEXT"))
+        logger.info("Added quiz_snapshot_json column to quiz_attempts table.")
 
 
 def get_db():

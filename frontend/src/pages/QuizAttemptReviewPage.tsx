@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
 import "./QuizResultsPage.css";
+import { formatMalaysiaDateTime } from "../utils/dateTime";
 
 type ReviewQuestion = {
   question_number: number;
@@ -122,7 +123,7 @@ const QuizAttemptReviewPage: React.FC = () => {
               <div className="qr-summary-card">
                 <span>Submitted</span>
                 <strong>
-                  {review.submitted_at ? new Date(review.submitted_at).toLocaleString() : "Unknown"}
+                  {review.submitted_at ? formatMalaysiaDateTime(review.submitted_at) : "Unknown"}
                 </strong>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
 import "./QuizResultsPage.css";
+import { formatMalaysiaDateTime } from "../utils/dateTime";
 
 type AttemptResult = {
   id: number;
@@ -171,7 +172,7 @@ const QuizResultsPage: React.FC = () => {
                     <div className="qr-attempt-meta">
                       Submitted{" "}
                       {attempt.submitted_at
-                        ? new Date(attempt.submitted_at).toLocaleString()
+                        ? formatMalaysiaDateTime(attempt.submitted_at)
                         : "at an unknown time"}
                     </div>
                     <div style={{ marginTop: "16px" }}>

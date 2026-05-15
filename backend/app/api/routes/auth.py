@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 
 from app.databases.chat_database import get_db
+from app.models.chat_db_model import Chat
 from app.models.user_model import User, VerifiedIdentity
 from app.schemas.user_sch import (
     UserCreate,
@@ -21,6 +22,7 @@ from app.utils.auth_utils import (
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+DEFAULT_CHAT_TITLE = "New Question"
 
 
 def normalize_institutional_id(raw_value: str) -> str:
@@ -102,6 +104,7 @@ def signup(user_in: UserCreate, db: Session = Depends(get_db)):
     db.flush()
     identity.claimed_by_user_id = new_user.id
     db.add(identity)
+    db.add(Chat(user_id=new_user.id, title=DEFAULT_CHAT_TITLE))
     db.commit()
     db.refresh(new_user)
     return new_user

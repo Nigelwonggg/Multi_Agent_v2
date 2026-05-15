@@ -13,6 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     pkg-config \
+    libmagic1 \
+    poppler-utils \
+    tesseract-ocr \
+    libtesseract-dev \
     libavformat-dev \
     libavcodec-dev \
     libavdevice-dev \

@@ -52,6 +52,7 @@ def init_db() -> None:
 
     Base.metadata.create_all(bind=engine)
     ensure_verified_identity_schema()
+    ensure_quiz_schema()
     logger.info("Chat database initialized and tables created.")
     
     # Create initial users
@@ -119,6 +120,25 @@ def ensure_verified_identity_schema() -> None:
                 text("ALTER TABLE verified_identities ADD COLUMN assigned_unit_ids TEXT DEFAULT '[]' NOT NULL")
             )
         logger.info("Added assigned_unit_ids column to verified_identities table.")
+
+
+def ensure_quiz_schema() -> None:
+    """Apply lightweight schema updates for unit-aware quizzes."""
+    inspector = inspect(engine)
+    if "quizzes" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("quizzes")}
+
+    if "unit_id" not in existing_columns:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE quizzes ADD COLUMN unit_id INTEGER"))
+        logger.info("Added unit_id column to quizzes table.")
+
+    if "created_by_user_id" not in existing_columns:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE quizzes ADD COLUMN created_by_user_id INTEGER"))
+        logger.info("Added created_by_user_id column to quizzes table.")
 
 
 def get_db():

@@ -8,6 +8,10 @@ type Quiz = {
   id: number;
   title: string;
   description: string;
+  unit_id: number | null;
+  unit_code: string | null;
+  unit_name: string | null;
+  can_manage: boolean;
 };
 
 const QuizEditPage: React.FC = () => {
@@ -18,13 +22,24 @@ const QuizEditPage: React.FC = () => {
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+  const fetchWithAuth = async (url: string, options?: RequestInit) => {
+    const token = localStorage.getItem("token");
+    const headers = new Headers(options?.headers || {});
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return fetch(url, { ...options, headers });
+  };
+
   // 🔥 Delete quiz
   const handleDelete = async (quizId: number) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this quiz?");
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(`${API_BASE}/quizzes/${quizId}`, {
+      const res = await fetchWithAuth(`${API_BASE}/quizzes/${quizId}`, {
         method: "DELETE",
       });
 
@@ -43,7 +58,7 @@ const QuizEditPage: React.FC = () => {
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
-        const res = await fetch(`${API_BASE}/quizzes`);
+        const res = await fetchWithAuth(`${API_BASE}/quizzes`);
 
         if (!res.ok) {
           throw new Error("Failed to fetch quizzes");
@@ -57,7 +72,7 @@ const QuizEditPage: React.FC = () => {
     };
 
     fetchQuizzes();
-  }, []);
+  }, [API_BASE]);
 
   // 🔍 Filter quizzes by search
   const filteredQuizzes = quizzes.filter((quiz) =>
@@ -116,6 +131,11 @@ const QuizEditPage: React.FC = () => {
                   <div>
                     <h2>{quiz.title}</h2>
                     <p>{quiz.description}</p>
+                    {quiz.unit_code && (
+                      <p style={{ color: "#fbbc05", marginTop: "6px" }}>
+                        {quiz.unit_code} - {quiz.unit_name}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -126,19 +146,21 @@ const QuizEditPage: React.FC = () => {
                       navigate(`/quiz/edit/${quiz.id}`)
                     }
                   >
-                    Edit
+                    {quiz.can_manage ? "Edit" : "View"}
                   </button>
 
                   <button className="qe-btn qe-results">
                     Results
                   </button>
 
-                  <button 
-                    className="qe-btn qe-delete"
-                    onClick={() => handleDelete(quiz.id)}
-                  >
-                    Delete
-                  </button>
+                  {quiz.can_manage && (
+                    <button 
+                      className="qe-btn qe-delete"
+                      onClick={() => handleDelete(quiz.id)}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             ))

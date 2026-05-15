@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
@@ -29,6 +29,12 @@ type GeneratedQuestion =
       answer: string;
     };
 
+type UnitRecord = {
+  id: number;
+  unit_code: string;
+  unit_name: string;
+};
+
 const QuizCreationPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -36,15 +42,19 @@ const QuizCreationPage: React.FC = () => {
   const [description, setDescription] = useState("");
   const [topic, setTopic] = useState("");
   const [numQuestions, setNumQuestions] = useState(5);
+  const [assignedUnits, setAssignedUnits] = useState<UnitRecord[]>([]);
+  const [selectedUnitId, setSelectedUnitId] = useState<number | "">("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingUnits, setIsLoadingUnits] = useState(true);
   const [isTopicHighlighted, setIsTopicHighlighted] = useState(false);
+  const [isUnitHighlighted, setIsUnitHighlighted] = useState(false);
   const [highlightedQuestionIds, setHighlightedQuestionIds] = useState<number[]>([]);
   const [popupState, setPopupState] = useState<{
     title: string;
     message: string;
     focusQuestionId?: number;
-    focusTarget?: "topic";
+    focusTarget?: "topic" | "unit";
   } | null>(null);
 
   const [questions, setQuestions] = useState<Question[]>([
@@ -59,6 +69,17 @@ const QuizCreationPage: React.FC = () => {
   ]);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+  const fetchWithAuth = async (url: string, options?: RequestInit) => {
+    const token = localStorage.getItem("token");
+    const headers = new Headers(options?.headers || {});
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return fetch(url, { ...options, headers });
+  };
 
   const clearQuestionHighlight = (questionId: number) => {
     setHighlightedQuestionIds((prev) => prev.filter((id) => id !== questionId));
@@ -89,8 +110,49 @@ const QuizCreationPage: React.FC = () => {
       return;
     }
 
+    if (focusTarget === "unit") {
+      requestAnimationFrame(() => {
+        document
+          .getElementById("quiz-unit-select")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        (document.getElementById("quiz-unit-select") as HTMLSelectElement | null)?.focus();
+      });
+      return;
+    }
+
     scrollToQuestion(focusQuestionId);
   };
+
+  useEffect(() => {
+    const loadAssignedUnits = async () => {
+      try {
+        setIsLoadingUnits(true);
+        const response = await fetchWithAuth(`${API_BASE}/identity-registry/me/assigned-units`);
+        if (!response.ok) {
+          throw new Error("Failed to load your assigned units.");
+        }
+
+        const units: UnitRecord[] = await response.json();
+        setAssignedUnits(units);
+        setSelectedUnitId((currentUnitId) => {
+          if (currentUnitId !== "" && units.some((unit) => unit.id === currentUnitId)) {
+            return currentUnitId;
+          }
+          return units.length === 1 ? units[0].id : "";
+        });
+      } catch (error) {
+        console.error(error);
+        setPopupState({
+          title: "Unable to load units",
+          message: "We could not load your assigned units. Please refresh and try again.",
+        });
+      } finally {
+        setIsLoadingUnits(false);
+      }
+    };
+
+    loadAssignedUnits();
+  }, [API_BASE]);
 
   // 🤖 AI Generate Quiz
   const handleAIGenerate = async () => {
@@ -271,6 +333,16 @@ const QuizCreationPage: React.FC = () => {
       return;
     }
 
+    if (selectedUnitId === "") {
+      setIsUnitHighlighted(true);
+      setPopupState({
+        title: "Choose a unit",
+        message: "Please choose one of your assigned units before saving this quiz.",
+        focusTarget: "unit",
+      });
+      return;
+    }
+
     const invalidMcqQuestions = questions
       .map((question, index) => ({ question, index }))
       .filter(({ question }) => {
@@ -332,6 +404,7 @@ const QuizCreationPage: React.FC = () => {
     const payload = {
       title,
       description,
+      unit_id: selectedUnitId,
       questions: questions.map((q) => ({
         type: q.type,
         question: q.question,
@@ -342,7 +415,7 @@ const QuizCreationPage: React.FC = () => {
 
     setIsSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/quizzes`, {
+      const res = await fetchWithAuth(`${API_BASE}/quizzes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -456,6 +529,42 @@ const QuizCreationPage: React.FC = () => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
+
+          <div style={{ marginTop: "18px" }}>
+            <label
+              htmlFor="quiz-unit-select"
+              style={{ color: "#fbbc05", fontWeight: "bold", display: "block", marginBottom: "8px" }}
+            >
+              Unit
+            </label>
+            <select
+              id="quiz-unit-select"
+              className={`qc-input ${isUnitHighlighted ? "qc-input-warning" : ""}`}
+              value={selectedUnitId}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedUnitId(value ? Number(value) : "");
+                if (value) {
+                  setIsUnitHighlighted(false);
+                }
+              }}
+              disabled={isLoadingUnits || assignedUnits.length === 0}
+            >
+              <option value="">
+                {isLoadingUnits ? "Loading units..." : "Select one of your assigned units"}
+              </option>
+              {assignedUnits.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.unit_code} - {unit.unit_name}
+                </option>
+              ))}
+            </select>
+            {assignedUnits.length === 0 && !isLoadingUnits && (
+              <p className="qc-short-note">
+                You do not have any assigned units yet. Ask an admin to assign one before creating quizzes.
+              </p>
+            )}
+          </div>
         </div>
 
         {/* QUESTIONS */}
@@ -609,7 +718,7 @@ const QuizCreationPage: React.FC = () => {
             <h2 id="quiz-creation-popup-title">{popupState.title}</h2>
             <p>{popupState.message}</p>
             <button className="qc-popup-btn" onClick={closePopup}>
-              {popupState.focusQuestionId ? "Review questions" : "Close"}
+              {popupState.focusQuestionId || popupState.focusTarget ? "Review details" : "Close"}
             </button>
           </div>
         </div>

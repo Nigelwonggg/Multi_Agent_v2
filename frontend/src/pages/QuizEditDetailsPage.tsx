@@ -29,22 +29,53 @@ type ExistingQuestion =
       answer: string;
     };
 
+type UnitRecord = {
+  id: number;
+  unit_code: string;
+  unit_name: string;
+};
+
+type QuizDetailsResponse = {
+  title: string;
+  description: string;
+  unit_id?: number | null;
+  can_manage?: boolean;
+  questions?: ExistingQuestion[];
+};
+
 const QuizEditDetailsPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [assignedUnits, setAssignedUnits] = useState<UnitRecord[]>([]);
+  const [selectedUnitId, setSelectedUnitId] = useState<number | "">("");
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [canManage, setCanManage] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingUnits, setIsLoadingUnits] = useState(true);
+  const [isUnitHighlighted, setIsUnitHighlighted] = useState(false);
   const [highlightedQuestionIds, setHighlightedQuestionIds] = useState<number[]>([]);
   const [popupState, setPopupState] = useState<{
     title: string;
     message: string;
     focusQuestionId?: number;
+    focusTarget?: "unit";
   } | null>(null);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+  const fetchWithAuth = async (url: string, options?: RequestInit) => {
+    const token = localStorage.getItem("token");
+    const headers = new Headers(options?.headers || {});
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return fetch(url, { ...options, headers });
+  };
 
   const clearQuestionHighlight = (questionId: number) => {
     setHighlightedQuestionIds((prev) => prev.filter((id) => id !== questionId));
@@ -62,21 +93,66 @@ const QuizEditDetailsPage: React.FC = () => {
 
   const closePopup = () => {
     const focusQuestionId = popupState?.focusQuestionId;
+    const focusTarget = popupState?.focusTarget;
     setPopupState(null);
+
+    if (focusTarget === "unit") {
+      requestAnimationFrame(() => {
+        document
+          .getElementById("quiz-edit-unit-select")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        (document.getElementById("quiz-edit-unit-select") as HTMLSelectElement | null)?.focus();
+      });
+      return;
+    }
+
     scrollToQuestion(focusQuestionId);
   };
+
+  useEffect(() => {
+    const loadAssignedUnits = async () => {
+      try {
+        setIsLoadingUnits(true);
+        const response = await fetchWithAuth(`${API_BASE}/identity-registry/me/assigned-units`);
+        if (!response.ok) {
+          throw new Error("Failed to load your assigned units.");
+        }
+
+        const units: UnitRecord[] = await response.json();
+        setAssignedUnits(units);
+        setSelectedUnitId((currentUnitId) => {
+          if (currentUnitId !== "" && units.some((unit) => unit.id === currentUnitId)) {
+            return currentUnitId;
+          }
+          return units.length === 1 ? units[0].id : "";
+        });
+      } catch (error) {
+        console.error(error);
+        setPopupState({
+          title: "Unable to load units",
+          message: "We could not load your assigned units. Please refresh and try again.",
+        });
+      } finally {
+        setIsLoadingUnits(false);
+      }
+    };
+
+    loadAssignedUnits();
+  }, [API_BASE]);
 
   // 📥 Load quiz from backend
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const res = await fetch(`${API_BASE}/quizzes/${id}`);
+        const res = await fetchWithAuth(`${API_BASE}/quizzes/${id}`);
         if (!res.ok) throw new Error("Failed to fetch");
 
-        const data = await res.json();
+        const data: QuizDetailsResponse = await res.json();
 
         setTitle(data.title);
         setDescription(data.description);
+        setSelectedUnitId(typeof data.unit_id === "number" ? data.unit_id : "");
+        setCanManage(data.can_manage !== false);
         
         // Map backend questions to our frontend state with IDs
         const mappedQuestions: Question[] = ((data.questions || []) as ExistingQuestion[]).map((q, idx: number) => ({
@@ -228,6 +304,16 @@ const QuizEditDetailsPage: React.FC = () => {
       return;
     }
 
+    if (selectedUnitId === "") {
+      setIsUnitHighlighted(true);
+      setPopupState({
+        title: "Choose a unit",
+        message: "Please choose one of your assigned units before saving this quiz.",
+        focusTarget: "unit",
+      });
+      return;
+    }
+
     const invalidMcqQuestions = questions
       .map((question, index) => ({ question, index }))
       .filter(({ question }) => {
@@ -287,6 +373,7 @@ const QuizEditDetailsPage: React.FC = () => {
     const payload = {
       title,
       description,
+      unit_id: selectedUnitId,
       questions: questions.map((q) => ({
         type: q.type,
         question: q.question,
@@ -297,7 +384,7 @@ const QuizEditDetailsPage: React.FC = () => {
 
     try {
       setIsSaving(true);
-      const res = await fetch(`${API_BASE}/quizzes/${id}`, {
+      const res = await fetchWithAuth(`${API_BASE}/quizzes/${id}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
@@ -337,8 +424,10 @@ const QuizEditDetailsPage: React.FC = () => {
     <div className="qc-dashboard">
       <Navbar />
 
-      <h1 className="qc-title">Edit Quiz</h1>
-      <p className="qc-subtitle">Modify and customize your quiz</p>
+      <h1 className="qc-title">{canManage ? "Edit Quiz" : "View Quiz"}</h1>
+      <p className="qc-subtitle">
+        {canManage ? "Modify and customize your quiz" : "This quiz is shared through one of your assigned units."}
+      </p>
 
       <div className="qc-create-container">
         <button 
@@ -367,6 +456,7 @@ const QuizEditDetailsPage: React.FC = () => {
             placeholder="Enter quiz title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            disabled={!canManage}
           />
 
           <textarea
@@ -374,7 +464,44 @@ const QuizEditDetailsPage: React.FC = () => {
             placeholder="Enter quiz description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            disabled={!canManage}
           />
+
+          <div style={{ marginTop: "18px" }}>
+            <label
+              htmlFor="quiz-edit-unit-select"
+              style={{ color: "#fbbc05", fontWeight: "bold", display: "block", marginBottom: "8px" }}
+            >
+              Unit
+            </label>
+            <select
+              id="quiz-edit-unit-select"
+              className={`qc-input ${isUnitHighlighted ? "qc-input-warning" : ""}`}
+              value={selectedUnitId}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedUnitId(value ? Number(value) : "");
+                if (value) {
+                  setIsUnitHighlighted(false);
+                }
+              }}
+              disabled={!canManage || isLoadingUnits || assignedUnits.length === 0}
+            >
+              <option value="">
+                {isLoadingUnits ? "Loading units..." : "Select one of your assigned units"}
+              </option>
+              {assignedUnits.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.unit_code} - {unit.unit_name}
+                </option>
+              ))}
+            </select>
+            {assignedUnits.length === 0 && !isLoadingUnits && (
+              <p className="qc-short-note">
+                You do not have any assigned units yet. Ask an admin to assign one before editing quizzes.
+              </p>
+            )}
+          </div>
         </div>
 
         {/* QUESTIONS */}
@@ -396,6 +523,7 @@ const QuizEditDetailsPage: React.FC = () => {
                   onChange={(e) =>
                     changeType(q.id, e.target.value as QuestionType)
                   }
+                  disabled={!canManage}
                 >
                   <option value="mcq">MCQ</option>
                   <option value="short">Short Answer</option>
@@ -404,6 +532,7 @@ const QuizEditDetailsPage: React.FC = () => {
                 <button
                   className="qc-delete-btn"
                   onClick={() => deleteQuestion(q.id)}
+                  disabled={!canManage}
                 >
                   Delete
                 </button>
@@ -417,6 +546,7 @@ const QuizEditDetailsPage: React.FC = () => {
               onChange={(e) =>
                 updateQuestion(q.id, e.target.value)
               }
+              disabled={!canManage}
             />
 
             {isHighlighted && (
@@ -438,6 +568,7 @@ const QuizEditDetailsPage: React.FC = () => {
                       type="radio"
                       checked={q.answer === i}
                       onChange={() => setAnswer(q.id, i)}
+                      disabled={!canManage}
                     />
 
                     <input
@@ -447,11 +578,13 @@ const QuizEditDetailsPage: React.FC = () => {
                       onChange={(e) =>
                         updateOption(q.id, i, e.target.value)
                       }
+                      disabled={!canManage}
                     />
 
                     <button
                       type="button"
                       onClick={() => removeOption(q.id, i)}
+                      disabled={!canManage}
                       style={{
                         background: "transparent",
                         border: "none",
@@ -468,6 +601,7 @@ const QuizEditDetailsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => addOption(q.id)}
+                  disabled={!canManage}
                   style={{
                     marginTop: "10px",
                     backgroundColor: "#fbbc05",
@@ -497,6 +631,7 @@ const QuizEditDetailsPage: React.FC = () => {
                   onChange={(e) =>
                     updateShortAnswer(q.id, e.target.value)
                   }
+                  disabled={!canManage}
                 />
               </div>
             )}
@@ -505,10 +640,10 @@ const QuizEditDetailsPage: React.FC = () => {
 
         {/* ACTIONS */}
         <div className="qc-actions-bottom">
-          <button onClick={addQuestion}>+ Add Question</button>
+          <button onClick={addQuestion} disabled={!canManage}>+ Add Question</button>
 
-          <button className="qc-save-btn" onClick={handleUpdate} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save Changes"}
+          <button className="qc-save-btn" onClick={handleUpdate} disabled={!canManage || isSaving}>
+            {!canManage ? "View Only" : isSaving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
@@ -528,7 +663,7 @@ const QuizEditDetailsPage: React.FC = () => {
             <h2 id="quiz-edit-popup-title">{popupState.title}</h2>
             <p>{popupState.message}</p>
             <button className="qc-popup-btn" onClick={closePopup}>
-              {popupState.focusQuestionId ? "Review questions" : "Close"}
+              {popupState.focusQuestionId || popupState.focusTarget ? "Review details" : "Close"}
             </button>
           </div>
         </div>

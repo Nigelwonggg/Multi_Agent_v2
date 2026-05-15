@@ -8,23 +8,37 @@ type Quiz = {
   id: number;
   title: string;
   description: string;
+  unit_id: number | null;
+  unit_code: string | null;
+  unit_name: string | null;
+  completed: boolean;
+  score?: number;
+  total_questions?: number;
 };
 
 const QuizListPage: React.FC = () => {
   const navigate = useNavigate();
-  const storedUser = localStorage.getItem("user");
-  const user = storedUser ? JSON.parse(storedUser) : null;
 
-  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [search, setSearch] = useState("");
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+  const fetchWithAuth = async (url: string, options?: RequestInit) => {
+    const token = localStorage.getItem("token");
+    const headers = new Headers(options?.headers || {});
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return fetch(url, { ...options, headers });
+  };
+
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
-        const url = user ? `${API_BASE}/quizzes?user_id=${user.id}` : `${API_BASE}/quizzes`;
-        const res = await fetch(url);
+        const res = await fetchWithAuth(`${API_BASE}/quizzes`);
         if (!res.ok) throw new Error("Failed to fetch quizzes");
         const data = await res.json();
         setQuizzes(data);
@@ -33,7 +47,7 @@ const QuizListPage: React.FC = () => {
       }
     };
     fetchQuizzes();
-  }, [API_BASE, user]);
+  }, [API_BASE]);
 
   const filteredQuizzes = quizzes.filter((quiz) =>
     quiz.title.toLowerCase().includes(search.toLowerCase())
@@ -86,6 +100,11 @@ const QuizListPage: React.FC = () => {
                   <div>
                     <h2>{quiz.title}</h2>
                     <p>{quiz.description}</p>
+                    {quiz.unit_code && (
+                      <p style={{ color: "#fbbc05", marginTop: "6px" }}>
+                        {quiz.unit_code} - {quiz.unit_name}
+                      </p>
+                    )}
                   </div>
                 </div>
 

@@ -15,6 +15,9 @@ type QuizData = {
   id?: number | string;
   title: string;
   description: string;
+  unit_id?: number | null;
+  unit_code?: string | null;
+  unit_name?: string | null;
   questions: Question[];
 };
 
@@ -30,6 +33,17 @@ const QuizTakePage: React.FC = () => {
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+  const fetchWithAuth = async (url: string, options?: RequestInit) => {
+    const token = localStorage.getItem("token");
+    const headers = new Headers(options?.headers || {});
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return fetch(url, { ...options, headers });
+  };
+
   useEffect(() => {
     const fetchQuiz = async () => {
       // Check if it's a temporary quiz passed via state
@@ -41,7 +55,7 @@ const QuizTakePage: React.FC = () => {
       }
 
       try {
-        const res = await fetch(`${API_BASE}/quizzes/${id}`);
+        const res = await fetchWithAuth(`${API_BASE}/quizzes/${id}`);
         if (!res.ok) throw new Error("Failed to fetch");
         const data = await res.json();
         setQuiz(data);
@@ -99,7 +113,7 @@ const QuizTakePage: React.FC = () => {
     // Record attempt for official quizzes
     if (id !== "temp" && user) {
       try {
-        await fetch(`${API_BASE}/quizzes/submit`, {
+        await fetchWithAuth(`${API_BASE}/quizzes/submit`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -126,6 +140,11 @@ const QuizTakePage: React.FC = () => {
 
       <h1 className="qc-title">{quiz.title}</h1>
       <p className="qc-subtitle">{quiz.description}</p>
+      {quiz.unit_code && (
+        <p className="qc-subtitle" style={{ marginTop: "-8px", color: "#fbbc05" }}>
+          {quiz.unit_code} - {quiz.unit_name}
+        </p>
+      )}
 
       <div className="qc-create-container">
         {!submitted ? (

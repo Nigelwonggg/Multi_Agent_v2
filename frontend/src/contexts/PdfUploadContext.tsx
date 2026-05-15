@@ -53,6 +53,20 @@ export const PdfUploadProvider: React.FC<{ children: ReactNode }> = ({ children 
       return false; // Still processing
     } catch (error) {
       console.error(`Failed to poll job ${jobId}:`, error);
+      if (
+        error instanceof Error &&
+        'status' in error &&
+        typeof (error as Error & { status?: number }).status === 'number' &&
+        (error as Error & { status?: number }).status === 404
+      ) {
+        setUploadJobs((prev) => {
+          const next = { ...prev };
+          delete next[jobId];
+          return next;
+        });
+        setActiveJobId((currentJobId) => (currentJobId === jobId ? null : currentJobId));
+        return true;
+      }
       return false;
     }
   }, []);
@@ -109,6 +123,7 @@ export const PdfUploadProvider: React.FC<{ children: ReactNode }> = ({ children 
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const usePdfUpload = () => {
   const context = useContext(PdfUploadContext);
   if (context === undefined) {

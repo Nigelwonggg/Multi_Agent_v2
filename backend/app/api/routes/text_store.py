@@ -280,6 +280,18 @@ async def get_pdf_upload_job_status(job_id: str):
 
     return PdfUploadJobResponse(**job)
 
+
+@router.delete("/upload-jobs/{job_id}")
+async def cancel_pdf_upload_job(job_id: str):
+    """Cancel a running or queued PDF upload job."""
+    success = pdf_ingestion_service.cancel_job(job_id)
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail="Job cannot be cancelled (already finished, cancelled, or not found)",
+        )
+    return {"message": "Job cancellation requested"}
+
 @router.post("/by-domain", response_model=List[TextDocumentResponse])
 async def get_documents_by_domain(
     request: DocumentsByDomainRequest

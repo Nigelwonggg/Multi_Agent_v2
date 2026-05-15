@@ -8,6 +8,13 @@ type Quiz = {
   id: number;
   title: string;
   description: string;
+  unit_id: number | null;
+  unit_code: string | null;
+  unit_name: string | null;
+  created_by_name?: string | null;
+  is_active: boolean;
+  is_locked: boolean;
+  can_manage: boolean;
 };
 
 const QuizEditPage: React.FC = () => {
@@ -15,16 +22,38 @@ const QuizEditPage: React.FC = () => {
 
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [search, setSearch] = useState("");
+  const [actionState, setActionState] = useState<{
+    quizId: number;
+    action: "activate" | "hide" | "show";
+    title: string;
+    message: string;
+  } | null>(null);
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+  const fetchWithAuth = async (url: string, options?: RequestInit) => {
+    const token = localStorage.getItem("token");
+    const headers = new Headers(options?.headers || {});
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return fetch(url, { ...options, headers });
+  };
+
   // 🔥 Delete quiz
-  const handleDelete = async (quizId: number) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this quiz?");
+  const handleDelete = async (quizId: number, isLocked: boolean) => {
+    const confirmDelete = window.confirm(
+      isLocked
+        ? "Are you sure you want to delete this published quiz? This will also remove all student attempts for it."
+        : "Are you sure you want to delete this quiz?"
+    );
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(`${API_BASE}/quizzes/${quizId}`, {
+      const res = await fetchWithAuth(`${API_BASE}/quizzes/${quizId}`, {
         method: "DELETE",
       });
 
@@ -39,11 +68,52 @@ const QuizEditPage: React.FC = () => {
     }
   };
 
+  const updateQuizStatus = (quizId: number, updates: Partial<Quiz>) => {
+    setQuizzes((prev) => prev.map((quiz) => (quiz.id === quizId ? { ...quiz, ...updates } : quiz)));
+  };
+
+  const handleStatusAction = async () => {
+    if (!actionState || isSubmittingAction) return;
+
+    const endpoint =
+      actionState.action === "activate"
+        ? "activate"
+        : actionState.action === "hide"
+        ? "hide"
+        : "show";
+
+    try {
+      setIsSubmittingAction(true);
+      const response = await fetchWithAuth(`${API_BASE}/quizzes/${actionState.quizId}/${endpoint}`, {
+        method: "POST",
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.detail || "Unable to update quiz visibility.");
+      }
+
+      if (actionState.action === "activate") {
+        updateQuizStatus(actionState.quizId, { is_active: true, is_locked: true });
+      } else if (actionState.action === "hide") {
+        updateQuizStatus(actionState.quizId, { is_active: false, is_locked: true });
+      } else {
+        updateQuizStatus(actionState.quizId, { is_active: true, is_locked: true });
+      }
+
+      setActionState(null);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Unable to update quiz visibility.");
+    } finally {
+      setIsSubmittingAction(false);
+    }
+  };
+
   // 🔥 Fetch quizzes from backend
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
-        const res = await fetch(`${API_BASE}/quizzes`);
+        const res = await fetchWithAuth(`${API_BASE}/quizzes`);
 
         if (!res.ok) {
           throw new Error("Failed to fetch quizzes");
@@ -57,7 +127,7 @@ const QuizEditPage: React.FC = () => {
     };
 
     fetchQuizzes();
-  }, []);
+  }, [API_BASE]);
 
   // 🔍 Filter quizzes by search
   const filteredQuizzes = quizzes.filter((quiz) =>
@@ -116,35 +186,106 @@ const QuizEditPage: React.FC = () => {
                   <div>
                     <h2>{quiz.title}</h2>
                     <p>{quiz.description}</p>
+                    {quiz.unit_code && (
+                      <p style={{ color: "#fbbc05", marginTop: "6px" }}>
+                        {quiz.unit_code} - {quiz.unit_name}
+                      </p>
+                    )}
+                    {quiz.created_by_name && (
+                      <p style={{ color: "#c7d2fe", marginTop: "6px", fontSize: "13px" }}>
+                        Created by: {quiz.created_by_name}
+                      </p>
+                    )}
+                    <p style={{ marginTop: "8px", color: quiz.is_active ? "#88d77f" : quiz.is_locked ? "#93c5fd" : "#ffbc99", fontWeight: 700 }}>
+                      {quiz.is_active ? "Active" : quiz.is_locked ? "Hidden" : "Draft"}
+                    </p>
                   </div>
                 </div>
 
                 <div className="qe-actions">
-                  <button
-                    className="qe-btn qe-edit"
-                    onClick={() =>
-                      navigate(`/quiz/edit/${quiz.id}`)
-                    }
-                  >
-                    Edit
-                  </button>
+                  {(!quiz.can_manage || !quiz.is_locked) && (
+                    <>
+                      <button
+                        className="qe-btn qe-edit"
+                        onClick={() => navigate(`/quiz/edit/${quiz.id}`)}
+                      >
+                        {quiz.can_manage && !quiz.is_locked ? "Edit" : "View"}
+                      </button>
 
-                  <button className="qe-btn qe-results">
+                      {quiz.can_manage && !quiz.is_locked && (
+                        <button
+                          className="qe-btn qe-activate"
+                          onClick={() =>
+                            setActionState({
+                              quizId: quiz.id,
+                              action: "activate",
+                              title: "Make this quiz active?",
+                              message: "Students will be able to see this quiz, and it can no longer be edited afterwards.",
+                            })
+                          }
+                        >
+                          Make Active
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  <button
+                    className="qe-btn qe-results"
+                    onClick={() => navigate(`/quiz/results/${quiz.id}`)}
+                  >
                     Results
                   </button>
 
-                  <button 
-                    className="qe-btn qe-delete"
-                    onClick={() => handleDelete(quiz.id)}
-                  >
-                    Delete
-                  </button>
+                  {quiz.can_manage && quiz.is_locked && (
+                    <button
+                      className={`qe-btn ${quiz.is_active ? "qe-hide" : "qe-show"}`}
+                      onClick={() =>
+                        setActionState({
+                          quizId: quiz.id,
+                          action: quiz.is_active ? "hide" : "show",
+                          title: quiz.is_active ? "Hide this quiz from students?" : "Show this quiz to students?",
+                          message: quiz.is_active
+                            ? "Students will no longer see this quiz, but it will stay locked from editing."
+                            : "Students will be able to see this quiz again. It will remain locked from editing.",
+                        })
+                      }
+                    >
+                      {quiz.is_active ? "Hide from Students" : "Show to Students"}
+                    </button>
+                  )}
+
+                  {quiz.can_manage && (
+                    <button 
+                      className="qe-btn qe-delete"
+                      onClick={() => handleDelete(quiz.id, quiz.is_locked)}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             ))
           )}
         </div>
       </div>
+
+      {actionState && (
+        <div className="qe-modal-overlay" onClick={() => !isSubmittingAction && setActionState(null)}>
+          <div className="qe-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>{actionState.title}</h2>
+            <p>{actionState.message}</p>
+            <div className="qe-modal-actions">
+              <button className="qe-btn qe-modal-cancel" onClick={() => setActionState(null)} disabled={isSubmittingAction}>
+                Cancel
+              </button>
+              <button className="qe-btn qe-activate" onClick={handleStatusAction} disabled={isSubmittingAction}>
+                {isSubmittingAction ? "Updating..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

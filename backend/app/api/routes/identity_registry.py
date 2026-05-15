@@ -20,7 +20,7 @@ from app.schemas.user_sch import (
     UnitResponse,
     UnitUploadResponse,
 )
-from app.utils.auth_utils import get_lecturer_user
+from app.utils.auth_utils import get_current_user, get_lecturer_user
 
 router = APIRouter(prefix="/identity-registry", tags=["identity-registry"])
 
@@ -175,6 +175,26 @@ def build_identity_entry_response(
     )
 
 
+def get_assigned_units_for_user(db: Session, user: User) -> list[Unit]:
+    identity = (
+        db.query(VerifiedIdentity)
+        .filter(VerifiedIdentity.claimed_by_user_id == user.id)
+        .first()
+    )
+    if not identity:
+        return []
+
+    unit_ids = parse_assigned_unit_ids(identity.assigned_unit_ids)
+    if not unit_ids:
+        return []
+
+    units_by_id = {
+        unit.id: unit
+        for unit in db.query(Unit).filter(Unit.id.in_(unit_ids)).all()
+    }
+    return [units_by_id[unit_id] for unit_id in unit_ids if unit_id in units_by_id]
+
+
 @router.get("/summary", response_model=IdentityRegistrySummary)
 def get_identity_registry_summary(
     db: Session = Depends(get_db),
@@ -217,6 +237,14 @@ def list_units(
 ):
     units = db.query(Unit).order_by(Unit.unit_code.asc()).all()
     return [to_unit_response(unit) for unit in units]
+
+
+@router.get("/me/assigned-units", response_model=list[UnitResponse])
+def list_my_assigned_units(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return [to_unit_response(unit) for unit in get_assigned_units_for_user(db, current_user)]
 
 
 @router.post("/units", response_model=UnitResponse, status_code=status.HTTP_201_CREATED)

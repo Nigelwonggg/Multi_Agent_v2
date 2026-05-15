@@ -23,6 +23,8 @@ import QuizEditPage from './pages/QuizEditPage';
 import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
 import QuizListPage from './pages/QuizListPage';
 import QuizTakePage from './pages/QuizTakePage';
+import QuizResultsPage from './pages/QuizResultsPage';
+import QuizAttemptReviewPage from './pages/QuizAttemptReviewPage';
 import ChatProgressToast from './components/ChatProgressToast/ChatProgressToast';
 import IdentityRegistryPage from './pages/IdentityRegistryPage';
 import UnitManagerPage from './pages/UnitManagerPage';
@@ -48,9 +50,11 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
 
 import { PdfUploadProvider } from './contexts/PdfUploadContext';
 import UploadStatusBar from './components/global/UploadStatusBar';
+import { useSessionTimeout } from './hooks/useSessionTimeout';
 
 function App() {
   const location = useLocation();
+  useSessionTimeout();
 
   useEffect(() => {
     const className = 'page-elements-entering';
@@ -84,6 +88,21 @@ function App() {
       <Route path="/quiz/quick" element={<QuickQuizPage />} />
       <Route path="/quiz/edit" element={<QuizEditPage />} />
       <Route path="/quiz/edit/:id" element={<QuizEditDetailsPage />} />
+      <Route path="/quiz/results/:id" element={
+        <ProtectedRoute allowedRoles={['lecturer']}>
+          <QuizResultsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/quiz/results/:id/attempt/:attemptId" element={
+        <ProtectedRoute allowedRoles={['lecturer']}>
+          <QuizAttemptReviewPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/quiz/review/:id" element={
+        <ProtectedRoute allowedRoles={['student']}>
+          <QuizAttemptReviewPage />
+        </ProtectedRoute>
+      } />
       <Route path="/quiz/list" element={<QuizListPage />} />
       <Route path="/quiz/take/:id" element={<QuizTakePage />} />
         <Route path="/vector-database/upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
@@ -109,6 +128,21 @@ function App() {
       <Route path="/quiz/quick" element={<QuickQuizPage />} />
       <Route path="/quiz/edit" element={<QuizEditPage />} />
       <Route path="/quiz/edit/:id" element={<QuizEditDetailsPage />} />
+      <Route path="/quiz/results/:id" element={
+        <ProtectedRoute allowedRoles={['lecturer']}>
+          <QuizResultsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/quiz/results/:id/attempt/:attemptId" element={
+        <ProtectedRoute allowedRoles={['lecturer']}>
+          <QuizAttemptReviewPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/quiz/review/:id" element={
+        <ProtectedRoute allowedRoles={['student']}>
+          <QuizAttemptReviewPage />
+        </ProtectedRoute>
+      } />
       <Route path="/quiz/list" element={<QuizListPage />} />
       <Route path="/quiz/take/:id" element={<QuizTakePage />} />
     

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
@@ -15,6 +15,10 @@ type QuizData = {
   id?: number | string;
   title: string;
   description: string;
+  unit_id?: number | null;
+  unit_code?: string | null;
+  unit_name?: string | null;
+  time_limit_minutes?: number | null;
   questions: Question[];
 };
 
@@ -27,8 +31,52 @@ const QuizTakePage: React.FC = () => {
   const [userAnswers, setUserAnswers] = useState<(string | number | null)[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [popupState, setPopupState] = useState<{
+    title: string;
+    message: string;
+    redirectPath?: string;
+    mode?: "notice" | "confirmSubmit";
+    unansweredCount?: number;
+  } | null>(null);
+  const submitHandlerRef = useRef<(isAutoSubmitted?: boolean) => Promise<void>>(async () => {});
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+  const fetchWithAuth = async (url: string, options?: RequestInit) => {
+    const token = localStorage.getItem("token");
+    const headers = new Headers(options?.headers || {});
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return fetch(url, { ...options, headers });
+  };
+
+  const timerStorageKey = `quiz-timer-start-${id}`;
+  const quizExitPath = id === "temp" ? "/quiz" : "/quiz/list";
+
+  const formatRemainingTime = (totalSeconds: number) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  };
+
+  const closePopup = () => {
+    const redirectPath = popupState?.redirectPath;
+    setPopupState(null);
+
+    if (redirectPath) {
+      navigate(redirectPath);
+    }
+  };
+
+  const getUnansweredQuestionCount = () =>
+    userAnswers.filter(
+      (answer) => answer === null || (typeof answer === "string" && answer.trim() === "")
+    ).length;
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -41,7 +89,7 @@ const QuizTakePage: React.FC = () => {
       }
 
       try {
-        const res = await fetch(`${API_BASE}/quizzes/${id}`);
+        const res = await fetchWithAuth(`${API_BASE}/quizzes/${id}`);
         if (!res.ok) throw new Error("Failed to fetch");
         const data = await res.json();
         setQuiz(data);
@@ -53,14 +101,47 @@ const QuizTakePage: React.FC = () => {
     fetchQuiz();
   }, [id, API_BASE, location.state]);
 
+  useEffect(() => {
+    if (!quiz || submitted) {
+      setRemainingSeconds(null);
+      return;
+    }
+
+    if (!quiz.time_limit_minutes || quiz.time_limit_minutes <= 0) {
+      setRemainingSeconds(null);
+      return;
+    }
+
+    const totalSeconds = quiz.time_limit_minutes * 60;
+    const existingStart = sessionStorage.getItem(timerStorageKey);
+    const startTimestamp = existingStart ? Number(existingStart) : Date.now();
+
+    if (!existingStart) {
+      sessionStorage.setItem(timerStorageKey, String(startTimestamp));
+    }
+
+    const updateRemainingTime = () => {
+      const elapsedSeconds = Math.floor((Date.now() - startTimestamp) / 1000);
+      const nextRemaining = Math.max(totalSeconds - elapsedSeconds, 0);
+      setRemainingSeconds(nextRemaining);
+    };
+
+    updateRemainingTime();
+    const intervalId = window.setInterval(updateRemainingTime, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [quiz, submitted, timerStorageKey]);
+
   const handleAnswerChange = (index: number, value: string | number) => {
     const newAnswers = [...userAnswers];
     newAnswers[index] = value;
     setUserAnswers(newAnswers);
   };
 
-  const handleSubmit = async () => {
-    if (!quiz) return;
+  const handleSubmit = async (isAutoSubmitted = false) => {
+    if (!quiz || isSubmitting || submitted) return;
+
+    setIsSubmitting(true);
 
     let correctCount = 0;
     quiz.questions.forEach((q, idx) => {
@@ -99,24 +180,67 @@ const QuizTakePage: React.FC = () => {
     // Record attempt for official quizzes
     if (id !== "temp" && user) {
       try {
-        await fetch(`${API_BASE}/quizzes/submit`, {
+        const response = await fetchWithAuth(`${API_BASE}/quizzes/submit`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             user_id: user.id,
             quiz_id: Number(id),
             score: correctCount,
-            total_questions: quiz.questions.length
+            total_questions: quiz.questions.length,
+            user_answers: userAnswers,
           }),
         });
+
+        if (!response.ok) {
+          throw new Error("Failed to record attempt");
+        }
       } catch (err) {
         console.error("Failed to record attempt", err);
       }
     }
 
+    sessionStorage.removeItem(timerStorageKey);
+    setRemainingSeconds(0);
     setScore(correctCount);
     setSubmitted(true);
+    setIsSubmitting(false);
+
+    if (isAutoSubmitted) {
+      setPopupState({
+        title: "Time is up",
+        message: "Your quiz has been submitted automatically.",
+        redirectPath: quizExitPath,
+      });
+    }
   };
+  submitHandlerRef.current = handleSubmit;
+
+  const handleSubmitClick = () => {
+    if (!quiz || isSubmitting || submitted) return;
+
+    const unansweredCount = getUnansweredQuestionCount();
+    if (unansweredCount > 0) {
+      setPopupState({
+        title: "Submit with unanswered questions?",
+        message:
+          unansweredCount === 1
+            ? "You still have 1 unanswered question. Are you sure you want to submit your quiz now?"
+            : `You still have ${unansweredCount} unanswered questions. Are you sure you want to submit your quiz now?`,
+        mode: "confirmSubmit",
+        unansweredCount,
+      });
+      return;
+    }
+
+    void handleSubmit();
+  };
+
+  useEffect(() => {
+    if (remainingSeconds === 0 && quiz && !submitted && !isSubmitting) {
+      void submitHandlerRef.current(true);
+    }
+  }, [remainingSeconds, quiz, submitted, isSubmitting]);
 
   if (!quiz) return <div className="qc-dashboard"><Navbar /><h1>Loading...</h1><Footer /></div>;
 
@@ -126,12 +250,17 @@ const QuizTakePage: React.FC = () => {
 
       <h1 className="qc-title">{quiz.title}</h1>
       <p className="qc-subtitle">{quiz.description}</p>
+      {quiz.unit_code && (
+        <p className="qc-subtitle" style={{ marginTop: "-8px", color: "#fbbc05" }}>
+          {quiz.unit_code} - {quiz.unit_name}
+        </p>
+      )}
 
       <div className="qc-create-container">
         {!submitted ? (
           <>
             <button 
-              onClick={() => navigate(id === "temp" ? "/quiz" : "/quiz/list")} 
+              onClick={() => navigate(quizExitPath)} 
               className="qc-back-btn"
               style={{ 
                 background: "transparent", 
@@ -146,6 +275,22 @@ const QuizTakePage: React.FC = () => {
             >
               ← Exit Quiz
             </button>
+
+            {remainingSeconds !== null && (
+              <div className={`qc-card ${remainingSeconds <= 60 ? "qc-card-warning" : ""}`} style={{ marginTop: "0" }}>
+                <div className="qc-status-row">
+                  <div>
+                    <h2 style={{ margin: 0 }}>Quiz Timer</h2>
+                    <p className="qc-short-note" style={{ marginTop: "8px" }}>
+                      Your attempt will be submitted automatically when the timer reaches zero.
+                    </p>
+                  </div>
+                  <span className={`qc-status-pill ${remainingSeconds <= 60 ? "qc-status-pill-draft" : "qc-status-pill-active"}`}>
+                    {formatRemainingTime(remainingSeconds)}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {quiz.questions.map((q, index) => (
               <div className="qc-card" key={index}>
@@ -178,8 +323,8 @@ const QuizTakePage: React.FC = () => {
             ))}
 
             <div className="qc-actions-bottom">
-              <button className="qc-save-btn" onClick={handleSubmit}>
-                Submit Quiz
+              <button className="qc-save-btn" onClick={handleSubmitClick} disabled={isSubmitting}>
+                {isSubmitting ? "Submitting..." : "Submit Quiz"}
               </button>
             </div>
           </>
@@ -263,7 +408,7 @@ const QuizTakePage: React.FC = () => {
             <div className="qc-actions-bottom" style={{ justifyContent: "center", marginTop: "40px" }}>
               <button 
                 className="qc-save-btn" 
-                onClick={() => navigate(id === "temp" ? "/quiz" : "/quiz/list")}
+                onClick={() => navigate(quizExitPath)}
                 style={{ padding: "12px 40px", fontSize: "1.1rem" }}
               >
                 {id === "temp" ? "Back to Dashboard" : "Back to Quizzes"}
@@ -272,6 +417,45 @@ const QuizTakePage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {popupState && (
+        <div className="qc-popup-overlay" role="presentation" onClick={closePopup}>
+          <div
+            className="qc-popup"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quiz-timer-popup-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="qc-popup-icon" aria-hidden="true">
+              !
+            </div>
+            <h2 id="quiz-timer-popup-title">{popupState.title}</h2>
+            <p>{popupState.message}</p>
+            {popupState.mode === "confirmSubmit" ? (
+              <div className="qc-popup-actions">
+                <button className="qc-popup-secondary-btn" onClick={closePopup}>
+                  Continue Answering
+                </button>
+                <button
+                  className="qc-popup-btn"
+                  onClick={() => {
+                    setPopupState(null);
+                    void handleSubmit();
+                  }}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Anyway"}
+                </button>
+              </div>
+            ) : (
+              <button className="qc-popup-btn" onClick={closePopup}>
+                {popupState.redirectPath ? "Back to Quizzes" : "Close"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

@@ -120,6 +120,36 @@
   opacity: 0.9;
 }
 
+.qe-activate {
+  background: #16a34a;
+  color: white;
+  border: none;
+}
+
+.qe-activate:hover {
+  background: #15803d;
+}
+
+.qe-hide {
+  background: #2563eb;
+  color: white;
+  border: none;
+}
+
+.qe-hide:hover {
+  background: #1d4ed8;
+}
+
+.qe-show {
+  background: #0f766e;
+  color: white;
+  border: none;
+}
+
+.qe-show:hover {
+  background: #115e59;
+}
+
 .qe-delete {
   background: #ff4d4f;
   color: white;
@@ -128,4 +158,47 @@
 
 .qe-delete:hover {
   background: #d9363e;
+}
+
+.qe-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 2000;
+}
+
+.qe-modal {
+  width: min(100%, 460px);
+  padding: 28px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #111, #1a1a1a);
+  border: 1px solid #2b2b2b;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.qe-modal h2 {
+  margin: 0 0 10px;
+}
+
+.qe-modal p {
+  margin: 0;
+  color: #c9c9c9;
+  line-height: 1.5;
+}
+
+.qe-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+
+.qe-modal-cancel {
+  background: transparent;
+  border-color: #555;
 }

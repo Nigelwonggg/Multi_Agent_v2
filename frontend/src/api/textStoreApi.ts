@@ -253,7 +253,9 @@ export const getPdfUploadJobStatus = async (
 ): Promise<PdfUploadJobStatus> => {
   const response = await fetch(`${API_BASE}/api/text-store/upload-jobs/${encodeURIComponent(jobId)}`);
   if (!response.ok) {
-    throw new Error('Failed to fetch upload job status');
+    const error = new Error('Failed to fetch upload job status') as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
   return await response.json();
 };

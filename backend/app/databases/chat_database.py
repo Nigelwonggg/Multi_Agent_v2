@@ -48,7 +48,7 @@ def init_db() -> None:
     handle migrations separately and might not call this function.
     """
     # Import models here to ensure they are registered with the Base
-    from app.models import chat_db_model, user_model, quiz, question
+    from app.models import chat_db_model, pdf_upload_job, question, quiz, user_model
 
     Base.metadata.create_all(bind=engine)
     ensure_verified_identity_schema()

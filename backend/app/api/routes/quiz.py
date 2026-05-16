@@ -336,7 +336,7 @@ def get_quizzes(
         unit_ids = list(user_units_by_id.keys())
         if not unit_ids:
             return []
-        quizzes_query = quizzes_query.filter(Quiz.unit_id.in_(unit_ids), Quiz.is_active.is_(True))
+        quizzes_query = quizzes_query.filter(Quiz.unit_id.in_(unit_ids), Quiz.is_active == 1)
 
     quizzes = quizzes_query.order_by(Quiz.id.desc()).all()
     creator_ids = {
@@ -453,8 +453,8 @@ def create_quiz(
             description=payload.description,
             unit_id=payload.unit_id,
             created_by_user_id=current_user.id,
-            is_active=False,
-            is_locked=False,
+            is_active=0,
+            is_locked=0,
             time_limit_minutes=payload.time_limit_minutes,
         )
 
@@ -592,8 +592,8 @@ def activate_quiz(
 
     validate_quiz_payload(build_quiz_payload_from_rows(quiz, question_rows))
 
-    quiz.is_active = True
-    quiz.is_locked = True
+    quiz.is_active = 1
+    quiz.is_locked = 1
     quiz.created_by_user_id = current_user.id
     db.add(quiz)
     db.commit()
@@ -621,7 +621,7 @@ def hide_quiz_from_students(
     if not quiz.is_active:
         raise HTTPException(status_code=400, detail="This quiz is already hidden from students.")
 
-    quiz.is_active = False
+    quiz.is_active = 0
     db.add(quiz)
     db.commit()
 
@@ -648,7 +648,7 @@ def show_quiz_to_students(
     if quiz.is_active:
         raise HTTPException(status_code=400, detail="This quiz is already visible to students.")
 
-    quiz.is_active = True
+    quiz.is_active = 1
     db.add(quiz)
     db.commit()
 

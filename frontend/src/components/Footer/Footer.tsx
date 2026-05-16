@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import SmoothLink from "../SmoothLink/SmoothLink";
 import "./Footer.css";
 
 const Footer: React.FC = () => {
@@ -50,9 +50,9 @@ const Footer: React.FC = () => {
               <ul className="footer__group-list">
                 {group.items.map((item) => (
                   <li key={item.label}>
-                    <Link to={item.to} className="footer__link">
+                    <SmoothLink to={item.to} className="footer__link">
                       {item.label}
-                    </Link>
+                    </SmoothLink>
                   </li>
                 ))}
               </ul>

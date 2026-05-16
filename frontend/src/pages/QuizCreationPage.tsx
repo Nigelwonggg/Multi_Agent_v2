@@ -735,6 +735,7 @@ const QuizCreationPage: React.FC = () => {
 
                 <button
                   type="button"
+                  className="qc-add-option-btn"
                   onClick={() => addOption(q.id)}
                   style={{
                     marginTop: "10px",

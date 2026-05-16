@@ -783,6 +783,7 @@ const QuizEditDetailsPage: React.FC = () => {
 
                 <button
                   type="button"
+                  className="qc-add-option-btn"
                   onClick={() => addOption(q.id)}
                   disabled={isReadOnly}
                   style={{

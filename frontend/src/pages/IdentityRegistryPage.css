@@ -107,7 +107,13 @@
   border: 1px solid var(--border, rgba(212, 175, 55, 0.16));
   background: rgba(255, 255, 255, 0.03);
   color: var(--text, #ffffff);
+  color-scheme: dark;
   box-sizing: border-box;
+}
+
+.identity-upload-form select option {
+  background: #111111;
+  color: #ffffff;
 }
 
 .upload-button {
@@ -223,7 +229,13 @@
   border: 1px solid var(--border, rgba(212, 175, 55, 0.16));
   background: rgba(255, 255, 255, 0.03);
   color: var(--text, #ffffff);
+  color-scheme: dark;
   box-sizing: border-box;
+}
+
+.registry-toolbar-field select option {
+  background: #111111;
+  color: #ffffff;
 }
 
 .registry-search-field {

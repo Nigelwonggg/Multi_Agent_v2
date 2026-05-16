@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import SmoothLink from '../components/SmoothLink/SmoothLink';
 import './IdentityRegistryPage.css';
 
 type RegistrySummary = {
@@ -466,7 +466,7 @@ const IdentityRegistryPage: React.FC = () => {
 
               {availableUnits.length === 0 ? (
                 <p className="panel-help">
-                  No units exist yet. Create them in the <Link to="/vector-database/unit-manager" className="inline-link">Unit Manager</Link> first.
+                  No units exist yet. Create them in the <SmoothLink to="/vector-database/unit-manager" className="inline-link">Unit Manager</SmoothLink> first.
                 </p>
               ) : (
                 <>

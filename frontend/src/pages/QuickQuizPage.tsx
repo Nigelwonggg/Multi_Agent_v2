@@ -2,69 +2,51 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
+import { useQuizGeneration } from "../contexts/QuizGenerationContext";
 import "./QuizCreationPage.css"; // Reuse styling for cards and inputs
 
 const QuickQuizPage: React.FC = () => {
   const navigate = useNavigate();
+  const { activeJob, startQuizGeneration, clearQuizGeneration } = useQuizGeneration();
 
   const [topic, setTopic] = useState("");
   const [numQuestions, setNumQuestions] = useState(5);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationJobId, setGenerationJobId] = useState<string | null>(null);
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-  const showGenerationProgress = isGenerating || generationProgress > 0;
+  const isGenerating = activeJob?.status === "running";
 
   useEffect(() => {
-    if (!isGenerating) {
+    if (
+      !generationJobId ||
+      activeJob?.id !== generationJobId ||
+      activeJob.mode !== "quick" ||
+      activeJob.status !== "completed" ||
+      !activeJob.result
+    ) {
       return;
     }
 
-    setGenerationProgress((current) => Math.max(current, 6));
+    navigate("/quiz/take/temp", { state: { quiz: activeJob.result } });
+    clearQuizGeneration();
+  }, [activeJob, clearQuizGeneration, generationJobId, navigate]);
 
-    const progressTimer = window.setInterval(() => {
-      setGenerationProgress((current) => {
-        if (current >= 94) {
-          return current;
-        }
-
-        const remaining = 94 - current;
-        const step = Math.max(1, Math.ceil(remaining * 0.08));
-        return Math.min(94, current + step);
-      });
-    }, 420);
-
-    return () => window.clearInterval(progressTimer);
-  }, [isGenerating]);
-
-  const handleGenerate = async () => {
-    if (!topic) {
+  const handleGenerate = () => {
+    if (!topic.trim()) {
       alert("Please enter a topic for your quiz!");
       return;
     }
 
-    setIsGenerating(true);
-    setGenerationProgress(6);
-    try {
-      const res = await fetch(`${API_BASE}/quizzes/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, num_questions: numQuestions }),
-      });
+    const jobId = startQuizGeneration({
+      mode: "quick",
+      topic: topic.trim(),
+      numQuestions,
+    });
 
-      if (!res.ok) throw new Error("Failed to generate quiz");
-      const data = await res.json();
-
-      setGenerationProgress(100);
-      window.setTimeout(() => {
-        navigate("/quiz/take/temp", { state: { quiz: data } });
-      }, 450);
-    } catch (err) {
-      console.error(err);
-      setGenerationProgress(0);
-      setIsGenerating(false);
-      alert("Error generating quiz. Please try again.");
+    if (!jobId) {
+      return;
     }
+
+    setGenerationJobId(jobId);
   };
 
   return (
@@ -131,20 +113,6 @@ const QuickQuizPage: React.FC = () => {
             {isGenerating ? "Generating Quiz..." : "Generate & Start Practice"}
           </button>
 
-          {showGenerationProgress && (
-            <div className="qc-generation-progress" role="status" aria-live="polite">
-              <div className="qc-generation-progress-header">
-                <span>{generationProgress >= 100 ? "Quiz generated" : "Generating quiz"}</span>
-                <strong>{generationProgress}%</strong>
-              </div>
-              <div className="qc-generation-progress-track" aria-hidden="true">
-                <div
-                  className="qc-generation-progress-fill"
-                  style={{ width: `${generationProgress}%` }}
-                />
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

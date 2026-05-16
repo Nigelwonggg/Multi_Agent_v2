@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
+import {
+  useQuizGeneration,
+  type GeneratedQuiz,
+} from "../contexts/QuizGenerationContext";
 import "./QuizCreationPage.css";
 
 type QuestionType = "mcq" | "short";
@@ -15,20 +19,6 @@ type Question = {
   shortAnswer?: string;  // short answer correct text
 };
 
-type GeneratedQuestion =
-  | {
-      type: "mcq";
-      question: string;
-      options?: string[];
-      answer: number;
-    }
-  | {
-      type: "short";
-      question: string;
-      options?: string[];
-      answer: string;
-    };
-
 type UnitRecord = {
   id: number;
   unit_code: string;
@@ -37,6 +27,7 @@ type UnitRecord = {
 
 const QuizCreationPage: React.FC = () => {
   const navigate = useNavigate();
+  const { activeJob, startQuizGeneration, clearQuizGeneration } = useQuizGeneration();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -46,8 +37,6 @@ const QuizCreationPage: React.FC = () => {
   const [timeLimitMinutes, setTimeLimitMinutes] = useState("30");
   const [assignedUnits, setAssignedUnits] = useState<UnitRecord[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<number | "">("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingUnits, setIsLoadingUnits] = useState(true);
   const [isTopicHighlighted, setIsTopicHighlighted] = useState(false);
@@ -73,7 +62,7 @@ const QuizCreationPage: React.FC = () => {
   ]);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-  const showGenerationProgress = isGenerating || generationProgress > 0;
+  const isGenerating = activeJob?.status === "running";
 
   const fetchWithAuth = async (url: string, options?: RequestInit) => {
     const token = localStorage.getItem("token");
@@ -169,30 +158,36 @@ const QuizCreationPage: React.FC = () => {
     loadAssignedUnits();
   }, [API_BASE]);
 
+  const applyGeneratedQuiz = (data: GeneratedQuiz) => {
+    setTitle(data.title);
+    setDescription(data.description);
+    setPopupState(null);
+    setIsTopicHighlighted(false);
+    setHighlightedQuestionIds([]);
+
+    const newQuestions: Question[] = (data.questions || []).map((q, index: number) => ({
+      id: Date.now() + index,
+      type: q.type,
+      question: q.question,
+      options: q.options || [],
+      answer: q.type === "mcq" ? q.answer : null,
+      shortAnswer: q.type === "short" ? q.answer : "",
+    }));
+
+    setQuestions(newQuestions);
+  };
+
   useEffect(() => {
-    if (!isGenerating) {
+    if (activeJob?.mode !== "draft" || activeJob.status !== "completed" || !activeJob.result) {
       return;
     }
 
-    setGenerationProgress((current) => Math.max(current, 6));
-
-    const progressTimer = window.setInterval(() => {
-      setGenerationProgress((current) => {
-        if (current >= 94) {
-          return current;
-        }
-
-        const remaining = 94 - current;
-        const step = Math.max(1, Math.ceil(remaining * 0.08));
-        return Math.min(94, current + step);
-      });
-    }, 420);
-
-    return () => window.clearInterval(progressTimer);
-  }, [isGenerating]);
+    applyGeneratedQuiz(activeJob.result);
+    clearQuizGeneration();
+  }, [activeJob, clearQuizGeneration]);
 
   // 🤖 AI Generate Quiz
-  const handleAIGenerate = async () => {
+  const handleAIGenerate = () => {
     if (!topic.trim()) {
       setIsTopicHighlighted(true);
       setPopupState({
@@ -203,49 +198,22 @@ const QuizCreationPage: React.FC = () => {
       return;
     }
 
-    setIsGenerating(true);
-    setGenerationProgress(6);
-    try {
-      const res = await fetch(`${API_BASE}/quizzes/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, num_questions: numQuestions }),
-      });
+    const jobId = startQuizGeneration({
+      mode: "draft",
+      topic: topic.trim(),
+      numQuestions,
+    });
 
-      if (!res.ok) throw new Error("Failed to generate quiz");
-
-      const data = await res.json();
-
-      setTitle(data.title);
-      setDescription(data.description);
-      setPopupState(null);
-      setIsTopicHighlighted(false);
-      setHighlightedQuestionIds([]);
-      
-      const newQuestions: Question[] = (data.questions as GeneratedQuestion[]).map((q, index: number) => ({
-        id: Date.now() + index,
-        type: q.type,
-        question: q.question,
-        options: q.options || [],
-        answer: q.type === "mcq" ? q.answer : null,
-        shortAnswer: q.type === "short" ? q.answer : "",
-      }));
-
-      setQuestions(newQuestions);
-      setGenerationProgress(100);
-      window.setTimeout(() => {
-        setGenerationProgress(0);
-      }, 900);
-    } catch (err) {
-      console.error(err);
-      setGenerationProgress(0);
+    if (!jobId) {
       setPopupState({
-        title: "Unable to generate quiz",
-        message: "Something went wrong while generating the quiz. Please try again in a moment.",
+        title: "Quiz generation already running",
+        message: "Please wait for the current quiz generation to finish before starting another one.",
       });
-    } finally {
-      setIsGenerating(false);
+      return;
     }
+
+    setPopupState(null);
+    setIsTopicHighlighted(false);
   };
 
   // ➕ Add question
@@ -568,20 +536,6 @@ const QuizCreationPage: React.FC = () => {
               {isGenerating ? "Generating..." : "Generate Quiz"}
             </button>
           </div>
-          {showGenerationProgress && (
-            <div className="qc-generation-progress" role="status" aria-live="polite">
-              <div className="qc-generation-progress-header">
-                <span>{generationProgress >= 100 ? "Quiz generated" : "Generating quiz"}</span>
-                <strong>{generationProgress}%</strong>
-              </div>
-              <div className="qc-generation-progress-track" aria-hidden="true">
-                <div
-                  className="qc-generation-progress-fill"
-                  style={{ width: `${generationProgress}%` }}
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         {/* QUIZ INFO */}

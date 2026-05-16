@@ -63,13 +63,20 @@ def init_db() -> None:
 def create_initial_users():
     """Create initial admin and student users if they don't exist."""
     from app.models.user_model import User
+    from app.models.chat_db_model import Chat
     from app.utils.auth_utils import get_password_hash
     
     db = SessionLocal()
     try:
+        def ensure_default_chat(user: User) -> None:
+            if not db.query(Chat).filter(Chat.user_id == user.id).first():
+                db.add(Chat(user_id=user.id, title="New Question"))
+                logger.info(f"Created default chat for user: {user.email}")
+
         # Admin/Lecturer
         admin_email = "admin@test.com"
-        if not db.query(User).filter(User.email == admin_email).first():
+        admin_user = db.query(User).filter(User.email == admin_email).first()
+        if not admin_user:
             admin_user = User(
                 email=admin_email,
                 hashed_password=get_password_hash("password123"),
@@ -79,11 +86,14 @@ def create_initial_users():
                 security_answer="AdminPet"
             )
             db.add(admin_user)
+            db.flush()
             logger.info(f"Created default admin user: {admin_email}")
+        ensure_default_chat(admin_user)
 
         # Student
         student_email = "student@test.com"
-        if not db.query(User).filter(User.email == student_email).first():
+        student_user = db.query(User).filter(User.email == student_email).first()
+        if not student_user:
             student_user = User(
                 email=student_email,
                 hashed_password=get_password_hash("password123"),
@@ -93,7 +103,9 @@ def create_initial_users():
                 security_answer="StudentPet"
             )
             db.add(student_user)
+            db.flush()
             logger.info(f"Created default student user: {student_email}")
+        ensure_default_chat(student_user)
             
         db.commit()
     except Exception as e:

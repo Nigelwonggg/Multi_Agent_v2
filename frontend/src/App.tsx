@@ -26,6 +26,7 @@ import QuizTakePage from './pages/QuizTakePage';
 import QuizResultsPage from './pages/QuizResultsPage';
 import QuizAttemptReviewPage from './pages/QuizAttemptReviewPage';
 import ChatProgressToast from './components/ChatProgressToast/ChatProgressToast';
+import QuizGenerationToast from './components/QuizGenerationToast/QuizGenerationToast';
 import IdentityRegistryPage from './pages/IdentityRegistryPage';
 import UnitManagerPage from './pages/UnitManagerPage';
 import QuickQuizPage from './pages/QuickQuizPage';
@@ -49,6 +50,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
 };
 
 import { PdfUploadProvider } from './contexts/PdfUploadContext';
+import { QuizGenerationProvider } from './contexts/QuizGenerationContext';
 import UploadStatusBar from './components/global/UploadStatusBar';
 import { useSessionTimeout } from './hooks/useSessionTimeout';
 
@@ -71,7 +73,8 @@ function App() {
 
   return (
     <PdfUploadProvider>
-      <Routes>
+      <QuizGenerationProvider>
+        <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
@@ -180,9 +183,13 @@ function App() {
         } />
         
         <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-      <ChatProgressToast />
-      <UploadStatusBar />
+        </Routes>
+        <div className="progress-toast-stack" aria-live="polite">
+          <ChatProgressToast />
+          <QuizGenerationToast />
+        </div>
+        <UploadStatusBar />
+      </QuizGenerationProvider>
     </PdfUploadProvider>
   );
 }

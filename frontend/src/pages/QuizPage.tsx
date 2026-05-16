@@ -1,11 +1,11 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
+import { useSmoothNavigate } from "../hooks/useSmoothNavigate";
 import './QuizPage.css';
 
 const QuizDashboard: React.FC = () => {
-  const navigate = useNavigate();
+  const smoothNavigate = useSmoothNavigate();
   const storedUser = localStorage.getItem("user");
   const user = storedUser ? JSON.parse(storedUser) : null;
   const isLecturer = user?.role === "lecturer";
@@ -26,7 +26,7 @@ const QuizDashboard: React.FC = () => {
               <div className="icon">+</div>
               <h2>Create New Quiz</h2>
               <p>Start a quiz from scratch</p>
-              <button onClick={() => navigate("/quiz/create")}>
+              <button onClick={() => smoothNavigate("/quiz/create")}>
                 Create Quiz
               </button>
             </div>
@@ -36,7 +36,7 @@ const QuizDashboard: React.FC = () => {
               <div className="icon">📝</div>
               <h2>Edit Existing Quiz</h2>
               <p>Modify or manage your past quizzes</p>
-              <button onClick={() => navigate("/quiz/edit")}>
+              <button onClick={() => smoothNavigate("/quiz/edit")}>
                 View Quizzes
               </button>
             </div>
@@ -49,7 +49,7 @@ const QuizDashboard: React.FC = () => {
               <div className="icon">🎓</div>
               <h2>Take Quizzes</h2>
               <p>View available quizzes and test your knowledge</p>
-              <button onClick={() => navigate("/quiz/list")}>
+              <button onClick={() => smoothNavigate("/quiz/list")}>
                 Go to Quizzes
               </button>
             </div>
@@ -60,7 +60,7 @@ const QuizDashboard: React.FC = () => {
               <h2>Quick AI Quiz</h2>
               <p>Generate a custom study quiz instantly using AI!</p>
               <button 
-                onClick={() => navigate("/quiz/quick")}
+                onClick={() => smoothNavigate("/quiz/quick")}
               >
                 Create Quick Quiz
               </button>

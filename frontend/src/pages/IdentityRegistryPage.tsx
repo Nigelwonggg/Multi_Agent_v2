@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import SmoothLink from '../components/SmoothLink/SmoothLink';
 import './IdentityRegistryPage.css';
 
 type RegistrySummary = {
@@ -57,6 +57,8 @@ const IdentityRegistryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<RegistryEntry | null>(null);
+  const [deleteDialogError, setDeleteDialogError] = useState('');
   const [savingUnitsForEntryId, setSavingUnitsForEntryId] = useState<number | null>(null);
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
   const [selectedUnitIds, setSelectedUnitIds] = useState<number[]>([]);
@@ -174,17 +176,31 @@ const IdentityRegistryPage: React.FC = () => {
     }
   };
 
-  const handleDeleteEntry = async (entry: RegistryEntry) => {
-    const confirmMessage = entry.claimed_by_user_id
-      ? `Delete ${entry.full_name} (${entry.institutional_id}) from the registry? This will also delete their account and they will no longer be able to log in.`
-      : `Delete ${entry.full_name} (${entry.institutional_id}) from the registry? They will no longer be able to sign up unless this ID is uploaded again.`;
+  const handleDeleteEntryRequest = (entry: RegistryEntry) => {
+    setDeleteCandidate(entry);
+    setDeleteDialogError('');
+    setError('');
+    setMessage('');
+  };
 
-    if (!window.confirm(confirmMessage)) {
+  const handleCancelDeleteEntry = () => {
+    if (deletingEntryId !== null) {
       return;
     }
 
+    setDeleteCandidate(null);
+    setDeleteDialogError('');
+  };
+
+  const handleConfirmDeleteEntry = async () => {
+    if (!deleteCandidate || deletingEntryId !== null) {
+      return;
+    }
+
+    const entry = deleteCandidate;
     setError('');
     setMessage('');
+    setDeleteDialogError('');
 
     try {
       setDeletingEntryId(entry.id);
@@ -207,9 +223,12 @@ const IdentityRegistryPage: React.FC = () => {
         setSelectedEntryId(null);
         setSelectedUnitIds([]);
       }
+      setDeleteCandidate(null);
       await loadRegistryData(selectedRole);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed.');
+      const errorMessage = err instanceof Error ? err.message : 'Delete failed.';
+      setDeleteDialogError(errorMessage);
+      setError(errorMessage);
     } finally {
       setDeletingEntryId(null);
     }
@@ -439,7 +458,7 @@ const IdentityRegistryPage: React.FC = () => {
                           <button
                             type="button"
                             className="delete-entry-button"
-                            onClick={() => handleDeleteEntry(entry)}
+                            onClick={() => handleDeleteEntryRequest(entry)}
                             disabled={deletingEntryId === entry.id}
                           >
                             {deletingEntryId === entry.id
@@ -466,7 +485,7 @@ const IdentityRegistryPage: React.FC = () => {
 
               {availableUnits.length === 0 ? (
                 <p className="panel-help">
-                  No units exist yet. Create them in the <Link to="/vector-database/unit-manager" className="inline-link">Unit Manager</Link> first.
+                  No units exist yet. Create them in the <SmoothLink to="/vector-database/unit-manager" className="inline-link">Unit Manager</SmoothLink> first.
                 </p>
               ) : (
                 <>
@@ -516,6 +535,57 @@ const IdentityRegistryPage: React.FC = () => {
           )}
         </div>
       </section>
+
+      {deleteCandidate && (
+        <div
+          className="registry-delete-modal-backdrop"
+          role="presentation"
+          onClick={handleCancelDeleteEntry}
+        >
+          <div
+            className="registry-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="registry-delete-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="registry-delete-modal-icon" aria-hidden="true">
+              !
+            </div>
+            <h2 id="registry-delete-title">Delete registered ID?</h2>
+            <p>
+              Delete <strong>{deleteCandidate.full_name}</strong> ({deleteCandidate.institutional_id}) from the registry?
+            </p>
+            <p>
+              {deleteCandidate.claimed_by_user_id
+                ? 'This will also delete their account and they will no longer be able to log in.'
+                : 'They will no longer be able to sign up unless this ID is uploaded again.'}
+            </p>
+            {deleteDialogError && (
+              <div className="registry-delete-modal-error">{deleteDialogError}</div>
+            )}
+            <div className="registry-delete-modal-actions">
+              <button
+                type="button"
+                className="registry-delete-cancel"
+                onClick={handleCancelDeleteEntry}
+                disabled={deletingEntryId !== null}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="registry-delete-confirm"
+                onClick={handleConfirmDeleteEntry}
+                disabled={deletingEntryId !== null}
+                autoFocus
+              >
+                {deletingEntryId === deleteCandidate.id ? 'Deleting...' : 'Delete ID'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

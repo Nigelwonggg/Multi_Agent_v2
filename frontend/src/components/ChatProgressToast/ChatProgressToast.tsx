@@ -10,6 +10,7 @@ import type { ChatProgressSnapshot } from '../../stores/chatStore';
 import './ChatProgressToast.css';
 
 const DONE_VISIBLE_MS = 3000;
+const TOAST_ORDER_EPOCH_MS = 1700000000000;
 
 function estimateProgress(startedAt: number | null, now: number) {
   if (!startedAt) return 0;
@@ -119,6 +120,9 @@ const ChatProgressToast: React.FC = () => {
   const progress = isDone ? 100 : Math.round(estimateProgress(displaySnapshot.startedAt, now));
   const label = isDone ? 'Done - answer ready' : getProgressLabel(displaySnapshot.startedAt, now);
   const extraChats = isDone ? 0 : displaySnapshot.totalPendingChats - 1;
+  const stackOrder = displaySnapshot.startedAt
+    ? Math.max(0, Math.floor((displaySnapshot.startedAt - TOAST_ORDER_EPOCH_MS) / 100))
+    : 0;
   const handleOpenChat = () => {
     navigate(`/chat/${displaySnapshot.chatId}`);
   };
@@ -138,6 +142,7 @@ const ChatProgressToast: React.FC = () => {
       tabIndex={0}
       onClick={handleOpenChat}
       onKeyDown={handleKeyDown}
+      style={{ order: stackOrder }}
     >
       <div className="chat-progress-header">
         <div className="chat-progress-title">

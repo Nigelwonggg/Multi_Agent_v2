@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
+import {
+  useQuizGeneration,
+  type GeneratedQuiz,
+} from "../contexts/QuizGenerationContext";
 import "./QuizCreationPage.css";
 
 type QuestionType = "mcq" | "short";
@@ -15,20 +19,6 @@ type Question = {
   shortAnswer?: string;  // short answer correct text
 };
 
-type GeneratedQuestion =
-  | {
-      type: "mcq";
-      question: string;
-      options?: string[];
-      answer: number;
-    }
-  | {
-      type: "short";
-      question: string;
-      options?: string[];
-      answer: string;
-    };
-
 type UnitRecord = {
   id: number;
   unit_code: string;
@@ -37,6 +27,7 @@ type UnitRecord = {
 
 const QuizCreationPage: React.FC = () => {
   const navigate = useNavigate();
+  const { activeJob, startQuizGeneration, clearQuizGeneration } = useQuizGeneration();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -46,7 +37,6 @@ const QuizCreationPage: React.FC = () => {
   const [timeLimitMinutes, setTimeLimitMinutes] = useState("30");
   const [assignedUnits, setAssignedUnits] = useState<UnitRecord[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<number | "">("");
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingUnits, setIsLoadingUnits] = useState(true);
   const [isTopicHighlighted, setIsTopicHighlighted] = useState(false);
@@ -72,6 +62,7 @@ const QuizCreationPage: React.FC = () => {
   ]);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  const isGenerating = activeJob?.status === "running";
 
   const fetchWithAuth = async (url: string, options?: RequestInit) => {
     const token = localStorage.getItem("token");
@@ -167,8 +158,36 @@ const QuizCreationPage: React.FC = () => {
     loadAssignedUnits();
   }, [API_BASE]);
 
+  const applyGeneratedQuiz = (data: GeneratedQuiz) => {
+    setTitle(data.title);
+    setDescription(data.description);
+    setPopupState(null);
+    setIsTopicHighlighted(false);
+    setHighlightedQuestionIds([]);
+
+    const newQuestions: Question[] = (data.questions || []).map((q, index: number) => ({
+      id: Date.now() + index,
+      type: q.type,
+      question: q.question,
+      options: q.options || [],
+      answer: q.type === "mcq" ? q.answer : null,
+      shortAnswer: q.type === "short" ? q.answer : "",
+    }));
+
+    setQuestions(newQuestions);
+  };
+
+  useEffect(() => {
+    if (activeJob?.mode !== "draft" || activeJob.status !== "completed" || !activeJob.result) {
+      return;
+    }
+
+    applyGeneratedQuiz(activeJob.result);
+    clearQuizGeneration();
+  }, [activeJob, clearQuizGeneration]);
+
   // 🤖 AI Generate Quiz
-  const handleAIGenerate = async () => {
+  const handleAIGenerate = () => {
     if (!topic.trim()) {
       setIsTopicHighlighted(true);
       setPopupState({
@@ -179,43 +198,22 @@ const QuizCreationPage: React.FC = () => {
       return;
     }
 
-    setIsGenerating(true);
-    try {
-      const res = await fetch(`${API_BASE}/quizzes/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, num_questions: numQuestions }),
-      });
+    const jobId = startQuizGeneration({
+      mode: "draft",
+      topic: topic.trim(),
+      numQuestions,
+    });
 
-      if (!res.ok) throw new Error("Failed to generate quiz");
-
-      const data = await res.json();
-
-      setTitle(data.title);
-      setDescription(data.description);
-      setPopupState(null);
-      setIsTopicHighlighted(false);
-      setHighlightedQuestionIds([]);
-      
-      const newQuestions: Question[] = (data.questions as GeneratedQuestion[]).map((q, index: number) => ({
-        id: Date.now() + index,
-        type: q.type,
-        question: q.question,
-        options: q.options || [],
-        answer: q.type === "mcq" ? q.answer : null,
-        shortAnswer: q.type === "short" ? q.answer : "",
-      }));
-
-      setQuestions(newQuestions);
-    } catch (err) {
-      console.error(err);
+    if (!jobId) {
       setPopupState({
-        title: "Unable to generate quiz",
-        message: "Something went wrong while generating the quiz. Please try again in a moment.",
+        title: "Quiz generation already running",
+        message: "Please wait for the current quiz generation to finish before starting another one.",
       });
-    } finally {
-      setIsGenerating(false);
+      return;
     }
+
+    setPopupState(null);
+    setIsTopicHighlighted(false);
   };
 
   // ➕ Add question
@@ -735,6 +733,7 @@ const QuizCreationPage: React.FC = () => {
 
                 <button
                   type="button"
+                  className="qc-add-option-btn"
                   onClick={() => addOption(q.id)}
                   style={{
                     marginTop: "10px",

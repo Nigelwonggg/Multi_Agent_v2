@@ -38,6 +38,8 @@ const UnitManagerPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [updatingUnitId, setUpdatingUnitId] = useState<number | null>(null);
   const [deletingUnitId, setDeletingUnitId] = useState<number | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<UnitRecord | null>(null);
+  const [deleteDialogError, setDeleteDialogError] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -130,16 +132,31 @@ const UnitManagerPage: React.FC = () => {
     }
   };
 
-  const handleDeleteUnit = async (unit: UnitRecord) => {
-    const confirmed = window.confirm(
-      `Delete ${unit.unit_code} - ${unit.unit_name}? This will also remove it from any registered IDs that currently have it assigned.`
-    );
-    if (!confirmed) {
+  const handleDeleteUnitRequest = (unit: UnitRecord) => {
+    setDeleteCandidate(unit);
+    setDeleteDialogError('');
+    setError('');
+    setMessage('');
+  };
+
+  const handleCancelDeleteUnit = () => {
+    if (deletingUnitId !== null) {
       return;
     }
 
+    setDeleteCandidate(null);
+    setDeleteDialogError('');
+  };
+
+  const handleConfirmDeleteUnit = async () => {
+    if (!deleteCandidate || deletingUnitId !== null) {
+      return;
+    }
+
+    const unit = deleteCandidate;
     setError('');
     setMessage('');
+    setDeleteDialogError('');
 
     try {
       setDeletingUnitId(unit.id);
@@ -155,8 +172,11 @@ const UnitManagerPage: React.FC = () => {
       const result = payload as DeleteUnitResult;
       setUnits((currentUnits) => currentUnits.filter((currentUnit) => currentUnit.id !== unit.id));
       setMessage(`Deleted ${result.deleted_unit_code}.`);
+      setDeleteCandidate(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete unit.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete unit.';
+      setDeleteDialogError(errorMessage);
+      setError(errorMessage);
     } finally {
       setDeletingUnitId(null);
     }
@@ -430,7 +450,7 @@ const UnitManagerPage: React.FC = () => {
                               <button
                                 type="button"
                                 className="delete-unit-button"
-                                onClick={() => handleDeleteUnit(unit)}
+                                onClick={() => handleDeleteUnitRequest(unit)}
                                 disabled={deletingUnitId === unit.id}
                               >
                                 {deletingUnitId === unit.id ? 'Deleting...' : 'Delete'}
@@ -447,6 +467,55 @@ const UnitManagerPage: React.FC = () => {
           )}
         </div>
       </section>
+
+      {deleteCandidate && (
+        <div
+          className="unit-delete-modal-backdrop"
+          role="presentation"
+          onClick={handleCancelDeleteUnit}
+        >
+          <div
+            className="unit-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="unit-delete-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="unit-delete-modal-icon" aria-hidden="true">
+              !
+            </div>
+            <h2 id="unit-delete-title">Delete unit?</h2>
+            <p>
+              Delete <strong>{deleteCandidate.unit_code} - {deleteCandidate.unit_name}</strong>?
+            </p>
+            <p>
+              This will also remove it from any registered IDs that currently have it assigned.
+            </p>
+            {deleteDialogError && (
+              <div className="unit-delete-modal-error">{deleteDialogError}</div>
+            )}
+            <div className="unit-delete-modal-actions">
+              <button
+                type="button"
+                className="unit-delete-cancel"
+                onClick={handleCancelDeleteUnit}
+                disabled={deletingUnitId !== null}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="unit-delete-confirm"
+                onClick={handleConfirmDeleteUnit}
+                disabled={deletingUnitId !== null}
+                autoFocus
+              >
+                {deletingUnitId === deleteCandidate.id ? 'Deleting...' : 'Delete Unit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

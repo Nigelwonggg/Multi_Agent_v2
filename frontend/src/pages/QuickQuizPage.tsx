@@ -1,43 +1,52 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
+import { useQuizGeneration } from "../contexts/QuizGenerationContext";
 import "./QuizCreationPage.css"; // Reuse styling for cards and inputs
 
 const QuickQuizPage: React.FC = () => {
   const navigate = useNavigate();
+  const { activeJob, startQuizGeneration, clearQuizGeneration } = useQuizGeneration();
 
   const [topic, setTopic] = useState("");
   const [numQuestions, setNumQuestions] = useState(5);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationJobId, setGenerationJobId] = useState<string | null>(null);
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  const isGenerating = activeJob?.status === "running";
 
-  const handleGenerate = async () => {
-    if (!topic) {
+  useEffect(() => {
+    if (
+      !generationJobId ||
+      activeJob?.id !== generationJobId ||
+      activeJob.mode !== "quick" ||
+      activeJob.status !== "completed" ||
+      !activeJob.result
+    ) {
+      return;
+    }
+
+    navigate("/quiz/take/temp", { state: { quiz: activeJob.result } });
+    clearQuizGeneration();
+  }, [activeJob, clearQuizGeneration, generationJobId, navigate]);
+
+  const handleGenerate = () => {
+    if (!topic.trim()) {
       alert("Please enter a topic for your quiz!");
       return;
     }
 
-    setIsGenerating(true);
-    try {
-      const res = await fetch(`${API_BASE}/quizzes/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, num_questions: numQuestions }),
-      });
+    const jobId = startQuizGeneration({
+      mode: "quick",
+      topic: topic.trim(),
+      numQuestions,
+    });
 
-      if (!res.ok) throw new Error("Failed to generate quiz");
-      const data = await res.json();
-
-      // Navigate directly to take the quiz
-      navigate("/quiz/take/temp", { state: { quiz: data } });
-    } catch (err) {
-      console.error(err);
-      alert("Error generating quiz. Please try again.");
-    } finally {
-      setIsGenerating(false);
+    if (!jobId) {
+      return;
     }
+
+    setGenerationJobId(jobId);
   };
 
   return (
@@ -103,6 +112,7 @@ const QuickQuizPage: React.FC = () => {
           >
             {isGenerating ? "Generating Quiz..." : "Generate & Start Practice"}
           </button>
+
         </div>
       </div>
 

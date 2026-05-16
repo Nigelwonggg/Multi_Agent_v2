@@ -444,10 +444,50 @@ textarea.quiz-input {
   }
 }
 
+:root[data-theme="light"] .qc-dashboard {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 34vw),
+    radial-gradient(circle at top right, rgba(139, 92, 246, 0.1), transparent 30vw),
+    var(--bg);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qc-title {
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qc-subtitle {
+  color: var(--text-muted);
+}
+
+:root[data-theme="light"] .qc-create-container {
+  color: var(--text);
+}
+
 :root[data-theme="light"] .qc-card {
   background: #ffffff;
   border: 1px solid rgba(37, 99, 235, 0.12);
   box-shadow: 0 12px 30px rgba(37, 99, 235, 0.08);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qc-card h2,
+:root[data-theme="light"] .qc-card h3 {
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qc-card label {
+  color: var(--accent) !important;
+}
+
+:root[data-theme="light"] .qc-back-btn {
+  background: rgba(37, 99, 235, 0.08) !important;
+  border-color: rgba(37, 99, 235, 0.28) !important;
+  color: var(--accent) !important;
+}
+
+:root[data-theme="light"] .qc-back-btn:hover {
+  background: rgba(37, 99, 235, 0.14) !important;
 }
 
 :root[data-theme="light"] .qc-input,
@@ -455,6 +495,17 @@ textarea.quiz-input {
   border-color: rgba(37, 99, 235, 0.18);
   background: #f8fbff;
   color: #111827;
+}
+
+:root[data-theme="light"] .qc-input:disabled,
+:root[data-theme="light"] .qc-actions select:disabled {
+  background: #eef4ff;
+  color: #64748b;
+  opacity: 1;
+}
+
+:root[data-theme="light"] .qc-input::placeholder {
+  color: #94a3b8;
 }
 
 :root[data-theme="light"] .qc-input-warning {
@@ -469,6 +520,40 @@ textarea.quiz-input {
 :root[data-theme="light"] .qc-inline-warning {
   background: rgba(245, 158, 11, 0.12);
   color: #9a3412;
+}
+
+:root[data-theme="light"] .ai-gen-card {
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08), #ffffff);
+  border-color: rgba(37, 99, 235, 0.18);
+}
+
+:root[data-theme="light"] .ai-gen-card h2 {
+  color: var(--accent);
+}
+
+:root[data-theme="light"] .qc-ai-btn,
+:root[data-theme="light"] .qc-save-btn,
+:root[data-theme="light"] .qc-actions-bottom button,
+:root[data-theme="light"] .qc-add-option-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.18);
+}
+
+:root[data-theme="light"] .qc-ai-btn:hover:not(:disabled),
+:root[data-theme="light"] .qc-save-btn:hover:not(:disabled),
+:root[data-theme="light"] .qc-actions-bottom button:hover:not(:disabled),
+:root[data-theme="light"] .qc-add-option-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1d4ed8, #7c3aed) !important;
+}
+
+:root[data-theme="light"] .qc-ai-btn:disabled,
+:root[data-theme="light"] .qc-save-btn:disabled,
+:root[data-theme="light"] .qc-actions-bottom button:disabled,
+:root[data-theme="light"] .qc-add-option-btn:disabled {
+  background: #dbeafe !important;
+  color: #64748b !important;
+  box-shadow: none;
 }
 
 :root[data-theme="light"] .qc-popup {

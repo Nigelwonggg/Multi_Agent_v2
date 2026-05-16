@@ -115,6 +115,30 @@ a {
   background-size: 200px;
 }
 
+.progress-toast-stack {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1600;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.progress-toast-stack > * {
+  pointer-events: auto;
+}
+
+@media (max-width: 640px) {
+  .progress-toast-stack {
+    right: 12px;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root) {
     animation: page-transition-out 260ms ease both;
@@ -157,7 +181,12 @@ a {
       .home-page,
       .auth-card,
       .quiz-dashboard,
+      .qc-dashboard,
+      .qe-page,
       .quiz-cards,
+      .database-layout-container,
+      .identity-registry-page,
+      .unit-manager-page,
       .upload-pdf-container,
       .text-store-container,
       .image-store-container,
@@ -180,7 +209,12 @@ a {
       .home-page,
       .auth-card,
       .quiz-dashboard,
+      .qc-dashboard,
+      .qe-page,
       .quiz-cards,
+      .database-layout-container,
+      .identity-registry-page,
+      .unit-manager-page,
       .upload-pdf-container,
       .text-store-container,
       .image-store-container,
@@ -202,7 +236,12 @@ a {
       .home-page,
       .auth-card,
       .quiz-dashboard,
+      .qc-dashboard,
+      .qe-page,
       .quiz-cards,
+      .database-layout-container,
+      .identity-registry-page,
+      .unit-manager-page,
       .upload-pdf-container,
       .text-store-container,
       .image-store-container,
@@ -224,7 +263,12 @@ a {
       .home-page,
       .auth-card,
       .quiz-dashboard,
+      .qc-dashboard,
+      .qe-page,
       .quiz-cards,
+      .database-layout-container,
+      .identity-registry-page,
+      .unit-manager-page,
       .upload-pdf-container,
       .text-store-container,
       .image-store-container,

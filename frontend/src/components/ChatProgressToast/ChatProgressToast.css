@@ -1,8 +1,4 @@
 .chat-progress-toast {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 1600;
   width: min(340px, calc(100vw - 32px));
   padding: 14px;
   border: 1px solid color-mix(in srgb, var(--accent, #d4af37) 28%, transparent);
@@ -159,8 +155,6 @@
 
 @media (max-width: 640px) {
   .chat-progress-toast {
-    right: 12px;
-    bottom: 12px;
-    width: calc(100vw - 24px);
+    width: 100%;
   }
 }

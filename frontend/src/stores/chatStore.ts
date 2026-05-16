@@ -259,6 +259,17 @@ function hasFetchedResponseForPending(state: MessageState, fetchedMessages: Mess
   });
 }
 
+function isRecoverableSendError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return (
+    error.name === "AbortError" ||
+    /aborted|failed to fetch|load failed|networkerror|network request failed/i.test(error.message)
+  );
+}
+
 function schedulePendingRefresh(chatId: string) {
   const state = messageStates.get(chatId);
   if (!state || state.pendingCount === 0) {
@@ -575,6 +586,7 @@ export function replaceChatMessages(chatId: string, messages: Message[]) {
 export async function sendChatMessage(chatId: string, text: string) {
   const state = getMessageState(chatId);
   const existingMessageCount = state.messages.length;
+  let keepPendingAfterError = false;
   const userMessage: Message = {
     id: `pending-user-${Date.now()}`,
     text,
@@ -600,13 +612,33 @@ export async function sendChatMessage(chatId: string, text: string) {
     persistMessageState(chatId, state);
     return replyMessage;
   } catch (error) {
+    if (isRecoverableSendError(error)) {
+      console.warn("Chat request was interrupted; keeping the response pending and polling for completion.", error);
+      keepPendingAfterError = true;
+      schedulePendingRefresh(chatId);
+      return;
+    }
+
     console.error("Failed to post message:", error);
+    const errorMessage: Message = {
+      id: `error-${Date.now()}`,
+      text: "Sorry, I encountered an error. Please try again.",
+      sender: "bot",
+      timestamp: new Date().toISOString(),
+    };
+
+    state.messages = [...state.messages, errorMessage];
+    persistMessageState(chatId, state);
     throw error;
   } finally {
-    state.pendingCount = Math.max(0, state.pendingCount - 1);
-    if (state.pendingCount === 0) {
-      state.pendingSince = null;
-      state.lastPendingText = "";
+    if (!keepPendingAfterError) {
+      state.pendingCount = Math.max(0, state.pendingCount - 1);
+      if (state.pendingCount === 0) {
+        state.pendingSince = null;
+        state.lastPendingText = "";
+      }
+    } else {
+      schedulePendingRefresh(chatId);
     }
     persistMessageState(chatId, state);
     notifyMessages(chatId);

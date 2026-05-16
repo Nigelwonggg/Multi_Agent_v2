@@ -410,23 +410,7 @@ export const postMessage = async (
     return botMessage;
   } catch (error) {
     console.error("Error posting message:", error);
-
-    // Fallback to mock response if API fails
-    const fallbackMessage: Message = {
-      id: String(Date.now()),
-      text: "Sorry, I encountered an error. Please try again.",
-      sender: "bot",
-      timestamp: new Date().toISOString(),
-      // No imageUrl for error messages
-    };
-
-    if (messages[chatId]) {
-      messages[chatId].push(fallbackMessage);
-    } else {
-      messages[chatId] = [fallbackMessage];
-    }
-
-    return fallbackMessage;
+    throw error;
   }
 };
 

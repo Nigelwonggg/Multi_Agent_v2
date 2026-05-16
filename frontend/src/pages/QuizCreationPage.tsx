@@ -47,6 +47,7 @@ const QuizCreationPage: React.FC = () => {
   const [assignedUnits, setAssignedUnits] = useState<UnitRecord[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<number | "">("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingUnits, setIsLoadingUnits] = useState(true);
   const [isTopicHighlighted, setIsTopicHighlighted] = useState(false);
@@ -72,6 +73,7 @@ const QuizCreationPage: React.FC = () => {
   ]);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  const showGenerationProgress = isGenerating || generationProgress > 0;
 
   const fetchWithAuth = async (url: string, options?: RequestInit) => {
     const token = localStorage.getItem("token");
@@ -167,6 +169,28 @@ const QuizCreationPage: React.FC = () => {
     loadAssignedUnits();
   }, [API_BASE]);
 
+  useEffect(() => {
+    if (!isGenerating) {
+      return;
+    }
+
+    setGenerationProgress((current) => Math.max(current, 6));
+
+    const progressTimer = window.setInterval(() => {
+      setGenerationProgress((current) => {
+        if (current >= 94) {
+          return current;
+        }
+
+        const remaining = 94 - current;
+        const step = Math.max(1, Math.ceil(remaining * 0.08));
+        return Math.min(94, current + step);
+      });
+    }, 420);
+
+    return () => window.clearInterval(progressTimer);
+  }, [isGenerating]);
+
   // 🤖 AI Generate Quiz
   const handleAIGenerate = async () => {
     if (!topic.trim()) {
@@ -180,6 +204,7 @@ const QuizCreationPage: React.FC = () => {
     }
 
     setIsGenerating(true);
+    setGenerationProgress(6);
     try {
       const res = await fetch(`${API_BASE}/quizzes/generate`, {
         method: "POST",
@@ -207,8 +232,13 @@ const QuizCreationPage: React.FC = () => {
       }));
 
       setQuestions(newQuestions);
+      setGenerationProgress(100);
+      window.setTimeout(() => {
+        setGenerationProgress(0);
+      }, 900);
     } catch (err) {
       console.error(err);
+      setGenerationProgress(0);
       setPopupState({
         title: "Unable to generate quiz",
         message: "Something went wrong while generating the quiz. Please try again in a moment.",
@@ -538,6 +568,20 @@ const QuizCreationPage: React.FC = () => {
               {isGenerating ? "Generating..." : "Generate Quiz"}
             </button>
           </div>
+          {showGenerationProgress && (
+            <div className="qc-generation-progress" role="status" aria-live="polite">
+              <div className="qc-generation-progress-header">
+                <span>{generationProgress >= 100 ? "Quiz generated" : "Generating quiz"}</span>
+                <strong>{generationProgress}%</strong>
+              </div>
+              <div className="qc-generation-progress-track" aria-hidden="true">
+                <div
+                  className="qc-generation-progress-fill"
+                  style={{ width: `${generationProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* QUIZ INFO */}

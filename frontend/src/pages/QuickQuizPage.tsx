@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
@@ -10,8 +10,32 @@ const QuickQuizPage: React.FC = () => {
   const [topic, setTopic] = useState("");
   const [numQuestions, setNumQuestions] = useState(5);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  const showGenerationProgress = isGenerating || generationProgress > 0;
+
+  useEffect(() => {
+    if (!isGenerating) {
+      return;
+    }
+
+    setGenerationProgress((current) => Math.max(current, 6));
+
+    const progressTimer = window.setInterval(() => {
+      setGenerationProgress((current) => {
+        if (current >= 94) {
+          return current;
+        }
+
+        const remaining = 94 - current;
+        const step = Math.max(1, Math.ceil(remaining * 0.08));
+        return Math.min(94, current + step);
+      });
+    }, 420);
+
+    return () => window.clearInterval(progressTimer);
+  }, [isGenerating]);
 
   const handleGenerate = async () => {
     if (!topic) {
@@ -20,6 +44,7 @@ const QuickQuizPage: React.FC = () => {
     }
 
     setIsGenerating(true);
+    setGenerationProgress(6);
     try {
       const res = await fetch(`${API_BASE}/quizzes/generate`, {
         method: "POST",
@@ -30,13 +55,15 @@ const QuickQuizPage: React.FC = () => {
       if (!res.ok) throw new Error("Failed to generate quiz");
       const data = await res.json();
 
-      // Navigate directly to take the quiz
-      navigate("/quiz/take/temp", { state: { quiz: data } });
+      setGenerationProgress(100);
+      window.setTimeout(() => {
+        navigate("/quiz/take/temp", { state: { quiz: data } });
+      }, 450);
     } catch (err) {
       console.error(err);
-      alert("Error generating quiz. Please try again.");
-    } finally {
+      setGenerationProgress(0);
       setIsGenerating(false);
+      alert("Error generating quiz. Please try again.");
     }
   };
 
@@ -103,6 +130,21 @@ const QuickQuizPage: React.FC = () => {
           >
             {isGenerating ? "Generating Quiz..." : "Generate & Start Practice"}
           </button>
+
+          {showGenerationProgress && (
+            <div className="qc-generation-progress" role="status" aria-live="polite">
+              <div className="qc-generation-progress-header">
+                <span>{generationProgress >= 100 ? "Quiz generated" : "Generating quiz"}</span>
+                <strong>{generationProgress}%</strong>
+              </div>
+              <div className="qc-generation-progress-track" aria-hidden="true">
+                <div
+                  className="qc-generation-progress-fill"
+                  style={{ width: `${generationProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

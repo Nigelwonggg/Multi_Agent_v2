@@ -67,20 +67,34 @@ class BaseTextStoreService(ABC):
             error_str = str(e)
             self.logger.error(f"❌ Failed to initialize Chroma for {domain}: {error_str}")
             
-            # If it already exists or has tenant issues, try the most basic connection
+            # Chroma keeps an in-process client cache by persist path. After a
+            # domain is deleted and recreated, that cache can point at stale settings.
             if "already exists" in error_str or "tenant" in error_str:
-                self.logger.info(f"🔄 Attempting simplified connection for {domain}...")
+                self.logger.info(f"🔄 Clearing Chroma cache and retrying connection for {domain}...")
+                self._clear_chroma_system_cache()
                 try:
                     self.text_store = Chroma(
                         collection_name=collection_name,
                         embedding_function=self.embeddings,
-                        persist_directory=persist_dir
+                        persist_directory=persist_dir,
+                        client_settings=client_settings,
                     )
                     self.client = getattr(self.text_store, "_client", None)
-                    self.logger.info(f"✅ {domain} text store connected (simplified)")
+                    self.logger.info(f"✅ {domain} text store connected after cache clear")
                 except Exception as e2:
-                    self.logger.error(f"❌ Simplified connection also failed: {str(e2)}")
-                    raise e2
+                    self.logger.warning(f"⚠️ Cache-clear retry failed: {str(e2)}")
+                    self.logger.info(f"🔄 Attempting simplified connection for {domain}...")
+                    try:
+                        self.text_store = Chroma(
+                            collection_name=collection_name,
+                            embedding_function=self.embeddings,
+                            persist_directory=persist_dir
+                        )
+                        self.client = getattr(self.text_store, "_client", None)
+                        self.logger.info(f"✅ {domain} text store connected (simplified)")
+                    except Exception as e3:
+                        self.logger.error(f"❌ Simplified connection also failed: {str(e3)}")
+                        raise e3
             else:
                 raise e
         
@@ -89,6 +103,14 @@ class BaseTextStoreService(ABC):
             search_type="mmr", 
             search_kwargs={"k": 10, "fetch_k": 20}
         )
+
+    @staticmethod
+    def _clear_chroma_system_cache() -> None:
+        try:
+            from chromadb.api.shared_system_client import SharedSystemClient
+            SharedSystemClient.clear_system_cache()
+        except Exception:
+            pass
     
     def cleanup(self) -> None:
         """Explicitly release resources and close database connections"""
@@ -145,6 +167,7 @@ class BaseTextStoreService(ABC):
                 # 5. Force GC
                 import gc
                 gc.collect()
+                self._clear_chroma_system_cache()
                 
                 self.logger.info(f"🗑️ Released text store resources for domain '{self.domain}'")
         except Exception as e:

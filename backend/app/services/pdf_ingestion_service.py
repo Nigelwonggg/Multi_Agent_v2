@@ -85,32 +85,52 @@ class PdfIngestionService:
         self.image_factory = get_image_store_factory()
 
         requested_provider = os.getenv("PDF_LLM_PROVIDER", "").strip().lower()
-        openai_api_key = os.getenv("PDF_API_KEY", os.getenv("OPENAI_API_KEY", ""))
-        groq_api_key = os.getenv("PDF_API_KEY", os.getenv("GROQ_API_KEY", ""))
+        openai_api_key = os.getenv("PDF_OPENAI_API_KEY", os.getenv("PDF_API_KEY", os.getenv("OPENAI_API_KEY", "")))
+        groq_api_key = os.getenv("PDF_GROQ_API_KEY", os.getenv("PDF_API_KEY", os.getenv("GROQ_API_KEY", "")))
+        gemini_api_key = os.getenv("PDF_GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", "")))
 
-        if requested_provider in {"openai", "groq"}:
+        if requested_provider in {"openai", "groq", "gemini"}:
             self.provider = requested_provider
         elif openai_api_key:
             self.provider = "openai"
+        elif gemini_api_key:
+            self.provider = "gemini"
         elif groq_api_key:
             self.provider = "groq"
         else:
             self.provider = "openai"
 
         if self.provider == "groq":
-            self.text_model = os.getenv("PDF_TEXT_MODEL", "llama-3.3-70b-versatile")
-            self.vision_model = os.getenv("PDF_VISION_MODEL", "llama-3.2-90b-vision-preview")
+            self.text_model = os.getenv("PDF_GROQ_TEXT_MODEL", os.getenv("PDF_TEXT_MODEL", "llama-3.3-70b-versatile"))
+            self.vision_model = os.getenv(
+                "PDF_GROQ_VISION_MODEL",
+                os.getenv("PDF_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct"),
+            )
             self.base_url = os.getenv("PDF_API_BASE_URL", os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1"))
             self.api_key = groq_api_key
+        elif self.provider == "gemini":
+            self.text_model = os.getenv("PDF_GEMINI_TEXT_MODEL", os.getenv("PDF_TEXT_MODEL", "gemini-2.5-flash"))
+            self.vision_model = os.getenv("PDF_GEMINI_VISION_MODEL", os.getenv("PDF_VISION_MODEL", "gemini-2.5-flash"))
+            self.base_url = os.getenv(
+                "PDF_API_BASE_URL",
+                os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/"),
+            )
+            self.api_key = gemini_api_key
         else:
-            self.text_model = os.getenv("PDF_TEXT_MODEL", "gpt-4o-mini")
-            self.vision_model = os.getenv("PDF_VISION_MODEL", "gpt-4o-mini")
+            self.text_model = os.getenv("PDF_OPENAI_TEXT_MODEL", os.getenv("PDF_TEXT_MODEL", "gpt-4o-mini"))
+            self.vision_model = os.getenv("PDF_OPENAI_VISION_MODEL", "gpt-4o-mini")
             self.base_url = os.getenv("PDF_API_BASE_URL", os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"))
             self.api_key = openai_api_key
 
         self.fallback_provider = "groq" if self.provider == "openai" and groq_api_key else None
-        self.fallback_text_model = os.getenv("PDF_FALLBACK_TEXT_MODEL", "llama-3.3-70b-versatile") if self.fallback_provider else None
-        self.fallback_vision_model = os.getenv("PDF_FALLBACK_VISION_MODEL", "llama-3.2-90b-vision-preview") if self.fallback_provider else None
+        self.fallback_text_model = os.getenv(
+            "PDF_FALLBACK_TEXT_MODEL",
+            os.getenv("PDF_GROQ_TEXT_MODEL", "llama-3.3-70b-versatile"),
+        ) if self.fallback_provider else None
+        self.fallback_vision_model = os.getenv(
+            "PDF_FALLBACK_VISION_MODEL",
+            os.getenv("PDF_GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct"),
+        ) if self.fallback_provider else None
 
         self.logger.info(
             "PDF ingestion provider selected: %s (text_model=%s, vision_model=%s, fallback=%s)",
@@ -493,11 +513,11 @@ class PdfIngestionService:
         }
 
     def _build_client(self, provider: Optional[str]):
-        if provider == "openai" and self.provider == "openai" and self.api_key:
+        if provider == self.provider and self.api_key:
             return openai.OpenAI(base_url=self.base_url, api_key=self.api_key)
 
         if provider == "groq" and self.fallback_provider == "groq":
-            groq_api_key = os.getenv("PDF_API_KEY", os.getenv("GROQ_API_KEY", ""))
+            groq_api_key = os.getenv("PDF_GROQ_API_KEY", os.getenv("PDF_API_KEY", os.getenv("GROQ_API_KEY", "")))
             groq_base_url = os.getenv("PDF_API_BASE_URL", os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1"))
             if groq_api_key:
                 return openai.OpenAI(base_url=groq_base_url, api_key=groq_api_key)

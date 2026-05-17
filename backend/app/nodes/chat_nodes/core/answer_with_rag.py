@@ -42,6 +42,8 @@ class RAGAnswerNode(BaseNode):
         messages = state["messages"]
         current_input = state["current_input"]
         domains = state["domains"]
+        if not domains:
+            domains = self.config_manager.get_available_domains()
         # Use the first (primary) domain for configuration
         primary_domain = domains[0] if domains else "data_science"
         

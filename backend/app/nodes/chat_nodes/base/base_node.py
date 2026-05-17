@@ -28,6 +28,9 @@ class State(TypedDict):
     used_image: Optional[dict]  # Domain-aware image reference from RAG
     include_image: bool  # Whether to include images in the final answer
     thread_id: Optional[str]  # Thread ID for multi-threaded conversations
+    force_rag: bool  # Whether the request explicitly wants retrieval
+    search_all_domains: bool  # Whether RAG should search every available domain
+    requested_domains: List[str]  # Domains explicitly requested by the caller
     routes: List[str]  # List to track the routes taken during the process
     test: bool  # Flag to indicate if the node is in test mode
 

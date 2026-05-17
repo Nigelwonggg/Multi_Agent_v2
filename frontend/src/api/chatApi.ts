@@ -7,6 +7,21 @@ import newTestData from "./test_data_new.json";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 const DEFAULT_CHAT_TITLE = "New Question";
+const RAG_ENABLED_DOMAINS_KEY = "rag_enabled_domains";
+
+const getRagEnabledDomains = (): string[] => {
+  try {
+    const saved = localStorage.getItem(RAG_ENABLED_DOMAINS_KEY);
+    if (!saved) return [];
+
+    const domains = JSON.parse(saved);
+    if (!Array.isArray(domains)) return [];
+
+    return domains.filter((domain): domain is string => typeof domain === "string" && domain.trim().length > 0);
+  } catch {
+    return [];
+  }
+};
 
 // Helper to process JSON responses and throw errors when requests fail.
 async function handleResponse(response: Response) {
@@ -356,6 +371,8 @@ export const postMessage = async (
   text: string
 ): Promise<Message> => {
   try {
+    const ragDomains = getRagEnabledDomains();
+
     // Call the actual backend API
     const response = await fetch(`${API_BASE}/api/chat/message`, {
       method: "POST",
@@ -366,6 +383,12 @@ export const postMessage = async (
       body: JSON.stringify({
         message: text,
         thread_id: chatId,
+        config: ragDomains.length > 0
+          ? {
+              domains: ragDomains,
+              search_all_domains: true,
+            }
+          : undefined,
       }),
     });
 

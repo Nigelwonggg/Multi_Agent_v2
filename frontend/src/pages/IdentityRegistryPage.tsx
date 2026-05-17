@@ -331,7 +331,7 @@ const IdentityRegistryPage: React.FC = () => {
         <div className="identity-panel">
           <h2>Upload CSV</h2>
           <p className="panel-help">
-            CSV format: column 1 = institutional ID, column 2 = full name. If you still upload a third unit-code column, it will be kept only as legacy data and unit access should now be managed below.
+            CSV format: column 1 = student ID, column 2 = full name. If you still upload a third unit-code column, it will be kept only as legacy data and unit access should now be managed below.
           </p>
           <p className="panel-help">
             Choose the role for this upload here. The table filter on the right is only for browsing and searching registered IDs.

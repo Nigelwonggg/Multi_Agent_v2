@@ -77,7 +77,13 @@ class SessionService:
             self._last_accessed[thread_id_str] = datetime.now()
             logger.debug(f"➕ Added assistant message to cached session: {thread_id_str}")
     
-    def create_session_state(self, thread_id: str, current_input: str, db: Session) -> Dict[str, Any]:
+    def create_session_state(
+        self,
+        thread_id: str,
+        current_input: str,
+        db: Session,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """
         Create a fresh session state with loaded message history and new user input.
         
@@ -95,6 +101,11 @@ class SessionService:
         # Add the new user message to the session (but not to cache yet)
         session_messages = history_messages + [HumanMessage(content=current_input)]
         
+        request_config = config or {}
+        requested_domains = request_config.get("domains") or []
+        if not isinstance(requested_domains, list):
+            requested_domains = []
+
         # Create fresh state with message history
         return {
             "messages": session_messages,
@@ -105,6 +116,13 @@ class SessionService:
             "final_answer": "",
             "is_rag_needed": False,
             "domains": [],
+            "force_rag": bool(request_config.get("force_rag")),
+            "search_all_domains": bool(request_config.get("search_all_domains")),
+            "requested_domains": [
+                domain.strip().lower()
+                for domain in requested_domains
+                if isinstance(domain, str) and domain.strip()
+            ],
             "evaluation": "",
             "test": False,
             "include_image": False,

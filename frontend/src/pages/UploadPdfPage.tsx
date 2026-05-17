@@ -26,6 +26,7 @@ const UploadPdfPage: React.FC = () => {
 
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [displayedProgress, setDisplayedProgress] = useState(0);
 
   const activeJobStatus = useMemo(() => {
     return activeJobId ? uploadJobs[activeJobId] : null;
@@ -115,6 +116,61 @@ const UploadPdfPage: React.FC = () => {
     if (!activeJobStatus || activeJobStatus.total_pages === 0) return 0;
     return Math.min(Math.round((activeJobStatus.processed_pages / activeJobStatus.total_pages) * 100), 100);
   }, [activeJobStatus]);
+
+  useEffect(() => {
+    if (!activeJobStatus) {
+      setDisplayedProgress(0);
+      return;
+    }
+
+    if (activeJobStatus.status === 'completed') {
+      setDisplayedProgress(100);
+      return;
+    }
+
+    setDisplayedProgress(Math.min(progressPercentage, 95));
+  }, [activeJobStatus?.job_id, activeJobStatus?.status]);
+
+  useEffect(() => {
+    if (!activeJobStatus) {
+      setDisplayedProgress(0);
+      return;
+    }
+
+    if (activeJobStatus.status === 'failed') {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setDisplayedProgress((current) => {
+        if (activeJobStatus.status === 'completed') {
+          if (current >= 99.5) return 100;
+          const step = Math.max(1.2, (100 - current) * 0.12);
+          return Math.min(100, current + step);
+        }
+
+        const fallbackTarget = activeJobStatus.status === 'queued' ? 8 : 88;
+        const target = progressPercentage > 0
+          ? Math.min(progressPercentage, 95)
+          : fallbackTarget;
+
+        if (current < target) {
+          const step = Math.max(0.7, (target - current) * 0.08);
+          return Math.min(target, current + step);
+        }
+
+        if (activeJobStatus.status === 'processing' && current < 95) {
+          return Math.min(95, current + 0.12);
+        }
+
+        return current;
+      });
+    }, 220);
+
+    return () => window.clearInterval(intervalId);
+  }, [activeJobStatus, progressPercentage]);
+
+  const visibleProgressPercentage = Math.round(displayedProgress);
 
   return (
     <div className="upload-pdf-page">
@@ -264,7 +320,7 @@ const UploadPdfPage: React.FC = () => {
                       {activeJobStatus.status.toUpperCase()}
                     </div>
                     <div className="processed-counter">
-                      <span className="count">{progressPercentage}%</span>
+                      <span className="count">{visibleProgressPercentage}%</span>
                       <span className="label">PIPELINE PROGRESS</span>
                     </div>
                   </div>
@@ -274,7 +330,7 @@ const UploadPdfPage: React.FC = () => {
                       <div className="progress-bar-container">
                         <div 
                           className="progress-bar-fill" 
-                          style={{ width: `${progressPercentage}%` }}
+                          style={{ width: `${visibleProgressPercentage}%` }}
                         ></div>
                       </div>
                       <div className="progress-text">

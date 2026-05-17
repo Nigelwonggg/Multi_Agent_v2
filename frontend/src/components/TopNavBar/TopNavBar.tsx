@@ -47,12 +47,12 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) 
             <SmoothLink
               to={registryPath}
               className={`nav-link ${activeStore === 'registry' ? 'active' : ''}`}>
-              Unit Registry
+              User Registry
             </SmoothLink>
             <SmoothLink
               to={unitManagerPath}
               className={`nav-link ${activeStore === 'units' ? 'active' : ''}`}>
-              Unit Manager
+              User Manager
             </SmoothLink>
           </>
         ) : (

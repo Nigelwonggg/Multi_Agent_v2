@@ -156,7 +156,8 @@ async def chat(
         initial_state = session_service.create_session_state(
             thread_id=thread_id,
             current_input=message,
-            db=db
+            db=db,
+            config=request.config,
         )
 
         result = chat_graph.invoke(

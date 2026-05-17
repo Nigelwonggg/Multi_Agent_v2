@@ -44,9 +44,21 @@ class RouterNode(BaseNode):
         
         # Dynamically fetch available domains to include newly created ones
         available_domains = self.domain_config_manager.get_available_domains()
+        requested_domains = state.get("requested_domains", [])
+        selected_requested_domains = [
+            domain for domain in requested_domains if domain in available_domains
+        ]
         
         self.logger.info(f"🔍 Router analyzing query: '{current_input}'")
         self.logger.debug(f"📄 Available domains: {available_domains}")
+
+        if state.get("force_rag"):
+            domains = available_domains if state.get("search_all_domains") else selected_requested_domains or available_domains
+            self.logger.info(f"✅ Router using requested RAG domains: {domains}")
+            return {
+                "is_rag_needed": bool(domains),
+                "domains": domains,
+            }
         
         # Use general router configuration (not domain-specific)
         model_config = self.router_config_manager.get_model_config()
@@ -89,8 +101,13 @@ class RouterNode(BaseNode):
             
             is_rag_needed = response.is_rag_needed
 
-            # Ensure we only use domains that actually exist
-            domains = [d for d in response.domains if d in available_domains] if is_rag_needed else []
+            if not is_rag_needed:
+                domains = []
+            elif state.get("search_all_domains"):
+                domains = available_domains
+            else:
+                model_domains = [d for d in response.domains if d in available_domains]
+                domains = list(dict.fromkeys([*model_domains, *selected_requested_domains]))
 
             self.logger.info(f"✅ Router decision: is_rag_needed={is_rag_needed}, domains={domains}")
             

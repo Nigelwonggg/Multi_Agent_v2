@@ -15,6 +15,21 @@ interface PdfUploadContextType {
 const PdfUploadContext = createContext<PdfUploadContextType | undefined>(undefined);
 
 const POLL_INTERVAL_MS = 2000;
+const RAG_ENABLED_DOMAINS_KEY = 'rag_enabled_domains';
+
+const rememberRagDomain = (domain: string) => {
+  const normalizedDomain = domain.trim().toLowerCase();
+  if (!normalizedDomain) return;
+
+  try {
+    const saved = localStorage.getItem(RAG_ENABLED_DOMAINS_KEY);
+    const domains = saved ? JSON.parse(saved) : [];
+    const nextDomains = Array.from(new Set([...domains, normalizedDomain]));
+    localStorage.setItem(RAG_ENABLED_DOMAINS_KEY, JSON.stringify(nextDomains));
+  } catch {
+    localStorage.setItem(RAG_ENABLED_DOMAINS_KEY, JSON.stringify([normalizedDomain]));
+  }
+};
 
 export const PdfUploadProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [uploadJobs, setUploadJobs] = useState<Record<string, PdfUploadJobStatus>>(() => {
@@ -48,6 +63,9 @@ export const PdfUploadProvider: React.FC<{ children: ReactNode }> = ({ children 
       }));
 
       if (status.status === 'completed' || status.status === 'failed') {
+        if (status.status === 'completed') {
+          rememberRagDomain(status.domain);
+        }
         return true; // Finished
       }
       return false; // Still processing

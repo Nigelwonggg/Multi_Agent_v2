@@ -19,6 +19,14 @@ logger = get_logger("api.routes.domains")
 
 PROTECTED_DOMAINS = ["data_science", "medical"]
 
+def clear_chroma_system_cache() -> None:
+    try:
+        from chromadb.api.shared_system_client import SharedSystemClient
+        SharedSystemClient.clear_system_cache()
+        logger.info("✅ Cleared Chroma shared system cache")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not clear Chroma shared system cache: {str(e)}")
+
 def robust_rmtree(path: str, max_retries: int = 10, delay: float = 1.0):
     """Robust rmtree with retries for Windows file locking issues"""
     if not os.path.exists(path):
@@ -93,6 +101,7 @@ async def delete_domain(
         # 2. Remove from factories (clears internal cache/retrievers and closes Chroma)
         get_text_store_factory().remove_store(domain)
         get_image_store_factory().remove_store(domain)
+        clear_chroma_system_cache()
         
         # 3. Force multiple garbage collection cycles to release file handles
         for _ in range(5):
@@ -139,6 +148,7 @@ async def delete_domain(
 
         # 7. Reload config manager to reflect changes
         get_domain_config_manager().reload_config()
+        clear_chroma_system_cache()
 
         if not deleted_paths:
             logger.warning(f"⚠️ No database folders or configs found for domain '{domain}', but factory cache was cleared.")

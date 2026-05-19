@@ -1,37 +1,58 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getChats, createNewChat, deleteChat } from '../api/chatApi';
-import type { Chat } from '../api/chatApi';
+import {
+  createChatInStore,
+  deleteChatInStore,
+  getChatsSnapshot,
+  getLastActiveChatId,
+  refreshChats,
+  rememberActiveChat,
+  renameChatInStore,
+  subscribeChats,
+} from '../stores/chatStore';
 
 export const useChatLogic = () => {
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [activeChatId, setActiveChatId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [chatSnapshot, setChatSnapshot] = useState(() => getChatsSnapshot());
+  const [activeChatId, setActiveChatId] = useState<string | null>(() => getLastActiveChatId());
+  const [loading, setLoading] = useState(() => getChatsSnapshot().loading);
   const navigate = useNavigate();
   const { chatId: chatIdFromUrl } = useParams<{ chatId: string }>();
+  const { chats } = chatSnapshot;
+
+  useEffect(() => {
+    return subscribeChats(() => {
+      const nextSnapshot = getChatsSnapshot();
+      setChatSnapshot(nextSnapshot);
+      setLoading(nextSnapshot.loading);
+    });
+  }, []);
 
   useEffect(() => {
     const fetchAndSyncChats = async () => {
-      setLoading(true);
       try {
-        const fetchedChats = await getChats();
-        setChats(fetchedChats);
+        const fetchedChats = await refreshChats();
 
-        // If the URL has a valid chat ID, make it the active one.
-        if (chatIdFromUrl && fetchedChats.some(c => c.id === chatIdFromUrl)) {
-          setActiveChatId(chatIdFromUrl);
-        } 
-        // Otherwise, if there's no active chat but we have chats, default to the first one.
-        else if (fetchedChats.length > 0) {
-          const defaultChatId = fetchedChats[0].id;
-          setActiveChatId(defaultChatId);
+        const chatExists = (id: string | null | undefined): id is string =>
+          Boolean(id && fetchedChats.some(chat => chat.id === id));
+
+        const storedChatId = getLastActiveChatId();
+        const nextActiveChatId = chatExists(chatIdFromUrl)
+          ? chatIdFromUrl
+          : chatExists(storedChatId)
+            ? storedChatId
+            : fetchedChats[0]?.id ?? null;
+
+        setActiveChatId(nextActiveChatId);
+        rememberActiveChat(nextActiveChatId);
+
+        if (nextActiveChatId && chatIdFromUrl !== nextActiveChatId) {
           // Use replace to avoid cluttering browser history with the initial redirect.
-          navigate(`/chat/${defaultChatId}`, { replace: true });
+          navigate(`/chat/${nextActiveChatId}`, { replace: true });
         }
       } catch (error) {
         console.error("Failed to fetch chats:", error);
       } finally {
-        setLoading(false);
+        setLoading(getChatsSnapshot().loading);
       }
     };
     fetchAndSyncChats();
@@ -43,36 +64,65 @@ export const useChatLogic = () => {
   useEffect(() => {
     if (chatIdFromUrl) {
       setActiveChatId(chatIdFromUrl);
+      rememberActiveChat(chatIdFromUrl);
     }
   }, [chatIdFromUrl]);
 
+  useEffect(() => {
+    if (!loading && !chatIdFromUrl && activeChatId) {
+      navigate(`/chat/${activeChatId}`, { replace: true });
+    }
+  }, [activeChatId, chatIdFromUrl, loading, navigate]);
+
   const handleSelectChat = (chatId: string) => {
     setActiveChatId(chatId);
+    rememberActiveChat(chatId);
     navigate(`/chat/${chatId}`);
   };
 
-  const handleNewChat = useCallback(async () => {
-    try {
-      const newChat = await createNewChat();
-      setChats(prevChats => [newChat, ...prevChats]);
-      setActiveChatId(newChat.id);
-      navigate(`/chat/${newChat.id}`);
-    } catch (error) {
-      console.error("Failed to create new chat:", error);
-    }
+  const handleNewChat = useCallback(() => {
+    const { optimisticChat, confirmedChat } = createChatInStore();
+    setActiveChatId(optimisticChat.id);
+    rememberActiveChat(optimisticChat.id);
+    navigate(`/chat/${optimisticChat.id}`);
+
+    confirmedChat
+      .then(newChat => {
+        if (getLastActiveChatId() === optimisticChat.id) {
+          rememberActiveChat(newChat.id);
+        }
+
+        if (window.location.pathname === `/chat/${optimisticChat.id}` || window.location.pathname === '/chat') {
+          setActiveChatId(newChat.id);
+          navigate(`/chat/${newChat.id}`, { replace: true });
+        }
+      })
+      .catch(error => {
+        console.error("Failed to create new chat:", error);
+
+        if (getLastActiveChatId() !== optimisticChat.id) {
+          return;
+        }
+
+        const fallbackChatId = getChatsSnapshot().chats[0]?.id ?? null;
+        setActiveChatId(fallbackChatId);
+        rememberActiveChat(fallbackChatId);
+
+        if (window.location.pathname === `/chat/${optimisticChat.id}`) {
+          navigate(fallbackChatId ? `/chat/${fallbackChatId}` : '/chat', { replace: true });
+        }
+      });
   }, [navigate]);
 
   const handleDeleteChat = useCallback(async (chatId: string) => {
-    const previousChats = chats;
     const previousActiveId = activeChatId;
-
-    // Optimistically update UI
     const newChats = chats.filter(chat => chat.id !== chatId);
-    setChats(newChats);
 
+    // Optimistically update the selected chat while the store removes it from the sidebar.
     if (activeChatId === chatId) {
       const newActiveId = newChats.length > 0 ? newChats[0].id : null;
       setActiveChatId(newActiveId);
+      rememberActiveChat(newActiveId);
       if (newActiveId) {
         navigate(`/chat/${newActiveId}`);
       } else {
@@ -81,12 +131,12 @@ export const useChatLogic = () => {
     }
 
     try {
-      await deleteChat(chatId);
+      await deleteChatInStore(chatId);
     } catch (error) {
       console.error("Failed to delete chat:", error);
-      // Revert UI on failure
-      setChats(previousChats);
+      // Revert selected chat on failure. The store restores the sidebar list.
       setActiveChatId(previousActiveId);
+      rememberActiveChat(previousActiveId);
       if (previousActiveId) {
         navigate(`/chat/${previousActiveId}`);
       } else {
@@ -95,6 +145,10 @@ export const useChatLogic = () => {
     }
   }, [activeChatId, chats, navigate]);
 
+  const handleRenameChat = useCallback(async (chatId: string, title: string) => {
+    await renameChatInStore(chatId, title);
+  }, []);
+
   return {
     chats,
     activeChatId,
@@ -102,5 +156,6 @@ export const useChatLogic = () => {
     handleSelectChat,
     handleNewChat,
     handleDeleteChat,
+    handleRenameChat,
   };
 };

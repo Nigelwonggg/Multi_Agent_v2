@@ -55,5 +55,4 @@ def get_openai_service() -> OpenAIService:
     global _openai_instance
     if _openai_instance is None:
         _openai_instance = OpenAIService()
-        _openai_instance.initialize()
     return _openai_instance

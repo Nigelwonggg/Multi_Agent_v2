@@ -1,5 +1,6 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import SmoothLink from '../SmoothLink/SmoothLink';
 import './TopNavBar.css';
 
 interface TopNavBarProps {
@@ -9,10 +10,20 @@ interface TopNavBarProps {
 const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  const activeStore = location.pathname.includes('/image-store') || params.get('tab') === 'image' ? 'image' : 'text';
+  const isSettingsPage =
+    location.pathname.includes('/id-registry') || location.pathname.includes('/unit-manager');
+  const activeStore = location.pathname.includes('/id-registry')
+    ? 'registry'
+    : location.pathname.includes('/unit-manager')
+      ? 'units'
+    : location.pathname.includes('/image-store') || params.get('tab') === 'image'
+      ? 'image'
+      : 'text';
 
   let textStorePath: string;
   let imageStorePath: string;
+  const registryPath = `${basePath}/id-registry`;
+  const unitManagerPath = `${basePath}/unit-manager`;
 
   if (basePath === '/retrieved-content') {
     const textParams = new URLSearchParams(location.search);
@@ -29,18 +40,35 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ basePath = '/vector-database' }) 
 
   return (
     <nav className="top-nav-bar">
-      <div className="logo">Vector DB</div>
+      <div className="logo">{isSettingsPage ? 'Settings' : 'Vector DB'}</div>
       <div className="nav-links">
-        <Link
-          to={textStorePath}
-          className={`nav-link ${activeStore === 'text' ? 'active' : ''}`}>
-          Text Store
-        </Link>
-        <Link
-          to={imageStorePath}
-          className={`nav-link ${activeStore === 'image' ? 'active' : ''}`}>
-          Image Store
-        </Link>
+        {isSettingsPage ? (
+          <>
+            <SmoothLink
+              to={registryPath}
+              className={`nav-link ${activeStore === 'registry' ? 'active' : ''}`}>
+              Unit Registry
+            </SmoothLink>
+            <SmoothLink
+              to={unitManagerPath}
+              className={`nav-link ${activeStore === 'units' ? 'active' : ''}`}>
+              Unit Manager
+            </SmoothLink>
+          </>
+        ) : (
+          <>
+            <SmoothLink
+              to={textStorePath}
+              className={`nav-link ${activeStore === 'text' ? 'active' : ''}`}>
+              Text Store
+            </SmoothLink>
+            <SmoothLink
+              to={imageStorePath}
+              className={`nav-link ${activeStore === 'image' ? 'active' : ''}`}>
+              Image Store
+            </SmoothLink>
+          </>
+        )}
       </div>
     </nav>
   );

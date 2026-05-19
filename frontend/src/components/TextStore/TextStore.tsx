@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { getTextDocuments, deleteTextDocument, getAvailableDomains } from "../../api/textStoreApi";
+import { getTextDocuments, deleteTextDocument, getAvailableDomains, deleteDomain } from "../../api/textStoreApi";
 import type { TextDocument } from "../../api/textStoreApi";
 import MarkdownRenderer from "../MarkdownRenderer/MarkdownRenderer";
 import FilterBar from "../FilterBar/FilterBar";
 import Pagination from "../Pagination/Pagination";
-import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
+import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
+import { FiPlus, FiEdit, FiTrash2, FiAlertTriangle } from 'react-icons/fi';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import "./TextStore.css";
+
+const PROTECTED_DOMAINS = ["data_science", "medical"];
 
 const TextStore: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -24,6 +27,10 @@ const TextStore: React.FC = () => {
   });
   const [selectedDomain, setSelectedDomain] = useState(domainFromQuery);
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteCandidate, setDeleteCandidate] = useState<TextDocument | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const pageSize = 10;
   const navigate = useNavigate();
 
@@ -42,6 +49,8 @@ const TextStore: React.FC = () => {
       setTotalPages(Math.ceil(response.total / pageSize));
     } catch (error) {
       console.error("Failed to fetch documents:", error);
+      setDocuments([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -62,14 +71,16 @@ const TextStore: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!domainFromQuery) {
-      return;
-    }
-
     // Sync only when URL query value itself changes.
-    setSelectedDomain(domainFromQuery);
-    setCurrentPage(1);
-    setFilters({ category: "", filename: "" });
+    setSelectedDomain((previousDomain) => {
+      if (previousDomain === domainFromQuery) {
+        return previousDomain;
+      }
+
+      setCurrentPage(1);
+      setFilters({ category: "", filename: "" });
+      return domainFromQuery;
+    });
   }, [domainFromQuery]);
 
   const handleFilterChange = useCallback((newFilters: {
@@ -80,24 +91,50 @@ const TextStore: React.FC = () => {
     setFilters(newFilters);
   }, []);
 
-  const handleDelete = async (docId: string) => {
-    if (window.confirm("Are you sure you want to delete this document?")) {
-      try {
-        await deleteTextDocument(docId, selectedDomain);
-        // Refetch documents after deletion
-        const response = await getTextDocuments(
-          currentPage,
-          pageSize,
-          filters.category || null,
-          filters.filename || null,
-          null,
-          selectedDomain
-        );
-        setDocuments(response.documents);
-        setTotalPages(Math.ceil(response.total / pageSize));
-      } catch (error) {
-        console.error("Failed to delete document:", error);
-      }
+  const handleDeleteRequest = (doc: TextDocument) => {
+    setDeleteCandidate(doc);
+    setDeleteError(null);
+  };
+
+  const handleDeleteCancel = () => {
+    if (deleting) return;
+    setDeleteCandidate(null);
+    setDeleteError(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteCandidate?.doc_id) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteTextDocument(deleteCandidate.doc_id, selectedDomain);
+      setDeleteCandidate(null);
+      await fetchDocuments();
+    } catch (error) {
+      console.error("Failed to delete document:", error);
+      setDeleteError("Failed to delete this document. Please try again.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteDomainConfirm = async () => {
+    try {
+      await deleteDomain(selectedDomain);
+      setIsDeleteModalOpen(false);
+      
+      // Refresh available domains and switch to data_science
+      const updatedDomains = await getAvailableDomains();
+      setAvailableDomains(updatedDomains);
+      
+      const nextDomain = updatedDomains.includes('data_science') ? 'data_science' : updatedDomains[0];
+      setSelectedDomain(nextDomain);
+      navigate(`/vector-database/text-store?domain=${encodeURIComponent(nextDomain)}`);
+    } catch (error) {
+      console.error("Failed to delete domain:", error);
+      setIsDeleteModalOpen(false);
+      alert(error instanceof Error ? error.message : "Failed to delete domain");
     }
   };
 
@@ -171,6 +208,39 @@ const TextStore: React.FC = () => {
         <span style={{ fontSize: '12px', color: '#666' }}>
           Showing documents from the selected domain
         </span>
+
+        {!PROTECTED_DOMAINS.includes(selectedDomain) && (
+          <button 
+            className="delete-domain-btn"
+            onClick={() => setIsDeleteModalOpen(true)}
+            style={{
+              marginLeft: 'auto',
+              padding: '8px 16px',
+              backgroundColor: 'rgba(211, 47, 47, 0.1)',
+              color: '#ef5350',
+              border: '1px solid rgba(211, 47, 47, 0.3)',
+              borderRadius: '4px',
+              fontSize: '13px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(211, 47, 47, 0.2)';
+              e.currentTarget.style.borderColor = 'rgba(211, 47, 47, 0.5)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(211, 47, 47, 0.1)';
+              e.currentTarget.style.borderColor = 'rgba(211, 47, 47, 0.3)';
+            }}
+          >
+            <FiAlertTriangle />
+            <span>Delete Domain</span>
+          </button>
+        )}
       </div>
 
       <FilterBar 
@@ -213,17 +283,19 @@ const TextStore: React.FC = () => {
                   <td>
                     <div className="action-buttons">
                       <button className="action-btn edit-btn" title="Edit" onClick={() => {
+                        if (!doc.doc_id) return;
                         sessionStorage.setItem('currentPage', currentPage.toString());
                         sessionStorage.setItem('filters', JSON.stringify(filters));
                         navigate(`/vector-database/text-store/edit/${doc.doc_id}?domain=${encodeURIComponent(selectedDomain)}`);
-                      }}>
+                      }} disabled={!doc.doc_id}>
                         <FiEdit />
                         <span>Edit</span>
                       </button>
                       <button
                         className="action-btn delete-btn"
                         title="Delete"
-                        onClick={() => handleDelete(doc.doc_id || '')}
+                        onClick={() => handleDeleteRequest(doc)}
+                        disabled={!doc.doc_id}
                       >
                         <FiTrash2 />
                         <span>Delete</span>
@@ -241,6 +313,45 @@ const TextStore: React.FC = () => {
             onPageChange={setCurrentPage}
           />
         </>
+      )}
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        title="Delete Entire Domain?"
+        message={`WARNING: Are you sure you want to delete the domain "${selectedDomain.replace('_', ' ').toUpperCase()}"? This will permanently remove ALL associated documents and assets. This action is irreversible.`}
+        confirmLabel="Permanently Delete"
+        onConfirm={handleDeleteDomainConfirm}
+        onCancel={() => setIsDeleteModalOpen(false)}
+        isDestructive={true}
+      />
+
+      {deleteCandidate && (
+        <div className="store-delete-modal-backdrop" role="presentation" onClick={handleDeleteCancel}>
+          <div
+            className="store-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="text-delete-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="store-delete-modal-icon">
+              <FiTrash2 />
+            </div>
+            <h2 id="text-delete-title">Delete text?</h2>
+            <p>
+              This will remove <strong>{deleteCandidate.filename || deleteCandidate.doc_id}</strong> from the {selectedDomain.replace('_', ' ')} text store.
+            </p>
+            {deleteError && <div className="store-delete-modal-error">{deleteError}</div>}
+            <div className="store-delete-modal-actions">
+              <button type="button" className="store-modal-cancel" onClick={handleDeleteCancel} disabled={deleting}>
+                Cancel
+              </button>
+              <button type="button" className="store-modal-delete" onClick={handleDeleteConfirm} disabled={deleting}>
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -9,12 +9,14 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
     try {
-      const response = await fetch('http://localhost:8000/auth/login', {
+      const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -25,7 +27,7 @@ const LoginPage: React.FC = () => {
         localStorage.setItem('token', data.access_token);
         
         // Fetch user details
-        const userRes = await fetch('http://localhost:8000/auth/me', {
+        const userRes = await fetch(`${API_BASE}/auth/me`, {
           headers: { 'Authorization': `Bearer ${data.access_token}` },
         });
         

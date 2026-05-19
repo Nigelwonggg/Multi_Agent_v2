@@ -1,9 +1,12 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './pages/Layout';
 import ChatPage from './pages/ChatPage';
 import DummyPage from './pages/DummyPage';
 import ChatWindow from './components/ChatWindow/ChatWindow';
 import HomePage from './pages/HomePage';
+import QuizPage from './pages/QuizPage';
+import QuizCreationPage from './pages/QuizCreationPage';
 
 import EditDocumentPage from './pages/EditDocumentPage';
 import AddDocumentPage from './pages/AddDocumentPage';
@@ -16,6 +19,18 @@ import DatabaseLayout from './pages/DatabaseLayout';
 import RetrievedContentPage from './pages/RetrievedContentPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import QuizEditPage from './pages/QuizEditPage';
+import QuizEditDetailsPage from './pages/QuizEditDetailsPage';
+import QuizListPage from './pages/QuizListPage';
+import QuizTakePage from './pages/QuizTakePage';
+import QuizResultsPage from './pages/QuizResultsPage';
+import QuizAttemptReviewPage from './pages/QuizAttemptReviewPage';
+import ChatProgressToast from './components/ChatProgressToast/ChatProgressToast';
+import QuizGenerationToast from './components/QuizGenerationToast/QuizGenerationToast';
+import IdentityRegistryPage from './pages/IdentityRegistryPage';
+import UnitManagerPage from './pages/UnitManagerPage';
+import QuickQuizPage from './pages/QuickQuizPage';
+
 
 // Simple component to protect routes
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
@@ -34,20 +49,106 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
   return <>{children}</>;
 };
 
+import { PdfUploadProvider } from './contexts/PdfUploadContext';
+import { QuizGenerationProvider } from './contexts/QuizGenerationContext';
+import UploadStatusBar from './components/global/UploadStatusBar';
+import { useSessionTimeout } from './hooks/useSessionTimeout';
+
 function App() {
+  const location = useLocation();
+  useSessionTimeout();
+
+  useEffect(() => {
+    const className = 'page-elements-entering';
+    document.body.classList.remove(className);
+    void document.body.offsetWidth;
+    document.body.classList.add(className);
+
+    const timeoutId = window.setTimeout(() => {
+      document.body.classList.remove(className);
+    }, 1200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [location.pathname, location.search]);
+
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-      <Route path="/upload-pdf" element={
-        <ProtectedRoute allowedRoles={['lecturer']}>
-          <UploadPdfPage />
-        </ProtectedRoute>
-      } />
+    <PdfUploadProvider>
+      <QuizGenerationProvider>
+        <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/upload-pdf" element={
+          <ProtectedRoute allowedRoles={['lecturer']}>
+            <UploadPdfPage />
+          </ProtectedRoute>
+        } />
 
       <Route path="/vector-database/upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
       <Route path="/vector-database/text-store/upload" element={<Navigate to="/upload-pdf" replace />} />
+      <Route path="/quiz" element={<QuizPage />} />
+      <Route path="/quiz/create" element={<QuizCreationPage />} />
+      <Route path="/quiz/quick" element={<QuickQuizPage />} />
+      <Route path="/quiz/edit" element={<QuizEditPage />} />
+      <Route path="/quiz/edit/:id" element={<QuizEditDetailsPage />} />
+      <Route path="/quiz/results/:id" element={
+        <ProtectedRoute allowedRoles={['lecturer']}>
+          <QuizResultsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/quiz/results/:id/attempt/:attemptId" element={
+        <ProtectedRoute allowedRoles={['lecturer']}>
+          <QuizAttemptReviewPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/quiz/review/:id" element={
+        <ProtectedRoute allowedRoles={['student']}>
+          <QuizAttemptReviewPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/quiz/list" element={<QuizListPage />} />
+      <Route path="/quiz/take/:id" element={<QuizTakePage />} />
+        <Route path="/vector-database/upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
+        <Route path="/vector-database/text-store/upload" element={<Navigate to="/upload-pdf" replace />} />
+        <Route path="/quiz" element={<QuizPage />} />
+        <Route path="/quiz/create" element={<QuizCreationPage />} />
+        <Route path="/quiz/edit" element={<QuizEditPage />} />
+      
+        
+        <Route path="/chat" element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<ChatWindow chatId={null} />} />
+          <Route path=":chatId" element={<ChatPage />} />
+          <Route path="dummy" element={<DummyPage />} />
+        </Route>
+      <Route path="/vector-database/upload-pdf" element={<Navigate to="/upload-pdf" replace />} />
+      <Route path="/vector-database/text-store/upload" element={<Navigate to="/upload-pdf" replace />} />
+      <Route path="/quiz" element={<QuizPage />} />
+      <Route path="/quiz/create" element={<QuizCreationPage />} />
+      <Route path="/quiz/quick" element={<QuickQuizPage />} />
+      <Route path="/quiz/edit" element={<QuizEditPage />} />
+      <Route path="/quiz/edit/:id" element={<QuizEditDetailsPage />} />
+      <Route path="/quiz/results/:id" element={
+        <ProtectedRoute allowedRoles={['lecturer']}>
+          <QuizResultsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/quiz/results/:id/attempt/:attemptId" element={
+        <ProtectedRoute allowedRoles={['lecturer']}>
+          <QuizAttemptReviewPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/quiz/review/:id" element={
+        <ProtectedRoute allowedRoles={['student']}>
+          <QuizAttemptReviewPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/quiz/list" element={<QuizListPage />} />
+      <Route path="/quiz/take/:id" element={<QuizTakePage />} />
+    
       
       <Route path="/chat" element={
         <ProtectedRoute>
@@ -59,28 +160,37 @@ function App() {
         <Route path="dummy" element={<DummyPage />} />
       </Route>
 
-      <Route path="/vector-database" element={
-        <ProtectedRoute allowedRoles={['lecturer']}>
-          <DatabaseLayout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="text-store" />} />
-        <Route path="text-store" element={<TextStore />} />
-        <Route path="text-store/add" element={<AddDocumentPage />} />
-        <Route path="text-store/edit/:docId" element={<EditDocumentPage />} />
-        <Route path="image-store" element={<ImageStore />} />
-        <Route path="image-store/add" element={<AddImagePage />} />
-        <Route path="image-store/edit/:docId" element={<EditImagePage />} />
-      </Route>
+        <Route path="/vector-database" element={
+          <ProtectedRoute allowedRoles={['lecturer']}>
+            <DatabaseLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="text-store" />} />
+          <Route path="text-store" element={<TextStore />} />
+          <Route path="text-store/add" element={<AddDocumentPage />} />
+          <Route path="text-store/edit/:docId" element={<EditDocumentPage />} />
+          <Route path="image-store" element={<ImageStore />} />
+          <Route path="image-store/add" element={<AddImagePage />} />
+          <Route path="image-store/edit/:docId" element={<EditImagePage />} />
+          <Route path="id-registry" element={<IdentityRegistryPage />} />
+          <Route path="unit-manager" element={<UnitManagerPage />} />
+        </Route>
 
-      <Route path="/retrieved-content" element={
-        <ProtectedRoute>
-          <RetrievedContentPage />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+        <Route path="/retrieved-content" element={
+          <ProtectedRoute>
+            <RetrievedContentPage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+        <div className="progress-toast-stack" aria-live="polite">
+          <ChatProgressToast />
+          <QuizGenerationToast />
+        </div>
+        <UploadStatusBar />
+      </QuizGenerationProvider>
+    </PdfUploadProvider>
   );
 }
 

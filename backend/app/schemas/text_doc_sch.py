@@ -61,7 +61,7 @@ class DocumentsByDomainRequest(BaseModel):
 
 class PdfUploadResponse(BaseModel):
     job_id: str
-    status: Literal["queued", "processing", "completed", "failed"]
+    status: Literal["queued", "processing", "completed", "failed", "cancelled"]
     message: str
 
 
@@ -70,8 +70,9 @@ class PdfUploadJobResponse(BaseModel):
     filename: str
     domain: str
     category: str
-    status: Literal["queued", "processing", "completed", "failed"]
+    status: Literal["queued", "processing", "completed", "failed", "cancelled"]
     processed_pages: int
+    total_pages: int = 0
     created_documents: int
     created_images: int = 0
     error: Optional[str] = None

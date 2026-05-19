@@ -1,3 +1,9 @@
+import sys
+import os
+
+# Add the current directory to sys.path so we can import 'app'
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from sqlalchemy.orm import Session
 from app.databases.chat_database import engine, SessionLocal, Base
 from app.models.user_model import User
@@ -10,12 +16,15 @@ def create_manual_user():
     db = SessionLocal()
     try:
         email = "admin@test.com"
-        role = "lecturer" # Defined role variable
+        role = "lecturer"
         
         # Check if user exists
         user = db.query(User).filter(User.email == email).first()
         if user:
-            print(f"User {email} already exists!")
+            print(f"User {email} already exists! Updating password...")
+            user.hashed_password = get_password_hash("password123")
+            db.commit()
+            print("✅ Password updated to new format.")
             return
 
         new_user = User(
@@ -33,6 +42,7 @@ def create_manual_user():
         print(f"Password: password123")
     except Exception as e:
         print(f"Error: {e}")
+        db.rollback()
     finally:
         db.close()
 

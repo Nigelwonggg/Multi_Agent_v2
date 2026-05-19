@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import SmoothLink from "../SmoothLink/SmoothLink";
 import "./Footer.css";
 
 const Footer: React.FC = () => {
@@ -18,9 +18,9 @@ const Footer: React.FC = () => {
     { 
       group: "Account", 
       items: [
-        { label: "Login", to: "#login" },
-        { label: "Sign Up", to: "#signup" },
-        { label: "Settings", to: "#settings" }
+        { label: "Login", to: "/login" },
+        { label: "Sign Up", to: "/signup" },
+        { label: "Settings", to: "/vector-database/id-registry" }
       ] 
     },
   ];
@@ -50,15 +50,9 @@ const Footer: React.FC = () => {
               <ul className="footer__group-list">
                 {group.items.map((item) => (
                   <li key={item.label}>
-                    {item.to.startsWith("#") ? (
-                      <a href={item.to} className="footer__link">
-                        {item.label}
-                      </a>
-                    ) : (
-                      <Link to={item.to} className="footer__link">
-                        {item.label}
-                      </Link>
-                    )}
+                    <SmoothLink to={item.to} className="footer__link">
+                      {item.label}
+                    </SmoothLink>
                   </li>
                 ))}
               </ul>

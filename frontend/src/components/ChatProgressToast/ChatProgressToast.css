@@ -1,0 +1,160 @@
+.chat-progress-toast {
+  width: min(340px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent, #d4af37) 28%, transparent);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
+    color-mix(in srgb, var(--bg-card, #0a0a0a) 94%, transparent);
+  box-shadow:
+    0 16px 42px rgba(0, 0, 0, 0.45),
+    0 0 22px color-mix(in srgb, var(--accent, #d4af37) 18%, transparent);
+  color: var(--text, #ffffff);
+  cursor: pointer;
+  outline: none;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: chat-progress-enter 180ms ease-out;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.chat-progress-toast:hover,
+.chat-progress-toast:focus-visible {
+  border-color: color-mix(in srgb, var(--accent2, #ffd700) 48%, transparent);
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.5),
+    0 0 28px color-mix(in srgb, var(--accent, #d4af37) 26%, transparent);
+  transform: translateY(-1px);
+}
+
+.chat-progress-toast.is-done {
+  border-color: color-mix(in srgb, var(--accent2, #ffd700) 60%, transparent);
+}
+
+.chat-progress-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chat-progress-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 10px;
+}
+
+.chat-progress-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent, #d4af37) 16%, transparent);
+  color: var(--accent, #d4af37);
+  box-shadow: 0 0 14px var(--accent-glow, rgba(212, 175, 55, 0.2));
+}
+
+.chat-progress-icon svg {
+  display: block;
+  width: 27px;
+  height: 27px;
+}
+
+.chat-progress-toast.is-done .chat-progress-icon {
+  background: color-mix(in srgb, var(--accent2, #ffd700) 20%, transparent);
+  color: var(--accent2, #ffd700);
+}
+
+.chat-progress-title p {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.chat-progress-title > div > span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted, #a0a0a0);
+  font-size: 0.78rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.chat-progress-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border: 1px solid color-mix(in srgb, var(--accent, #d4af37) 22%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg-card2, #121212) 88%, transparent);
+  color: var(--accent, #d4af37);
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.chat-progress-toast:hover .chat-progress-open,
+.chat-progress-toast:focus-visible .chat-progress-open,
+.chat-progress-toast.is-done .chat-progress-open {
+  border-color: color-mix(in srgb, var(--accent2, #ffd700) 46%, transparent);
+  background: color-mix(in srgb, var(--accent, #d4af37) 12%, var(--bg-card2, #121212));
+  color: var(--accent2, #ffd700);
+}
+
+.chat-progress-prompt {
+  margin-top: 10px;
+  color: var(--text-dim, #808080);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.chat-progress-track {
+  position: relative;
+  height: 7px;
+  margin-top: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-card2, #121212) 72%, var(--accent, #d4af37));
+}
+
+.chat-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent, #d4af37), var(--accent2, #ffd700));
+  box-shadow: 0 0 14px var(--accent-glow, rgba(212, 175, 55, 0.2));
+  transition: width 420ms ease;
+}
+
+.chat-progress-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--text-muted, #a0a0a0);
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+
+@keyframes chat-progress-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .chat-progress-toast {
+    width: 100%;
+  }
+}

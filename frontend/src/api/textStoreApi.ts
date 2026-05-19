@@ -9,6 +9,21 @@ export const getAvailableDomains = async (): Promise<string[]> => {
   return await response.json();
 };
 
+export const deleteDomain = async (domain: string): Promise<void> => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_BASE}/api/domains/${encodeURIComponent(domain)}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Failed to delete domain');
+  }
+};
+
 export interface TextDocument {
   id: number;
   doc_id?: string; // Made optional
@@ -37,6 +52,7 @@ export interface PdfUploadJobStatus {
   category: string;
   status: 'queued' | 'processing' | 'completed' | 'failed';
   processed_pages: number;
+  total_pages: number;
   created_documents: number;
   created_images?: number;
   error?: string | null;
@@ -237,7 +253,9 @@ export const getPdfUploadJobStatus = async (
 ): Promise<PdfUploadJobStatus> => {
   const response = await fetch(`${API_BASE}/api/text-store/upload-jobs/${encodeURIComponent(jobId)}`);
   if (!response.ok) {
-    throw new Error('Failed to fetch upload job status');
+    const error = new Error('Failed to fetch upload job status') as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
   return await response.json();
 };

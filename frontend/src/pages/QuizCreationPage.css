@@ -1,0 +1,602 @@
+.qc-dashboard {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1a0f0f, #000);
+  display: flex;
+  flex-direction: column;
+}
+
+/* PAGE TITLE */
+.qc-title {
+  text-align: center;
+  font-size: 40px;
+  font-weight: bold;
+  margin: 100px 0 20px 0;
+  color: white;
+}
+
+.qc-subtitle {
+  text-align: center;
+  color: #aaa;
+  margin-top: -10px;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+textarea.quiz-input {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* MAIN CONTAINER */
+.qc-create-container {
+  width: 60%;
+  margin: auto;
+  padding-bottom: 40px;
+}
+
+/* CARD STYLE (Google Forms block) */
+.qc-card {
+  background: rgb(28, 28, 28);
+  padding: 20px;
+  border-radius: 10px;
+  margin: 40px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: 0.2s ease;
+}
+
+.qc-card:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.qc-card-warning {
+  border: 1px solid #ff8a4c;
+  box-shadow: 0 0 0 3px rgba(255, 138, 76, 0.18);
+}
+
+.result-correct {
+  border: 1px solid #4bb543;
+}
+
+.result-wrong {
+  border: 1px solid #ff4d4f;
+}
+
+/* INPUT STYLE */
+.qc-input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.2s ease;
+}
+
+.qc-input:focus {
+  border-color: #1a73e8;
+}
+
+.qc-input-warning {
+  border-color: #ff8a4c;
+  box-shadow: 0 0 0 3px rgba(255, 138, 76, 0.18);
+}
+
+/* QUESTION HEADER */
+.qc-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ACTIONS ROW */
+.qc-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* SELECT DROPDOWN */
+.qc-actions select {
+  padding: 5px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+/* DELETE BUTTON */
+.qc-delete-btn {
+  background: #ff4d4f;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.qc-delete-btn:hover {
+  background: #d9363e;
+}
+
+/* OPTIONS AREA */
+.qc-options {
+  margin-top: 10px;
+}
+
+/* OPTION ROW */
+.qc-option-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* RADIO BUTTON */
+.qc-option-row input[type="radio"] {
+  transform: scale(1.1);
+}
+
+/* SHORT ANSWER TEXT */
+.qc-short-note {
+  font-size: 13px;
+  color: #777;
+  margin-top: 10px;
+}
+
+.qc-inline-warning {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 138, 76, 0.12);
+  border: 1px solid rgba(255, 138, 76, 0.45);
+  color: #ffbc99;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* BOTTOM ACTIONS */
+.qc-actions-bottom {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+/* ADD BUTTON */
+.qc-actions-bottom button {
+  background-color: #fbbc05;
+  color: black;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.qc-actions-bottom button:hover {
+  background-color: #e6aa00;
+}
+
+/* AI GENERATION SECTION */
+.ai-gen-card {
+  border: 1px solid #fbbc05;
+  background: rgba(251, 188, 5, 0.05);
+}
+
+.ai-gen-card h2 {
+  color: #fbbc05;
+  margin-bottom: 5px;
+}
+
+.qc-ai-row {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.qc-ai-btn {
+  background-color: #fbbc05;
+  color: black;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.qc-ai-btn:hover:not(:disabled) {
+  background-color: #e6aa00;
+  transform: translateY(-1px);
+}
+
+.qc-ai-btn:disabled {
+  background-color: #555;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* SAVE BUTTON */
+.qc-save-btn {
+  background-color: #fbbc05;
+  color: black;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.qc-save-btn:hover {
+  background-color: #e6aa00;
+}
+
+.qc-save-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.qc-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.qc-popup {
+  width: min(100%, 460px);
+  padding: 32px 28px;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(37, 24, 10, 0.98), rgba(20, 20, 20, 0.98));
+  border: 1px solid rgba(251, 188, 5, 0.22);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.qc-popup-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(251, 188, 5, 0.16);
+  color: #fbbc05;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.qc-popup h2 {
+  margin: 0 0 10px;
+  color: #fff;
+  font-size: 1.5rem;
+}
+
+.qc-popup p {
+  margin: 0;
+  color: #cfcfcf;
+  line-height: 1.6;
+}
+
+.qc-popup-btn {
+  margin-top: 24px;
+  min-width: 180px;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #fbbc05, #ffd75e);
+  color: #111;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 12px 28px rgba(251, 188, 5, 0.28);
+}
+
+.qc-popup-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(251, 188, 5, 0.34);
+}
+
+.qc-popup-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.qc-popup-secondary-btn {
+  min-width: 160px;
+  border: 1px solid rgba(251, 188, 5, 0.28);
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f3f4f6;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.qc-popup-secondary-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(251, 188, 5, 0.55);
+}
+
+.qc-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.qc-radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #f3f4f6;
+  font-weight: 600;
+}
+
+.qc-radio-option input {
+  accent-color: #fbbc05;
+}
+
+.qc-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.qc-card-draft {
+  border-color: rgba(251, 188, 5, 0.24);
+  background:
+    linear-gradient(180deg, rgba(251, 188, 5, 0.08), rgba(20, 20, 20, 0.95));
+}
+
+.qc-card-success {
+  border-color: rgba(74, 222, 128, 0.24);
+  background:
+    linear-gradient(180deg, rgba(74, 222, 128, 0.08), rgba(20, 20, 20, 0.95));
+}
+
+.qc-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.qc-status-pill {
+  flex-shrink: 0;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.qc-status-pill-draft {
+  background: rgba(251, 188, 5, 0.14);
+  color: #fcd34d;
+  border: 1px solid rgba(251, 188, 5, 0.3);
+}
+
+.qc-status-pill-active {
+  background: rgba(74, 222, 128, 0.16);
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.qc-activate-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 13px 22px;
+  background: linear-gradient(135deg, #15803d, #22c55e);
+  color: #f8fafc;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(21, 128, 61, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.qc-activate-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(21, 128, 61, 0.34);
+}
+
+.qc-activate-btn:disabled,
+.qc-popup-secondary-btn:disabled,
+.qc-popup-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 900px) {
+  .qc-create-container {
+    width: min(92%, 720px);
+  }
+
+  .qc-card-header {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .qc-ai-row,
+  .qc-actions-bottom,
+  .qc-status-row {
+    flex-direction: column;
+  }
+
+  .qc-actions,
+  .qc-actions-bottom button,
+  .qc-ai-btn {
+    width: 100%;
+  }
+}
+
+:root[data-theme="light"] .qc-dashboard {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 34vw),
+    radial-gradient(circle at top right, rgba(139, 92, 246, 0.1), transparent 30vw),
+    var(--bg);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qc-title {
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qc-subtitle {
+  color: var(--text-muted);
+}
+
+:root[data-theme="light"] .qc-create-container {
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qc-card {
+  background: #ffffff;
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.08);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qc-card h2,
+:root[data-theme="light"] .qc-card h3 {
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qc-card label {
+  color: var(--accent) !important;
+}
+
+:root[data-theme="light"] .qc-back-btn {
+  background: rgba(37, 99, 235, 0.08) !important;
+  border-color: rgba(37, 99, 235, 0.28) !important;
+  color: var(--accent) !important;
+}
+
+:root[data-theme="light"] .qc-back-btn:hover {
+  background: rgba(37, 99, 235, 0.14) !important;
+}
+
+:root[data-theme="light"] .qc-input,
+:root[data-theme="light"] .qc-actions select {
+  border-color: rgba(37, 99, 235, 0.18);
+  background: #f8fbff;
+  color: #111827;
+}
+
+:root[data-theme="light"] .qc-input:disabled,
+:root[data-theme="light"] .qc-actions select:disabled {
+  background: #eef4ff;
+  color: #64748b;
+  opacity: 1;
+}
+
+:root[data-theme="light"] .qc-input::placeholder {
+  color: #94a3b8;
+}
+
+:root[data-theme="light"] .qc-input-warning {
+  border-color: rgba(234, 88, 12, 0.72);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16);
+}
+
+:root[data-theme="light"] .qc-short-note {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .qc-inline-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #9a3412;
+}
+
+:root[data-theme="light"] .ai-gen-card {
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08), #ffffff);
+  border-color: rgba(37, 99, 235, 0.18);
+}
+
+:root[data-theme="light"] .ai-gen-card h2 {
+  color: var(--accent);
+}
+
+:root[data-theme="light"] .qc-ai-btn,
+:root[data-theme="light"] .qc-save-btn,
+:root[data-theme="light"] .qc-actions-bottom button,
+:root[data-theme="light"] .qc-add-option-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.18);
+}
+
+:root[data-theme="light"] .qc-ai-btn:hover:not(:disabled),
+:root[data-theme="light"] .qc-save-btn:hover:not(:disabled),
+:root[data-theme="light"] .qc-actions-bottom button:hover:not(:disabled),
+:root[data-theme="light"] .qc-add-option-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1d4ed8, #7c3aed) !important;
+}
+
+:root[data-theme="light"] .qc-ai-btn:disabled,
+:root[data-theme="light"] .qc-save-btn:disabled,
+:root[data-theme="light"] .qc-actions-bottom button:disabled,
+:root[data-theme="light"] .qc-add-option-btn:disabled {
+  background: #dbeafe !important;
+  color: #64748b !important;
+  box-shadow: none;
+}
+
+:root[data-theme="light"] .qc-popup {
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+  border-color: rgba(37, 99, 235, 0.16);
+}
+
+:root[data-theme="light"] .qc-popup h2 {
+  color: #111827;
+}
+
+:root[data-theme="light"] .qc-popup p {
+  color: #475569;
+}
+
+:root[data-theme="light"] .qc-popup-secondary-btn {
+  background: #eef4ff;
+  border-color: rgba(37, 99, 235, 0.16);
+  color: #1e293b;
+}
+
+:root[data-theme="light"] .qc-radio-option {
+  color: #1f2937;
+}
+
+:root[data-theme="light"] .qc-card-draft {
+  border-color: rgba(245, 158, 11, 0.22);
+  background: linear-gradient(180deg, rgba(254, 243, 199, 0.9), #ffffff);
+}
+
+:root[data-theme="light"] .qc-card-success {
+  border-color: rgba(34, 197, 94, 0.2);
+  background: linear-gradient(180deg, rgba(220, 252, 231, 0.95), #ffffff);
+}
+
+:root[data-theme="light"] .qc-status-pill-draft {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.22);
+}
+
+:root[data-theme="light"] .qc-status-pill-active {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  border-color: rgba(34, 197, 94, 0.22);
+}

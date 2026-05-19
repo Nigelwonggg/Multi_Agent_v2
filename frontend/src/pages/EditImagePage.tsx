@@ -1,16 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { FiArrowLeft, FiSave, FiUpload, FiX } from 'react-icons/fi';
 import { getImageDocument, updateImageDocument } from '../api/imageStoreApi';
 import type { ImageDocument } from '../api/imageStoreApi';
 import './EditImagePage.css';
 
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1] || '');
+    };
+
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+};
+
+const getImageSrc = (imageBase64?: string | null) => {
+  if (!imageBase64) {
+    return null;
+  }
+
+  return imageBase64.startsWith('data:')
+    ? imageBase64
+    : `data:image/jpeg;base64,${imageBase64}`;
+};
+
 const EditImagePage: React.FC = () => {
   const { docId } = useParams<{ docId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const domain = searchParams.get('domain') || 'data_science';
   const [document, setDocument] = useState<ImageDocument | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDocument = async () => {
@@ -20,7 +49,7 @@ const EditImagePage: React.FC = () => {
         return;
       }
       try {
-        const fetchedDoc = await getImageDocument(docId);
+        const fetchedDoc = await getImageDocument(docId, domain);
         setDocument(fetchedDoc);
       } catch (err) {
         console.error('Failed to fetch image document:', err);
@@ -30,13 +59,22 @@ const EditImagePage: React.FC = () => {
       }
     };
     fetchDocument();
-  }, [docId]);
+  }, [docId, domain]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
+    if (!file) {
+      setSelectedFile(null);
+      setSelectedImagePreview(null);
+      return;
     }
+
+    setSelectedFile(file);
+    setDocument(prevDoc => prevDoc ? { ...prevDoc, filename: file.name } : prevDoc);
+
+    const reader = new FileReader();
+    reader.onloadend = () => setSelectedImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -54,90 +92,96 @@ const EditImagePage: React.FC = () => {
     e.preventDefault();
     if (!document || !docId) return;
 
-    setLoading(true);
+    setSaving(true);
     setError(null);
 
     let imageBase64 = document.image_base64;
     let filename = document.filename;
 
-    if (selectedFile) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        imageBase64 = (reader.result as string).split(',')[1];
+    try {
+      if (selectedFile) {
+        imageBase64 = await fileToBase64(selectedFile);
         filename = selectedFile.name;
-        try {
-          await updateImageDocument(docId, {
-            image_base64: imageBase64,
-            image_summary: document.image_summary,
-            category: document.category,
-            filename: filename,
-            page_number: document.page_number,
-          });
-          alert('Image document updated successfully!');
-          navigate('/vector-database/image-store');
-        } catch (err) {
-          console.error('Failed to update image document:', err);
-          setError('Failed to update image document. Please try again.');
-        } finally {
-          setLoading(false);
-        }
-      };
-      reader.readAsDataURL(selectedFile);
-    } else {
-      try {
-        await updateImageDocument(docId, {
-          image_summary: document.image_summary,
-          category: document.category,
-          filename: document.filename,
-          page_number: document.page_number,
-        });
-        alert('Image document updated successfully!');
-        navigate('/vector-database/image-store');
-      } catch (err) {
-        console.error('Failed to update image document:', err);
-        setError('Failed to update image document. Please try again.');
-      } finally {
-        setLoading(false);
       }
+
+      await updateImageDocument(docId, {
+        image_base64: imageBase64,
+        image_summary: document.image_summary,
+        category: document.category,
+        filename: filename,
+        page_number: document.page_number,
+      }, domain);
+      navigate(`/vector-database/image-store?domain=${encodeURIComponent(domain)}`);
+    } catch (err) {
+      console.error('Failed to update image document:', err);
+      setError('Failed to update image document. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleCancel = () => {
-    navigate('/vector-database/image-store'); // Go back to the image store page
+  const handleBack = () => {
+    navigate(`/vector-database/image-store?domain=${encodeURIComponent(domain)}`);
   };
 
   if (loading) {
-    return <div className="edit-image-container">Loading image document...</div>;
+    return <div className="edit-image-container edit-image-state">Loading image document...</div>;
   }
 
-  if (error) {
-    return <div className="edit-image-container error-message">{error}</div>;
+  if (error && !document) {
+    return (
+      <div className="edit-image-container edit-image-state">
+        <button type="button" className="back-btn" onClick={handleBack}>
+          <FiArrowLeft />
+          <span>Back</span>
+        </button>
+        <div className="error-message">{error}</div>
+      </div>
+    );
   }
 
   if (!document) {
-    return <div className="edit-image-container">Image document not found.</div>;
+    return <div className="edit-image-container edit-image-state">Image document not found.</div>;
   }
+
+  const imagePreviewSrc = selectedImagePreview || getImageSrc(document.image_base64);
 
   return (
     <div className="edit-image-container">
-      <h1>Edit Image Document</h1>
+      <div className="edit-image-header">
+        <button type="button" className="back-btn" onClick={handleBack}>
+          <FiArrowLeft />
+          <span>Back</span>
+        </button>
+        <div>
+          <h1>Edit Image Document</h1>
+          <p>{domain.replace('_', ' ')} image store</p>
+        </div>
+      </div>
       <form onSubmit={handleSubmit} className="edit-image-form">
         <div className="form-group">
           <label htmlFor="doc_id">Document ID:</label>
           <input type="text" id="doc_id" name="doc_id" value={document.doc_id} disabled />
         </div>
         <div className="form-group">
-          <label htmlFor="current_image">Current Image:</label>
-          {document.image_base64 ? (
-            <img src={`data:image/jpeg;base64,${document.image_base64}`} alt="Current Document Image" className="current-document-image" />
-          ) : (
-            <span>No Image Available</span>
-          )}
+          <label>Image Preview:</label>
+          <div className="image-preview-card">
+            {imagePreviewSrc ? (
+              <img src={imagePreviewSrc} alt="Current document" className="current-document-image" />
+            ) : (
+              <span>No Image Available</span>
+            )}
+          </div>
         </div>
         <div className="form-group">
           <label htmlFor="image_file">Upload New Image (optional):</label>
           <input type="file" id="image_file" accept="image/*" onChange={handleFileChange} />
-          {selectedFile && <p>New file selected: {selectedFile.name}</p>}
+          {selectedFile && (
+            <p className="selected-file-note">
+              <FiUpload />
+              <span>{selectedFile.name}</span>
+            </p>
+          )}
         </div>
         <div className="form-group">
           <label htmlFor="image_summary">Image Summary:</label>
@@ -156,11 +200,13 @@ const EditImagePage: React.FC = () => {
           <input type="number" id="page_number" name="page_number" value={document.page_number ?? ''} onChange={handleChange} />
         </div>
         <div className="form-actions">
-          <button type="submit" className="submit-btn" disabled={loading}>
-            {loading ? 'Updating...' : 'Submit'}
+          <button type="button" className="cancel-btn" onClick={handleBack} disabled={saving}>
+            <FiX />
+            <span>Cancel</span>
           </button>
-          <button type="button" className="cancel-btn" onClick={handleCancel} disabled={loading}>
-            Cancel
+          <button type="submit" className="submit-btn" disabled={saving}>
+            <FiSave />
+            <span>{saving ? 'Saving...' : 'Save'}</span>
           </button>
         </div>
         {error && <div className="error-message">{error}</div>}

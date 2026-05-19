@@ -60,6 +60,9 @@ class ChatResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ChatTitleUpdate(BaseModel):
+    title: str
+
 class ChatsResponse(BaseModel):
     """Schema representing a list of chat sessions in responses."""
 

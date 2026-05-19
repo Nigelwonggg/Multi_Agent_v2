@@ -15,7 +15,7 @@ from app.utils.logging_config import get_logger
 logger = get_logger("services.llm.gemini_service")
 load_dotenv(override=True)
 API_KEY=os.environ.get("GEMINI_API_KEY")
-logger.debug(f"🔑 Loaded GEMINI_API_KEY from environment {API_KEY}")
+logger.debug(f"Loaded GEMINI_API_KEY from environment: {'present' if API_KEY else 'missing'}")
 
 class GeminiService(BaseLLMService):
     """Service for Google Gemini models"""
@@ -25,7 +25,7 @@ class GeminiService(BaseLLMService):
         self.base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
         self.api_key = API_KEY
 
-        logger.debug(f"🔑 Loaded GOOGLE_API_KEY from environment {self.api_key}")
+        logger.debug(f"Loaded GOOGLE_API_KEY from environment: {'present' if self.api_key else 'missing'}")
         
         if not self.api_key:
             raise ValueError("GOOGLE_API_KEY environment variable is required for Gemini service")
@@ -66,5 +66,4 @@ def get_gemini_service() -> GeminiService:
     global _gemini_instance
     if _gemini_instance is None:
         _gemini_instance = GeminiService()
-        _gemini_instance.initialize()
     return _gemini_instance

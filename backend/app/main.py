@@ -33,7 +33,12 @@ app = FastAPI(
 # Enable CORS for your frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],  # Your React app URL
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://gen-lang-client-0059459242.web.app",
+        "https://gen-lang-client-0059459242.firebaseapp.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -51,6 +56,9 @@ app.include_router(chat_router)
 from app.api.routes.auth import router as auth_router
 app.include_router(auth_router)
 
+from app.api.routes.identity_registry import router as identity_registry_router
+app.include_router(identity_registry_router)
+
 from app.api.routes.text_store import router as text_store_router
 app.include_router(text_store_router)
 
@@ -59,6 +67,10 @@ app.include_router(image_store_router)
 
 from app.api.routes.domains import router as domains_router
 app.include_router(domains_router)
+
+from app.api.routes.quiz import router as quiz_router
+app.include_router(quiz_router)
+
 
 # ================================================================
 # LLM FACTORY INITIALIZATION

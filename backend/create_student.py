@@ -25,7 +25,10 @@ def create_manual_student():
         # Check if user exists
         user = db.query(User).filter(User.email == email).first()
         if user:
-            print(f"User {email} already exists!")
+            print(f"User {email} already exists! Updating password...")
+            user.hashed_password = get_password_hash(password)
+            db.commit()
+            print("✅ Password updated to new format.")
             return
 
         new_user = User(
@@ -44,6 +47,7 @@ def create_manual_student():
         print(f"Full Name: {full_name}")
     except Exception as e:
         print(f"Error: {e}")
+        db.rollback()
     finally:
         db.close()
 

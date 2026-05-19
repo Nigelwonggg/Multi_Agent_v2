@@ -19,24 +19,29 @@ import tempfile
 import uuid
 
 import openai
+from pypdf import PdfReader
 from dotenv import load_dotenv
 from unstructured.partition.pdf import partition_pdf
 
 from app.services.image_store_services import get_image_store_factory
 from app.services.text_store_services import get_text_store_factory
+from app.databases.chat_database import SessionLocal
+from app.models.pdf_upload_job import PdfUploadJobRecord
 from app.services.pdf_summary_prompts import (
     AVAILABLE_DOMAINS,
     ds_image_summary_prompt,
     ds_text_summary_prompt,
     med_image_summary_prompt,
     med_text_summary_prompt,
+    generic_image_summary_prompt,
+    generic_text_summary_prompt,
 )
 from app.utils.logging_config import get_logger
 
 
 load_dotenv()
 
-JobStatus = Literal["queued", "processing", "completed", "failed"]
+JobStatus = Literal["queued", "processing", "completed", "failed", "cancelled"]
 
 
 @dataclass
@@ -47,6 +52,7 @@ class PdfUploadJob:
     category: str
     status: JobStatus = "queued"
     processed_pages: int = 0
+    total_pages: int = 0
     created_documents: int = 0
     created_images: int = 0
     error: Optional[str] = None
@@ -61,6 +67,7 @@ class PdfUploadJob:
             "category": self.category,
             "status": self.status,
             "processed_pages": self.processed_pages,
+            "total_pages": self.total_pages,
             "created_documents": self.created_documents,
             "created_images": self.created_images,
             "error": self.error,
@@ -137,7 +144,6 @@ class PdfIngestionService:
             self.parse_extract_images,
         )
 
-        self._jobs: Dict[str, PdfUploadJob] = {}
         self._lock = Lock()
 
     @staticmethod
@@ -158,41 +164,128 @@ class PdfIngestionService:
             return default
 
     def create_job(self, filename: str, domain: str, category: str) -> str:
-        if domain not in AVAILABLE_DOMAINS:
-            raise ValueError(f"Domain '{domain}' not supported. Available domains: {AVAILABLE_DOMAINS}")
-
+        # Flexible domains: If not in AVAILABLE_DOMAINS, it will use generic prompts and stores
         job_id = str(uuid.uuid4())
         job = PdfUploadJob(job_id=job_id, filename=filename, domain=domain, category=category)
+        db = SessionLocal()
+        try:
+            db.add(
+                PdfUploadJobRecord(
+                    job_id=job.job_id,
+                    filename=job.filename,
+                    domain=job.domain,
+                    category=job.category,
+                    status=job.status,
+                    processed_pages=job.processed_pages,
+                    total_pages=job.total_pages,
+                    created_documents=job.created_documents,
+                    created_images=job.created_images,
+                    error=job.error,
+                    created_at=job.created_at,
+                    updated_at=job.updated_at,
+                )
+            )
+            db.commit()
+        finally:
+            db.close()
 
-        with self._lock:
-            self._jobs[job_id] = job
-
-        self.logger.info("Created PDF upload job %s for file %s", job_id, filename)
+        self.logger.info("Created PDF upload job %s for file %s in domain %s", job_id, filename, domain)
         return job_id
 
+    def cancel_job(self, job_id: str) -> bool:
+        """Mark a job as cancelled so processing stops."""
+        db = SessionLocal()
+        try:
+            job = db.query(PdfUploadJobRecord).filter(PdfUploadJobRecord.job_id == job_id).first()
+            if job and job.status in ["queued", "processing"]:
+                job.status = "cancelled"
+                job.updated_at = datetime.now(timezone.utc)
+                db.add(job)
+                db.commit()
+                self.logger.info("Job %s marked as cancelled", job_id)
+                return True
+            return False
+        finally:
+            db.close()
+
+    def _is_cancelled(self, job_id: str) -> bool:
+        """Check if job has been marked as cancelled."""
+        db = SessionLocal()
+        try:
+            job = db.query(PdfUploadJobRecord).filter(PdfUploadJobRecord.job_id == job_id).first()
+            return job.status == "cancelled" if job else False
+        finally:
+            db.close()
+
     def get_job(self, job_id: str) -> Optional[Dict[str, object]]:
-        with self._lock:
-            job = self._jobs.get(job_id)
-            return job.to_dict() if job else None
+        db = SessionLocal()
+        try:
+            job = db.query(PdfUploadJobRecord).filter(PdfUploadJobRecord.job_id == job_id).first()
+            if not job:
+                return None
+
+            return {
+                "job_id": job.job_id,
+                "filename": job.filename,
+                "domain": job.domain,
+                "category": job.category,
+                "status": job.status,
+                "processed_pages": job.processed_pages,
+                "total_pages": job.total_pages,
+                "created_documents": job.created_documents,
+                "created_images": job.created_images,
+                "error": job.error,
+                "created_at": job.created_at.isoformat(),
+                "updated_at": job.updated_at.isoformat(),
+            }
+        finally:
+            db.close()
 
     def _update_job(self, job_id: str, **updates: object) -> None:
-        with self._lock:
-            job = self._jobs.get(job_id)
+        db = SessionLocal()
+        try:
+            job = db.query(PdfUploadJobRecord).filter(PdfUploadJobRecord.job_id == job_id).first()
             if not job:
                 return
 
             for key, value in updates.items():
-                setattr(job, key, value)
+                if hasattr(job, key):
+                    setattr(job, key, value)
             job.updated_at = datetime.now(timezone.utc)
+            db.add(job)
+            db.commit()
+        finally:
+            db.close()
 
     def process_pdf_file(self, *, file_path: Path, filename: str, domain: str, category: str, job_id: str) -> None:
         self._update_job(job_id, status="processing", error=None)
 
         try:
+            # Check for cancellation before starting
+            if self._is_cancelled(job_id):
+                self.logger.info("Job %s was cancelled before processing started.", job_id)
+                return
+
+            # Get total pages first
+            try:
+                reader = PdfReader(str(file_path))
+                total_pages = len(reader.pages)
+                self._update_job(job_id, total_pages=total_pages)
+            except Exception as e:
+                self.logger.warning("Could not determine total pages for job %s: %s", job_id, e)
+                total_pages = 0
+
+            # Factories now handle dynamic domain creation via Generic stores
             text_store = self.text_factory.get_store_by_name(domain)
             image_store = self.image_factory.get_store_by_name(domain)
 
-            chunks = self._partition_pdf(str(file_path))
+            self.logger.info("Starting PDF partitioning for job %s (file: %s)", job_id, filename)
+            try:
+                chunks = self._partition_pdf(str(file_path))
+            except Exception as e:
+                self.logger.error("Failed to partition PDF for job %s: %s", job_id, e)
+                raise RuntimeError(f"PDF partitioning failed: {str(e)}")
+
             text_chunks = self._get_text_chunks(chunks)
             image_chunks = self._get_image_chunks(chunks)
 
@@ -209,6 +302,10 @@ class PdfIngestionService:
             )
 
             for index, text_chunk in enumerate(text_chunks, start=1):
+                if self._is_cancelled(job_id):
+                    self.logger.info("Job %s was cancelled during text processing.", job_id)
+                    return
+
                 summary = self._get_text_summary(
                     text_chunk,
                     self.text_model,
@@ -218,6 +315,7 @@ class PdfIngestionService:
                 )
                 summary_docs = self._create_text_db_document([summary], category)
                 for document in summary_docs:
+                    # Access the underlying Chroma store
                     text_store.text_store.add_documents([document], ids=[document.metadata["doc_id"]])
                 created_documents += len(summary_docs)
 
@@ -229,9 +327,14 @@ class PdfIngestionService:
                 )
 
             for index, image in enumerate(image_chunks, start=1):
+                if self._is_cancelled(job_id):
+                    self.logger.info("Job %s was cancelled during image processing.", job_id)
+                    return
+
                 summary = self._get_image_summary(image, domain, source_filename=filename)
                 summary_docs = self._create_image_db_document([summary], category)
                 for document in summary_docs:
+                    # Access the underlying Chroma store
                     image_store.image_store.add_documents([document], ids=[document.metadata["doc_id"]])
                 created_images += len(summary_docs)
 
@@ -315,8 +418,10 @@ class PdfIngestionService:
     def _make_text_summary_prompt(self, element: str, category: str, domain: str):
         if domain == "medical":
             prompt_text = med_text_summary_prompt(element, category)
-        else:
+        elif domain == "data_science":
             prompt_text = ds_text_summary_prompt(element, category)
+        else:
+            prompt_text = generic_text_summary_prompt(element, category, domain)
 
         return [
             {"role": "system", "content": "You are an assistant tasked with summarizing tables and text."},
@@ -326,8 +431,10 @@ class PdfIngestionService:
     def _make_image_summary_prompt(self, image: Dict[str, object], domain: str):
         if domain == "medical":
             prompt_text = med_image_summary_prompt(image)
-        else:
+        elif domain == "data_science":
             prompt_text = ds_image_summary_prompt(image)
+        else:
+            prompt_text = generic_image_summary_prompt(image, domain)
 
         return [
             {
@@ -401,6 +508,9 @@ class PdfIngestionService:
         if not self.client:
             return ""
 
+        # Determine if this is a vision request by checking if any message content is a list
+        is_vision = any(isinstance(m.get("content"), list) for m in messages)
+
         try:
             response = self.client.chat.completions.create(
                 model=model,
@@ -413,13 +523,14 @@ class PdfIngestionService:
         except openai.RateLimitError:
             self.logger.warning("PDF summary request hit rate limit on provider %s.", self.provider)
             if self.fallback_client and self.fallback_provider == "groq":
-                fallback_model = self.fallback_text_model if model == self.text_model else self.fallback_vision_model
+                # Correctly choose fallback based on request type, not just model name equality
+                fallback_model = self.fallback_vision_model if is_vision else self.fallback_text_model
                 try:
                     response = self.fallback_client.chat.completions.create(
                         model=fallback_model or model,
                         messages=list(messages),
                         temperature=0.6,
-                        max_completion_tokens=512,
+                        max_tokens=512,
                         top_p=0.95,
                     )
                     self.logger.info("PDF summary succeeded using fallback provider %s.", self.fallback_provider)

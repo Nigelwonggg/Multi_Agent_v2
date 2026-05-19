@@ -13,6 +13,7 @@ const Layout: React.FC = () => {
     handleSelectChat,
     handleNewChat,
     handleDeleteChat,
+    handleRenameChat,
   } = useChatLogic();
 
   return (
@@ -25,6 +26,7 @@ const Layout: React.FC = () => {
           onSelectChat={handleSelectChat}
           onNewChat={handleNewChat}
           onDeleteChat={handleDeleteChat}
+          onRenameChat={handleRenameChat}
           loading={loading}
         />
         <main className="main-content">

@@ -1,0 +1,332 @@
+/* PAGE */
+.qe-page {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1a0f0f, #000);
+  color: white;
+  padding-top: 80px;
+}
+
+/* CONTAINER */
+.qe-container {
+  width: 70%;
+  margin: auto;
+  padding: 40px 0;
+}
+
+/* HEADER */
+.qe-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.qe-header h1 {
+  font-size: 36px;
+  margin-bottom: 5px;
+}
+
+.qe-header p {
+  color: #aaa;
+}
+
+/* SEARCH */
+.qe-search {
+  padding: 10px 15px;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #111;
+  color: white;
+}
+
+/* LIST */
+.qe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* CARD */
+.qe-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #111, #1a1a1a);
+  border: 1px solid #222;
+  transition: 0.3s;
+}
+
+.qe-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(255, 200, 0, 0.1);
+}
+
+/* LEFT SIDE */
+.qe-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.qe-icon {
+  font-size: 30px;
+  background: #222;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+/* TEXT */
+.qe-card h2 {
+  margin: 0;
+}
+
+.qe-card p {
+  color: #aaa;
+  font-size: 14px;
+}
+
+/* ACTIONS */
+.qe-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* BUTTON BASE */
+.qe-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+/* VARIANTS */
+.qe-edit {
+  background: #facc15;
+  color: black;
+  border: none;
+}
+
+.qe-results:hover,
+.qe-more:hover {
+  background: #222;
+}
+
+.qe-edit:hover {
+  opacity: 0.9;
+}
+
+.qe-activate {
+  background: #16a34a;
+  color: white;
+  border: none;
+}
+
+.qe-activate:hover {
+  background: #15803d;
+}
+
+.qe-hide {
+  background: #2563eb;
+  color: white;
+  border: none;
+}
+
+.qe-hide:hover {
+  background: #1d4ed8;
+}
+
+.qe-show {
+  background: #0f766e;
+  color: white;
+  border: none;
+}
+
+.qe-show:hover {
+  background: #115e59;
+}
+
+.qe-delete {
+  background: #ff4d4f;
+  color: white;
+  border: none;
+}
+
+.qe-delete:hover {
+  background: #d9363e;
+}
+
+.qe-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 2000;
+}
+
+.qe-modal {
+  width: min(100%, 460px);
+  padding: 28px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #111, #1a1a1a);
+  border: 1px solid #2b2b2b;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.qe-modal h2 {
+  margin: 0 0 10px;
+}
+
+.qe-modal p {
+  margin: 0;
+  color: #c9c9c9;
+  line-height: 1.5;
+}
+
+.qe-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+
+.qe-modal-cancel {
+  background: transparent;
+  border-color: #555;
+}
+
+:root[data-theme="light"] .qe-page {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 34vw),
+    radial-gradient(circle at top right, rgba(139, 92, 246, 0.1), transparent 30vw),
+    var(--bg);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qe-header h1,
+:root[data-theme="light"] .qe-card h2,
+:root[data-theme="light"] .qe-modal h2 {
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qe-header p,
+:root[data-theme="light"] .qe-card p,
+:root[data-theme="light"] .qe-modal p {
+  color: var(--text-muted);
+}
+
+:root[data-theme="light"] .qe-search {
+  background: #f8fbff;
+  border-color: rgba(37, 99, 235, 0.2);
+  color: var(--text);
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.08);
+}
+
+:root[data-theme="light"] .qe-search::placeholder {
+  color: #94a3b8;
+}
+
+:root[data-theme="light"] .qe-card {
+  background: #ffffff;
+  border-color: rgba(37, 99, 235, 0.16);
+  color: var(--text);
+  box-shadow: 0 14px 36px rgba(37, 99, 235, 0.1);
+}
+
+:root[data-theme="light"] .qe-card:hover {
+  box-shadow: 0 18px 42px rgba(37, 99, 235, 0.16);
+}
+
+:root[data-theme="light"] .qe-icon {
+  background: #edf4ff;
+  color: var(--accent);
+}
+
+:root[data-theme="light"] .qe-btn {
+  background: #edf4ff;
+  border-color: rgba(37, 99, 235, 0.2);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qe-results:hover,
+:root[data-theme="light"] .qe-more:hover {
+  background: #dbeafe;
+}
+
+:root[data-theme="light"] .qe-edit,
+:root[data-theme="light"] .qe-activate,
+:root[data-theme="light"] .qe-hide,
+:root[data-theme="light"] .qe-show {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.18);
+}
+
+:root[data-theme="light"] .qe-edit:hover,
+:root[data-theme="light"] .qe-activate:hover,
+:root[data-theme="light"] .qe-hide:hover,
+:root[data-theme="light"] .qe-show:hover {
+  background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+}
+
+:root[data-theme="light"] .qe-delete {
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.24);
+  color: #b42318;
+}
+
+:root[data-theme="light"] .qe-delete:hover {
+  background: rgba(220, 53, 69, 0.16);
+}
+
+:root[data-theme="light"] .qe-modal {
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+  border-color: rgba(37, 99, 235, 0.16);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qe-modal-cancel {
+  background: #edf4ff;
+  border-color: rgba(37, 99, 235, 0.18);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .qc-back-btn {
+  background: rgba(37, 99, 235, 0.08) !important;
+  border-color: rgba(37, 99, 235, 0.28) !important;
+  color: var(--accent) !important;
+}
+
+:root[data-theme="light"] .qc-back-btn:hover {
+  background: rgba(37, 99, 235, 0.14) !important;
+}
+
+@media (max-width: 900px) {
+  .qe-container {
+    width: min(92%, 720px);
+  }
+
+  .qe-header,
+  .qe-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .qe-search,
+  .qe-actions {
+    width: 100%;
+  }
+
+  .qe-actions {
+    flex-wrap: wrap;
+  }
+}

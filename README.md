@@ -1,170 +1,237 @@
-# Adaptive LLM Agents Framework for Education Across Domains
+# Adaptive LLM Agents for Education
 
-> ⚠️ **Prototype Status Warning**
->
-> This is a prototype application. Users may encounter bugs, incomplete features, or unexpected behavior.
+> Prototype status: this project is still evolving, so some workflows, prompts, and UI paths may change as features are refined.
 
-This repository contains a full-stack application designed to facilitate educational chat interactions using multiple AI agents. The system is built to process both text and image data, leveraging advanced vector stores for efficient information retrieval across various educational domains.
+This repository contains a full-stack educational AI platform built around a multi-agent chat workflow. It combines a React frontend, a FastAPI backend, LangGraph-based orchestration, and domain-specific vector stores so students and lecturers can interact with course content through chat, document retrieval, and quiz workflows.
 
-## 🚀 Key Features & Benefits
+## Overview
 
-*   **Multi-Agent Architecture:** Utilizes an adaptive framework with multiple AI agents to provide dynamic and context-aware educational support.
-*   **Omnimodal Data Processing:** Handles both text and image inputs, expanding the scope of educational content and interactions.
-*   **Vector Store Integration:** Employs vector databases for intelligent information retrieval, ensuring accurate and relevant responses from educational materials.
-*   **Full-Stack Application:** A complete solution with a robust backend and an interactive frontend (frontend details are not provided in the prompt but implied by "full-stack").
-*   **User Authentication & Identity:** Secure user registration, login, and identity verification mechanisms (e.g., `auth.py`, `identity_registry.py`).
-*   **Rich Chat Functionality:** Supports sending messages, managing chat history, and updating chat titles for organized learning sessions (e.g., `chat.py`).
-*   **Domain-Specific Interactions:** Designed to adapt to different educational domains (e.g., `domains.py`), with capabilities for quizzes (`quiz.py`) and content storage (`image_store.py`, `text_store.py`).
-*   **Scalable Backend:** Built with Python, FastAPI, and LangGraph, providing a performant and extensible foundation for AI agent orchestration.
+The application is designed to support teaching and learning across multiple domains, currently centered on data science and medical content.
 
-## 🛠️ Prerequisites & Dependencies
+Core capabilities include:
 
-Before you begin, ensure you have the following installed:
+- multi-agent chat with routing between direct answers and retrieval-augmented generation
+- text and image retrieval from prebuilt vector stores
+- lecturer-managed document and image stores
+- quiz creation, delivery, marking, and attempt review
+- authentication with role-based access for lecturers and students
+- identity registry and unit management features for course administration
 
-*   **Git:** For cloning the repository.
-*   **Python 3.11+:** For the backend services.
-*   **Node.js:** For JavaScript/TypeScript development (likely for the frontend, not explicitly detailed here but listed as a technology).
-*   **Docker & Docker Compose (Optional but Recommended):** For containerized deployment.
-*   **`uv` (or `pip`):** A fast Python package installer and dependency resolver.
+## Architecture
 
-### Backend Specific Dependencies
+The project is split into three main parts:
 
-The backend relies on the following key technologies:
+- [`frontend/`](./frontend): React + TypeScript + Vite web application
+- [`backend/`](./backend): FastAPI API, LangGraph orchestration, auth, quiz logic, and vector-store access
+- [`vector_store_processing/`](./vector_store_processing): document processing scripts and notebooks for building or refreshing vector databases
 
-*   **FastAPI:** A modern, fast (high-performance) web framework for building APIs with Python.
-*   **LangGraph:** A library for building robust and stateful multi-agent applications with LLMs.
-*   **SQLAlchemy:** An ORM for interacting with databases (e.g., `app.db`).
+At a high level, the workflow is:
 
-## ⚙️ Installation & Setup Instructions
+1. Source PDFs and course material are processed into vector databases.
+2. The backend loads the relevant text and image stores by domain.
+3. A LangGraph chat flow decides whether a question needs retrieval.
+4. The frontend presents chats, retrieved content, and quiz workflows to users.
 
-To get this project up and running, follow these steps:
+## Key Features
 
-### 1. Clone the Repository
+### Multi-Agent Educational Chat
 
-```bash
-git clone https://github.com/Nigelwonggg/Multi_Agent_v2.git
-cd Multi_Agent_v2
+- LangGraph coordinates a router, direct-answer node, retrieval path, image selection, and final answer generation.
+- The backend can answer simple prompts directly or enrich answers with retrieved text and image context.
+- An optional evaluator stage can be enabled through environment configuration.
+
+### Domain-Aware Retrieval
+
+- Separate text and image vector databases exist for different subject areas.
+- The repository already includes built vector stores for:
+  - `ds_text_db_llama`
+  - `ds_image_db_llama`
+  - `med_text_db`
+  - `med_image_db`
+- Additional custom domain directories are supported under `backend/vector_databases/`.
+
+### Assessment Workflows
+
+- Lecturers can create quizzes, review attempts, and manage unit-linked quiz availability.
+- Students can take quizzes and review their own results where supported.
+- The backend stores quiz attempts and builds review snapshots for later inspection.
+
+### Content and Admin Tools
+
+- Lecturer-facing pages support text store management, image store management, PDF upload, and identity registry administration.
+- Unit management is built into the backend and frontend routing structure.
+
+## Repository Structure
+
+```text
+.
+├── backend/                  FastAPI app, LangGraph logic, database models, APIs
+├── frontend/                 React app and UI components
+├── vector_store_processing/  Data preparation and vector DB generation
+└── README.md                 Project entry point
 ```
 
-### 2. Backend Setup (Recommended: using `uv`)
+Useful backend areas:
 
-The backend is written in Python.
+- [`backend/app/api/routes`](./backend/app/api/routes): chat, auth, quiz, text/image store, domain, and identity endpoints
+- [`backend/app/graph_logics`](./backend/app/graph_logics): LangGraph assembly and chat flow control
+- [`backend/app/services`](./backend/app/services): retrieval, PDF ingestion, LLM, and quiz services
+- [`backend/vector_databases`](./backend/vector_databases): runtime vector stores loaded by the application
 
-1.  **Navigate to the backend directory:**
-    ```bash
-    cd backend
-    ```
+Useful frontend areas:
 
-2.  **Get API Keys:**
-    Refer to the `.env-example` file in the `backend/` directory. Create a new file named `.env` in the same directory and fill in all the required API keys.
-    ```bash
-    cp .env-example .env
-    # Open .env and populate with your keys
-    ```
-    > **Security Note:** Do NOT commit your `.env` file to version control. It contains sensitive credentials.
+- [`frontend/src/pages`](./frontend/src/pages): page-level UI including chat, quizzes, uploads, and admin screens
+- [`frontend/src/components`](./frontend/src/components): reusable UI building blocks
+- [`frontend/src/api`](./frontend/src/api): browser-side API clients
 
-3.  **Create and Activate a Virtual Environment:**
-    Using `uv` (ensure `uv` is installed, e.g., `pip install uv`):
-    ```bash
-    uv venv .venv
-    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-    ```
-    If you prefer `pip`:
-    ```bash
-    python -m venv .venv
-    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-    pip install -r requirements.txt # (assuming requirements.txt exists or generate one with `uv pip freeze > requirements.txt`)
-    ```
+## Tech Stack
 
-4.  **Install Dependencies:**
-    ```bash
-    uv sync
-    ```
+- Frontend: React 19, TypeScript, Vite, React Router
+- Backend: FastAPI, SQLAlchemy, LangGraph, LangChain
+- Retrieval: ChromaDB + Hugging Face embeddings
+- Storage: SQLite by default, configurable through `DATABASE_URL`
+- AI providers: configurable support is present for OpenAI, Groq, Gemini, and related tooling
 
-5.  **Run the Backend Application:**
-    Once dependencies are installed, you can start the FastAPI application:
-    ```bash
-    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-    ```
-    (Note: `app.main:app` is a common FastAPI entry point. If `main.py` doesn't exist, you might need to adjust based on the actual entry file, potentially within `app/__init__.py`).
-    The backend should now be running, typically accessible at `http://localhost:8000`.
+## Quick Start
 
-### 3. Docker Setup (Alternative)
+### Prerequisites
 
-You can also run the backend using Docker for a containerized environment.
+- Python 3.12+
+- Node.js 18+
+- `uv` for Python dependency management
+- `npm`
+- At least one usable LLM API key for the backend and vector processing workflows
 
-1.  **Navigate to the backend directory:**
-    ```bash
-    cd backend
-    ```
+### 1. Start the Backend
 
-2.  **Create `.env` file:**
-    As described in step 2.2 above, create a `.env` file in the `backend/` directory with your API keys.
+```sh
+cd backend
+uv venv .venv
+uv sync
+source .venv/bin/activate
+uvicorn app.main:app --reload
+```
 
-3.  **Build the Docker Image:**
-    ```bash
-    docker build -t multi-agent-backend .
-    ```
+The FastAPI server runs on `http://localhost:8000` by default.
 
-4.  **Run the Docker Container:**
-    ```bash
-    docker run -p 8000:8000 multi-agent-backend
-    ```
-    The application will be accessible at `http://localhost:8000`.
+### 2. Start the Frontend
 
-## 📖 Usage Examples & API Documentation
+In a second terminal:
 
-Once the backend is running, you can interact with its API endpoints. FastAPI automatically generates interactive API documentation.
+```sh
+cd frontend
+npm install
+npm run dev
+```
 
-*   **Swagger UI:** Access the interactive API documentation at `http://localhost:8000/docs`.
-*   **ReDoc:** Access an alternative API documentation at `http://localhost:8000/redoc`.
+The Vite development server runs on `http://localhost:5173`.
 
-Here's a glimpse of the available API categories, inferred from the project structure:
+### 3. Sign In With the Seeded Local Accounts
 
-*   `POST /auth/register`: Register a new user.
-*   `POST /auth/login`: Log in a user and obtain an access token.
-*   `POST /auth/verify-identity`: Verify user identity.
-*   `GET /chats`: Retrieve a list of user chats.
-*   `POST /chat/message`: Send a new message to a chat agent.
-*   `GET /chat/{chat_id}/history`: Get the message history for a specific chat.
-*   `PUT /chat/{chat_id}/title`: Update the title of a chat.
-*   `POST /images/upload`: Upload an image to the store.
-*   `GET /quiz/start`: Start a new quiz session.
-*   `POST /text/store`: Store text data.
+On backend startup, the app creates two default local users if they do not already exist:
 
-You can use tools like `curl`, Postman, or your preferred HTTP client to test these endpoints.
+- Lecturer: `admin@test.com` / `password123`
+- Student: `student@test.com` / `password123`
 
-## 🔧 Configuration Options
+These are convenient for local development only. Replace them or remove them before any real deployment.
 
-The primary configuration for this project is managed through environment variables.
+## Environment Configuration
 
-### Environment Variables
+### Backend
 
-All critical configurations, including API keys for various services (e.g., LLMs, vector databases, image processing), should be stored in a `.env` file in the `backend/` directory.
+The backend expects a local `backend/.env` file, but a tracked `backend/.env-example` is not currently included in the repository. Create `backend/.env` manually with the settings you need.
 
-Refer to `backend/.env-example` for a comprehensive list of required environment variables. Common examples include:
+Common variables used by the backend include:
 
-*   `OPENAI_API_KEY`
-*   `ANTHROPIC_API_KEY`
-*   `DATABASE_URL` (for database connection string, if not using default SQLite `app.db`)
-*   `SECRET_KEY` (for JWT token generation in authentication)
+- `DATABASE_URL`
+- `SECRET_KEY`
+- `OPENAI_API_KEY`
+- `GROQ_API_KEY`
+- `GOOGLE_API_KEY`
+- `GEMINI_API_KEY`
+- `EMBEDDING_MODEL`
+- `CHAT_ENABLE_EVALUATOR`
+- `CHAT_MAX_EVALUATION_RETRIES`
+- `LOG_LEVEL`
 
-## 🤝 Contributing Guidelines
+A minimal local example looks like:
 
-We welcome contributions to the **Adaptive LLM Agents Framework for Education Across Domains**! If you're interested in helping improve this project, please consider the following:
+```env
+DATABASE_URL=chat_history.db
+SECRET_KEY=change-me
+OPENAI_API_KEY=
+GROQ_API_KEY=
+GOOGLE_API_KEY=
+GEMINI_API_KEY=
+LOG_LEVEL=DEBUG
+```
 
-1.  **Fork the repository.**
-2.  **Create a new branch** for your feature or bug fix: `git checkout -b feature/your-feature-name` or `bugfix/issue-description`.
-3.  **Make your changes.**
-4.  **Write clear, concise commit messages.**
-5.  **Test your changes thoroughly.**
-6.  **Submit a pull request** to the `main` branch of this repository, describing your changes and their benefits.
+### Frontend
 
-## 📄 License Information
+The frontend reads its backend base URL from:
 
-The license for this project has **not been specified**. Please contact the repository owner, Nigelwonggg, for details regarding licensing and usage permissions.
+```env
+VITE_API_BASE_URL=http://localhost:8000
+```
 
-## 🙏 Acknowledgments
+If this variable is not set, the frontend falls back to `http://localhost:8000`.
 
-*   This project leverages numerous open-source libraries and frameworks, including FastAPI, LangGraph, SQLAlchemy, and others, without which this project would not be possible.
-*   Special thanks to the open-source community for their continuous innovation and support.
+### Vector Store Processing
+
+[`vector_store_processing/.env-example`](./vector_store_processing/.env-example) can be used as a reference for the document-processing pipeline.
+
+## Vector Store Workflow
+
+The repository already contains built vector databases under [`backend/vector_databases`](./backend/vector_databases), so the main app can run without rebuilding them first.
+
+If you want to refresh or extend the retrieval data:
+
+1. Add or update source materials in `vector_store_processing/`.
+2. Configure the vector-processing environment using `vector_store_processing/.env-example`.
+3. Use the processing notebooks or `pdf_processor.py` to generate updated vector databases.
+4. Copy the resulting database directories into `backend/vector_databases/`.
+5. Restart the backend so it picks up the new stores.
+
+Current bundled domain stores include:
+
+- data science text
+- data science image
+- medical text
+- medical image
+
+## API Surface
+
+The backend exposes routes for:
+
+- chat history and messaging
+- authentication
+- domain lookup
+- text store management
+- image store management
+- quizzes and attempts
+- identity registry
+
+See [`backend/app/api/routes`](./backend/app/api/routes) for the current route modules.
+
+## Development Notes
+
+- SQLite is the default local database.
+- Logging is enabled in the backend and writes to `backend/logs/` by default.
+- Some deployment-era configuration still exists in the codebase, including Firebase Hosting and Cloud Run references, but the project can be developed locally without them.
+- The frontend contains both real API calls and fallback dummy data paths in a few places, which is useful during development but worth reviewing before production use.
+
+## Component Documentation
+
+For more focused setup details, refer to:
+
+- [`backend/README.md`](./backend/README.md)
+- [`frontend/README.md`](./frontend/README.md)
+- [`vector_store_processing/README.md`](./vector_store_processing/README.md)
+
+## Suggested First Steps for New Contributors
+
+1. Start the backend and frontend locally.
+2. Log in with a seeded lecturer account.
+3. Test chat, quiz, and vector-store management flows.
+4. Review the LangGraph flow in [`backend/app/graph_logics/chat_graph.py`](./backend/app/graph_logics/chat_graph.py).
+5. Explore how retrieved content is surfaced in the chat UI.

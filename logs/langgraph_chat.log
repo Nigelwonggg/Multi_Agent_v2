@@ -1,0 +1,12 @@
+2026-06-06 09:48:22 - [services.llm.gemini_service] - DEBUG - <module>:18 - Loaded GEMINI_API_KEY from environment: present
+2026-06-06 09:48:32 - [services.llm.gemini_service] - DEBUG - <module>:18 - Loaded GEMINI_API_KEY from environment: present
+2026-06-06 09:48:33 - [llm_services.embedding] - INFO - initialize:28 - 🚀 Initializing embedding service with model: sentence-transformers/all-mpnet-base-v2
+2026-06-06 09:48:42 - [sentence_transformers.SentenceTransformer] - INFO - __init__:219 - Use pytorch device_name: mps
+2026-06-06 09:48:42 - [sentence_transformers.SentenceTransformer] - INFO - __init__:227 - Load pretrained SentenceTransformer: sentence-transformers/all-mpnet-base-v2
+2026-06-06 09:48:50 - [llm_services.embedding] - INFO - initialize:32 - ✅ Embedding service initialized successfully
+2026-06-06 09:48:50 - [services.text_store.data_science] - INFO - __init__:41 - 🚀 Initializing Chroma for domain 'data_science' at /Users/nigel/Desktop/Monash Degree/Year 3/Sem2/FIT3162/adaptive-llm-agents-education-main/Multi_Agent_v2/vector_databases/ds_text_db_llama
+2026-06-06 09:48:50 - [services.text_store.data_science] - INFO - __init__:49 - 🚀 Initializing Chroma for domain 'data_science' at /Users/nigel/Desktop/Monash Degree/Year 3/Sem2/FIT3162/adaptive-llm-agents-education-main/Multi_Agent_v2/vector_databases/ds_text_db_llama
+2026-06-06 09:48:50 - [chromadb.config] - DEBUG - start:359 - Starting component System
+2026-06-06 09:48:50 - [chromadb.config] - DEBUG - start:359 - Starting component Posthog
+2026-06-06 09:48:50 - [services.text_store.data_science] - INFO - __init__:64 - ✅ data_science text store initialized: /Users/nigel/Desktop/Monash Degree/Year 3/Sem2/FIT3162/adaptive-llm-agents-education-main/Multi_Agent_v2/vector_databases/ds_text_db_llama
+2026-06-06 09:48:50 - [services.text_store.data_science] - INFO - get_all_documents:185 - Retrieved 0 documents
